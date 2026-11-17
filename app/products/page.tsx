@@ -8,6 +8,7 @@ import ProductFilters from "@/components/ProductFilters";
 import ActiveChips from "@/components/ActiveChips";
 import { getCachedFromPrices } from "@/lib/pricing/fromPrice";
 import { supabaseServer } from "@/lib/supabase/server";
+import { whatsappHref } from "@/lib/company";
 
 export const metadata: Metadata = {
   title: "Steel Furniture Catalog | SANRA LIVING",
@@ -212,7 +213,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   We might not have an active catalog item matching these exact filters, but we manufacture custom steel dimensions every day on our SIDCO line.
                 </p>
                 <a
-                  href="https://wa.me/91XXXXXXXXXX?text=Hello%20SANRA%20LIVING,%20I%20am%20looking%20for%20a%20custom%20size%20or%20specific%20product%20not%20listed."
+                  href={whatsappHref(
+                    "Hello SANRA LIVING, I am looking for a custom size or specific product not listed."
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs uppercase tracking-wider transition-colors shadow-sm"

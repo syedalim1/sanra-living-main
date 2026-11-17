@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  outputFileTracingIncludes: {
+    "/api/quote-pdf": ["./lib/fonts/**/*"],
+  },
   turbopack: {
     rules: {
       "*.css": {

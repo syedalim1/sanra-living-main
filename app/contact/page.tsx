@@ -2,6 +2,7 @@ import React from "react";
 import SectionHeading from "@/components/SectionHeading";
 import Link from "next/link";
 import { ArrowLeft, MessageSquare, MapPin, Phone, Clock, FileText } from "lucide-react";
+import { company, whatsappHref } from "@/lib/company";
 
 export default function ContactPage() {
   return (
@@ -38,8 +39,8 @@ export default function ContactPage() {
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
                   <div>
-                    <strong className="block text-[#111111]">SIDCO Industrial Estate</strong>
-                    <span>Kurichi, Coimbatore, Tamil Nadu 641021, India</span>
+                    <strong className="block text-[#111111]">Factory Address</strong>
+                    <span>{company.address}</span>
                   </div>
                 </div>
 
@@ -47,7 +48,7 @@ export default function ContactPage() {
                   <Phone className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
                   <div>
                     <strong className="block text-[#111111]">Factory Desk</strong>
-                    <span>+91 91XXXXXXXXXX</span>
+                    <span>{company.phone}</span>
                   </div>
                 </div>
 
@@ -63,7 +64,7 @@ export default function ContactPage() {
                   <FileText className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
                   <div>
                     <strong className="block text-[#111111]">Commercial Invoicing</strong>
-                    <span>GSTIN: 33XXXXX0000X1Z5 (Input Tax Credit Eligible)</span>
+                    <span>GSTIN: {company.gstin} (Input Tax Credit Eligible)</span>
                   </div>
                 </div>
               </div>
@@ -82,9 +83,14 @@ export default function ContactPage() {
               </p>
             </div>
 
-            <div className="pt-8">
+            <div className="pt-8 space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+                WhatsApp: {company.whatsappDisplayNumber}
+              </p>
               <a
-                href="https://wa.me/91XXXXXXXXXX?text=Hello%20SANRA%20LIVING,%20I%20have%20an%20enquiry%20regarding%20factory%20furniture."
+                href={whatsappHref(
+                  "Hi SANRA LIVING, I'd like to know more about your steel furniture."
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs uppercase tracking-wider transition-colors shadow"
@@ -92,6 +98,11 @@ export default function ContactPage() {
                 <MessageSquare className="w-4 h-4" />
                 Chat with SIDCO Coimbatore Desk
               </a>
+              {!company.whatsappNumber && (
+                <p className="text-[11px] font-semibold text-amber-300">
+                  UPDATE ME: add NEXT_PUBLIC_WHATSAPP_NUMBER to .env.local
+                </p>
+              )}
             </div>
           </div>
         </div>
