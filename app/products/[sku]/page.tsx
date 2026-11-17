@@ -253,3 +253,4 @@ export default async function SkuPage({ params }: SkuPageProps) {
     </div>
   );
 }
+
