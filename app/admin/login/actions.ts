@@ -77,6 +77,9 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
     });
 
     if (error || !data.user) {
+      console.warn(
+        `Admin sign-in failed at Supabase Auth: ${error?.code ?? error?.name ?? "no-user"} (status ${error?.status ?? "n/a"}).`
+      );
       await failDelay();
       return { error: "Invalid credentials" };
     }

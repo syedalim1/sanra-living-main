@@ -47,9 +47,32 @@ function revalidateCatalog(sku?: string): void {
   }
 }
 
-function getUploadFile(formData: FormData): File | null {
-  const file = formData.get("file");
+function getFormFile(formData: FormData, key: string): File | null {
+  const file = formData.get(key);
   return file instanceof File && file.size > 0 ? file : null;
+}
+
+function getUploadFile(formData: FormData): File | null {
+  return getFormFile(formData, "file");
+}
+
+async function storeProductImage(
+  db: SupabaseClient,
+  sku: string,
+  kind: "main" | "hover",
+  file: File
+): Promise<string> {
+  validateImageSize(file.size);
+  const processed = await processAdminImage(Buffer.from(await file.arrayBuffer()), true);
+  const path = buildStoragePath(sku, kind);
+  return await uploadImageBuffer(db, path, processed.buffer);
+}
+
+async function discardUploads(
+  db: SupabaseClient,
+  urls: Array<string | null>
+): Promise<void> {
+  await Promise.all(urls.map((url) => removeStoredImage(db, url).catch(() => undefined)));
 }
 
 async function isImageReferencedByVariant(
@@ -135,6 +158,29 @@ export async function saveProductAction(
       return { ok: false, error: "That SKU already exists." };
     }
 
+    const mainFile = getFormFile(formData, "main_image");
+    const hoverFile = getFormFile(formData, "hover_image");
+    const removeMainImage = parseBoolean(formData.get("remove_main_image"));
+    const removeHoverImage = parseBoolean(formData.get("remove_hover_image"));
+
+    let uploadedMainUrl: string | null = null;
+    let uploadedHoverUrl: string | null = null;
+
+    try {
+      if (mainFile) {
+        uploadedMainUrl = await storeProductImage(db, values.sku, "main", mainFile);
+      }
+      if (hoverFile) {
+        uploadedHoverUrl = await storeProductImage(db, values.sku, "hover", hoverFile);
+      }
+    } catch (error) {
+      await discardUploads(db, [uploadedMainUrl, uploadedHoverUrl]);
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Image upload failed.",
+      };
+    }
+
     const productRow = {
       sku: values.sku,
       name: values.name,
@@ -156,20 +202,49 @@ export async function saveProductAction(
     if (productId) {
       const existing = await db
         .from("products")
-        .select("id, sku")
+        .select("id, sku, main_image_url, hover_blueprint_img")
         .eq("id", productId)
         .maybeSingle();
 
       if (existing.error || !existing.data) {
+        await discardUploads(db, [uploadedMainUrl, uploadedHoverUrl]);
         return { ok: false, error: "Product not found." };
       }
 
-      const { error } = await db.from("products").update(productRow).eq("id", productId);
+      const productUpdate: Record<string, unknown> = { ...productRow };
+
+      if (uploadedMainUrl) {
+        productUpdate.main_image_url = uploadedMainUrl;
+      } else if (removeMainImage) {
+        productUpdate.main_image_url = PRODUCT_PLACEHOLDER;
+      }
+
+      if (uploadedHoverUrl) {
+        productUpdate.hover_blueprint_img = uploadedHoverUrl;
+      } else if (removeHoverImage) {
+        productUpdate.hover_blueprint_img = null;
+      }
+
+      const { error } = await db.from("products").update(productUpdate).eq("id", productId);
       if (error) {
+        await discardUploads(db, [uploadedMainUrl, uploadedHoverUrl]);
         return {
           ok: false,
           error: isUniqueViolation(error) ? "That SKU already exists." : "Unable to save product.",
         };
+      }
+
+      const nextMain = uploadedMainUrl ?? (removeMainImage ? PRODUCT_PLACEHOLDER : existing.data.main_image_url);
+      const nextHover = uploadedHoverUrl ?? (removeHoverImage ? null : existing.data.hover_blueprint_img);
+
+      if (nextMain !== existing.data.main_image_url) {
+        if (!(await isImageReferencedByVariant(db, productId, existing.data.main_image_url))) {
+          await removeStoredImage(db, existing.data.main_image_url).catch(() => undefined);
+        }
+      }
+
+      if (nextHover !== existing.data.hover_blueprint_img) {
+        await removeStoredImage(db, existing.data.hover_blueprint_img).catch(() => undefined);
       }
 
       savedProductId = productId;
@@ -178,13 +253,14 @@ export async function saveProductAction(
         .from("products")
         .insert({
           ...productRow,
-          main_image_url: PRODUCT_PLACEHOLDER,
-          hover_blueprint_img: null,
+          main_image_url: uploadedMainUrl ?? PRODUCT_PLACEHOLDER,
+          hover_blueprint_img: uploadedHoverUrl,
         })
         .select("id")
         .single();
 
       if (error || !data) {
+        await discardUploads(db, [uploadedMainUrl, uploadedHoverUrl]);
         return {
           ok: false,
           error: isUniqueViolation(error) ? "That SKU already exists." : "Unable to create product.",
@@ -214,7 +290,8 @@ export async function saveProductAction(
     });
 
     revalidateCatalog(values.sku);
-    redirectTo = `/admin/products/${savedProductId}`;
+    const addAnother = !productId && formString(formData.get("after_save")) === "new";
+    redirectTo = addAnother ? "/admin/products/new" : `/admin/products/${savedProductId}`;
   } catch {
     return { ok: false, error: "Unable to save the product. Please try again." };
   }

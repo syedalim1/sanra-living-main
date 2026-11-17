@@ -7,7 +7,6 @@ import { ArrowLeft } from "lucide-react";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createServerClient } from "@/lib/supabase/server";
 import ProductForm from "@/app/admin/(dashboard)/products/[id]/ProductForm";
-import ImageManager from "@/app/admin/(dashboard)/products/[id]/ImageManager";
 import VariantManager from "@/app/admin/(dashboard)/products/[id]/VariantManager";
 import SwatchManager from "@/app/admin/(dashboard)/products/[id]/SwatchManager";
 import ProductLifecycleActions from "@/app/admin/(dashboard)/products/[id]/ProductLifecycleActions";
@@ -213,7 +212,7 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
               )}
               {!product && (
                 <span className="text-[11px] text-neutral-500">
-                  Create the product first, then upload images and variants.
+                  Add details and images now. Variants and swatches unlock after the first save.
                 </span>
               )}
             </div>
@@ -227,12 +226,6 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
 
       {product && (
         <>
-          <ImageManager
-            productId={product.id}
-            mainImageUrl={product.main_image_url}
-            hoverImageUrl={product.hover_blueprint_img}
-          />
-
           <VariantManager
             productId={product.id}
             variants={variants}
