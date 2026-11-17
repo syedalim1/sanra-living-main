@@ -414,7 +414,7 @@ export default function ProductForm({
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold uppercase tracking-wider disabled:bg-neutral-400"
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-[11px] font-bold uppercase tracking-wider disabled:bg-neutral-400"
         >
           {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {pending ? "Saving..." : isEdit ? "Save Product" : "Create Product"}

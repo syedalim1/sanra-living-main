@@ -1,5 +1,7 @@
 "use server";
 
+import "server-only";
+
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";

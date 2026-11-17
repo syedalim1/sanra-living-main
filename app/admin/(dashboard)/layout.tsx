@@ -1,3 +1,5 @@
+import "server-only";
+
 import { connection } from "next/server";
 import AdminShell from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/admin/auth";

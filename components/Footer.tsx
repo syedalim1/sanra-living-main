@@ -109,7 +109,7 @@ export default function Footer() {
                   href={whatsappHref("Hello SANRA LIVING Factory, I have an enquiry.")}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded bg-emerald-700 hover:bg-emerald-800 text-white transition-colors"
                 >
                   <MessageSquare className="w-4 h-4" />
                   Chat on WhatsApp
@@ -120,7 +120,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-4">
+        <div className="mt-12 pt-8 border-t border-neutral-800 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-400 gap-4">
           <p>© 2026 SANRA LIVING | Indian Make Steel Industries. All rights reserved.</p>
           <p className="text-neutral-400">Direct SIDCO Coimbatore Factory • Live Factory Pricing</p>
         </div>

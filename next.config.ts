@@ -54,6 +54,20 @@ const globalSecurityHeaders = [
   { key: "Content-Security-Policy", value: contentSecurityPolicy },
 ];
 
+const publicPageCacheHeaders = [
+  {
+    key: "Cache-Control",
+    value: "public, s-maxage=3600, stale-while-revalidate=86400",
+  },
+];
+
+const catalogCacheHeaders = [
+  {
+    key: "Cache-Control",
+    value: "public, s-maxage=300, stale-while-revalidate=600",
+  },
+];
+
 const adminSecurityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -94,6 +108,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/(.*)", headers: globalSecurityHeaders },
+      { source: "/", headers: publicPageCacheHeaders },
+      { source: "/contact", headers: publicPageCacheHeaders },
+      { source: "/privacy", headers: publicPageCacheHeaders },
+      { source: "/terms", headers: publicPageCacheHeaders },
+      { source: "/products", headers: catalogCacheHeaders },
+      { source: "/products/:path*", headers: catalogCacheHeaders },
       { source: "/admin", headers: adminSecurityHeaders },
       { source: "/admin/:path*", headers: adminSecurityHeaders },
       { source: "/api/admin/:path*", headers: adminSecurityHeaders },

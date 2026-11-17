@@ -1,3 +1,5 @@
+import "server-only";
+
 import { connection } from "next/server";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createServerClient } from "@/lib/supabase/server";

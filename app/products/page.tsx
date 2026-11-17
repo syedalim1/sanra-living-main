@@ -1,3 +1,5 @@
+import "server-only";
+
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -9,6 +11,10 @@ import ActiveChips from "@/components/ActiveChips";
 import { getCachedFromPrices } from "@/lib/pricing/fromPrice";
 import { supabaseServer } from "@/lib/supabase/server";
 import { whatsappHref } from "@/lib/company";
+
+const HAS_SUPABASE = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export const metadata: Metadata = {
   title: "Steel Furniture Catalog | SANRA LIVING",
@@ -100,24 +106,29 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   // 1. Fetch products from Supabase
   let rawProducts: any[] = [];
-  try {
-    const { data, error } = await supabaseServer
-      .from("products")
-      .select("*")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true });
 
-    if (!error && data && data.length > 0) {
-      rawProducts = data;
-    } else {
+  if (HAS_SUPABASE) {
+    try {
+      const { data, error } = await supabaseServer
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        rawProducts = data;
+      } else {
+        rawProducts = FALLBACK_PRODUCTS;
+      }
+    } catch {
       rawProducts = FALLBACK_PRODUCTS;
     }
-  } catch {
+  } else {
     rawProducts = FALLBACK_PRODUCTS;
   }
 
   // 2. Fetch computed from_prices
-  const priceMap = await getCachedFromPrices();
+  const priceMap = HAS_SUPABASE ? await getCachedFromPrices() : {};
 
   // Attach from_price
   let catalog: CatalogProduct[] = rawProducts.map((p) => ({
@@ -201,7 +212,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         <SectionHeading
           badge="SIDCO Coimbatore Direct"
           title="Steel Furniture Catalog & Live Prices"
-          subtitle="Explore all structural furniture manufactured at our SIDCO Kurichi unit. Transparent factory pricing with full GST invoices and zero showroom margins."
+          subtitle="Explore all structural furniture manufactured at our SIDCO Kurichi unit. Transparent factory pricing with full GST invoices and direct dispatch."
           align="left"
           as="h1"
         />
@@ -215,6 +226,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           <div className="flex-1">
             {/* Active Chips & Total Count */}
             <ActiveChips totalCount={catalog.length} />
+
+            <h2 className="sr-only">Product results</h2>
 
             {/* Product Cards Grid or Empty State */}
             {catalog.length > 0 ? (
@@ -241,7 +254,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs uppercase tracking-wider transition-colors shadow-sm"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs uppercase tracking-wider transition-colors shadow-sm"
                 >
                   <MessageSquare className="w-4 h-4" />
                   Can&apos;t find it? Tell us what you need on WhatsApp

@@ -67,7 +67,7 @@ export default function CategoryCard({
             href={whatsappEnquiryUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded bg-emerald-700 hover:bg-emerald-800 text-white transition-colors"
           >
             <MessageSquare className="w-3.5 h-3.5" />
             WhatsApp

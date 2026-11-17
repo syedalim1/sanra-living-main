@@ -1,3 +1,5 @@
+import "server-only";
+
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -268,7 +270,7 @@ export default async function B2BPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl bg-emerald-600 text-white p-6 sm:p-8 text-center space-y-4">
+        <section className="rounded-2xl bg-emerald-700 text-white p-6 sm:p-8 text-center space-y-4">
           <MessageCircle className="w-8 h-8 mx-auto" />
           <h2 className="text-xl sm:text-2xl font-black tracking-tight">
             Need a project conversation?

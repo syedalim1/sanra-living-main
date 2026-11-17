@@ -641,7 +641,7 @@ export default function TableConfigurator({
               <div className="p-3 rounded-lg bg-emerald-50/70 border border-emerald-200 space-y-1">
                 <p className="font-bold text-emerald-900">SANRA SIDCO Factory</p>
                 <p className="text-[11px] text-emerald-800 leading-snug">
-                  16G Tata Structura pipe + robotic CO2 MIG bead + leveling bushes + 10-Yr MIG Warranty.
+                  16G Tata Structura structural frame + leveling bushes + 10-Yr MIG Warranty.
                 </p>
               </div>
             </div>
@@ -652,7 +652,7 @@ export default function TableConfigurator({
       {/* ================= RIGHT COLUMN: CONFIGURATOR CONTROLS ================= */}
       <div className="lg:col-span-6 space-y-8">
         <div>
-          <span className="inline-block text-[10px] font-extrabold uppercase tracking-widest text-neutral-500 bg-neutral-100 border border-neutral-200 px-3 py-1 rounded-full mb-2">
+          <span className="inline-block text-[10px] font-extrabold uppercase tracking-widest text-neutral-600 bg-neutral-100 border border-neutral-200 px-3 py-1 rounded-full mb-2">
             Factory Customizer
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
@@ -1075,6 +1075,7 @@ export default function TableConfigurator({
                 type="number"
                 min={1}
                 max={500}
+                aria-label="Quantity"
                 value={quantity}
                 onChange={(e) => handleQuantityChange(parseInt(e.target.value || "1", 10))}
                 className="w-14 text-center text-xs font-bold py-1.5 focus:outline-hidden"
@@ -1140,8 +1141,8 @@ export default function TableConfigurator({
               className={`w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors ${
                 whatsappStatus === "loading" ||
                 (selectedSize === "CUSTOM" && !customDimsValid)
-                  ? "bg-emerald-600/40 text-white cursor-not-allowed"
-                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                  ? "bg-emerald-700/40 text-white cursor-not-allowed"
+                  : "bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm"
               }`}
             >
               <MessageSquare className="w-4 h-4" />

@@ -29,8 +29,8 @@ const USE_OPTIONS: FilterOption[] = [
 const MATERIAL_OPTIONS: FilterOption[] = [
   { value: "MS", label: "Mild Steel (Tata MS)" },
   { value: "SS", label: "Stainless Steel (Jindal SS)" },
-  { value: "WOOD", label: "Kerala Rubberwood" },
-  { value: "GRANITE", label: "Krishnagiri Granite" },
+  { value: "WOOD", label: "100% Seasoned Grade-A Kerala Rubberwood" },
+  { value: "GRANITE", label: "18mm Export-Grade Krishnagiri Granite" },
 ];
 
 const BUDGET_OPTIONS: FilterOption[] = [

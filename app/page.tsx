@@ -89,7 +89,7 @@ export default function Home() {
   const factoryBays = [
     {
       title: "CO2 MIG & Argon TIG Welding",
-      description: "Continuous robotic-grade deep-penetration welding bead across joints for permanent structural rigidity.",
+      description: "Continuous deep-penetration structural joints for permanent rigidity.",
       icon: Flame,
       imageSrc: "/images/bay-welding.svg",
     },
@@ -318,7 +318,7 @@ export default function Home() {
                   SANRA Zero-Shake Telescopic Lock™
                 </h3>
                 <p className="text-sm text-neutral-600 mb-6 leading-relaxed">
-                  Our proprietary telescopic inner-sleeve joint slides directly inside the outer steel member. This locks the joint across multiple spatial planes simultaneously, ensuring the structure stays completely rock steady even under 200 Kg tested load.
+                  Our SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested) keeps the structure steady in daily commercial use.
                 </p>
                 <div className="rounded-lg overflow-hidden border border-neutral-300 mb-6 bg-neutral-50">
                   <WatermarkedImage
@@ -334,7 +334,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Multi-axis telescopic inner-sleeve containment</span>
+                    <span>SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -492,7 +492,7 @@ export default function Home() {
               href="https://wa.me/91XXXXXXXXXX?text=Hello%20SANRA%20LIVING,%20I%20would%20like%20to%20request%20live%20factory%20pricing."
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm uppercase tracking-wider transition-colors shadow-md"
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm uppercase tracking-wider transition-colors shadow-md"
             >
               <MessageSquare className="w-4 h-4" />
               Chat on WhatsApp for Live Quotes

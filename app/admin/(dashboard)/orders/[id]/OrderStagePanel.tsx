@@ -165,7 +165,7 @@ export default function OrderStagePanel({
               <button
                 type="submit"
                 disabled={moving}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-700 disabled:bg-neutral-400"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-800 disabled:bg-neutral-400"
               >
                 {moving ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

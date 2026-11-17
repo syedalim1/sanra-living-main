@@ -1,3 +1,5 @@
+import "server-only";
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";

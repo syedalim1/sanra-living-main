@@ -122,7 +122,7 @@ export default function ContactPage() {
                 )}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs uppercase tracking-wider transition-colors shadow"
+                className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs uppercase tracking-wider transition-colors shadow"
               >
                 <MessageSquare className="w-4 h-4" />
                 Chat with SIDCO Coimbatore Desk

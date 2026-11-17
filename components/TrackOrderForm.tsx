@@ -314,7 +314,7 @@ export default function TrackOrderForm({
                     <span
                       className={`relative z-10 w-7 h-7 rounded-full border flex items-center justify-center text-[10px] font-bold shrink-0 ${
                         current
-                          ? "bg-emerald-600 border-emerald-600 text-white ring-4 ring-emerald-100"
+                          ? "bg-emerald-700 border-emerald-600 text-white ring-4 ring-emerald-100"
                           : finished
                           ? "bg-neutral-900 border-neutral-900 text-white"
                           : "bg-neutral-100 border-neutral-200 text-neutral-400"
@@ -445,7 +445,7 @@ export default function TrackOrderForm({
             href={whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-700"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-800"
           >
             <MessageCircle className="w-4 h-4" />
             Ask about my order

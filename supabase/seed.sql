@@ -77,7 +77,7 @@ BEGIN
     ARRAY['CAFE', 'HOME'],
     ARRAY['MS', 'WOOD', 'GRANITE'],
     10,
-    'Paired with 18mm Kerala Rubberwood or 18mm Export Krishnagiri Granite'
+    'Paired with 100% Seasoned Grade-A Kerala Rubberwood or 18mm Export-Grade Krishnagiri Granite'
   )
   ON CONFLICT (sku) DO UPDATE SET 
     name = EXCLUDED.name,

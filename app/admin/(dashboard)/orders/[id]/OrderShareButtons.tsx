@@ -54,7 +54,7 @@ export default function OrderShareButtons({
       <button
         type="button"
         onClick={openWhatsApp}
-        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-700"
+        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-800"
       >
         <MessageCircle className="w-3 h-3" />
         Send tracking info on WhatsApp

@@ -31,6 +31,7 @@ Add these to `.env.local`:
 | `COMPANY_ADDRESS` | Factory address printed on the PDF quote and Contact page |
 | `COMPANY_GSTIN` | GSTIN printed on the PDF quote and Contact page |
 | `COMPANY_PHONE` | Factory phone printed on the PDF quote and Contact page |
+| `NEXT_PUBLIC_SITE_URL` | Final public HTTPS origin used for canonical URLs, sitemap, Open Graph and robots |
 | `ADMIN_EMAIL` | Exact email of the single Supabase Auth user allowed into `/admin` |
 
 If a company value is missing, the UI shows a visible `UPDATE ME` placeholder instead of crashing. The GST wording on the PDF comes from `GST_NOTE` in `lib/company.ts` and can be edited directly.
@@ -445,4 +446,28 @@ Run the checks:
 ```powershell
 npm run typecheck
 npm test
+```
+
+---
+
+### Step 14: Run Rate Limit Migration (`008_rate_limits.sql`)
+
+1. Open the Supabase **SQL Editor**.
+2. Open [supabase/migrations/008_rate_limits.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/008_rate_limits.sql), copy the whole file, paste it, and click **Run**.
+3. Confirm `Success. No rows returned`.
+
+Migration 008 creates the private `rate_limits` table, the atomic `check_rate_limit` function and the 1-day opportunistic cleanup. The service role is the only caller. Admin login and `/api/track` fail closed if the limiter errors; public price/lead routes fail open.
+
+This migration is required before relying on admin login or tracking in production. It also normalizes the approved public wood/granite group labels.
+
+Set `NEXT_PUBLIC_SITE_URL` in `.env.local` before the final production build. It drives canonical URLs, Open Graph, the sitemap and robots. For local testing, use `http://localhost:3000`.
+
+The final hardening also adds the security headers/CSP, `/.well-known/security.txt`, robots/sitemap rules, privacy/terms pages, branded error pages, the `GET /api/health` check and the launch/operations docs.
+
+Run the final checks:
+
+```powershell
+npm run typecheck
+npm test
+npm run build
 ```

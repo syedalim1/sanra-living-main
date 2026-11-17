@@ -1,0 +1,33 @@
+# SANRA LIVING — Launch Checklist
+
+- [ ] Run migrations 001 through 008 in the production Supabase project.
+- [ ] Run the seed only if the catalog data is intended for production.
+- [ ] Fill `NEXT_PUBLIC_SUPABASE_URL`.
+- [ ] Fill `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- [ ] Fill `SUPABASE_SERVICE_ROLE_KEY` in the host secret store only.
+- [ ] Fill `ADMIN_EMAIL` and create the matching confirmed Supabase Auth user.
+- [ ] Fill `NEXT_PUBLIC_WHATSAPP_NUMBER` with digits and country code.
+- [ ] Fill `NEXT_PUBLIC_SITE_URL` with the final HTTPS origin.
+- [ ] Fill `COMPANY_ADDRESS`.
+- [ ] Fill `COMPANY_GSTIN`.
+- [ ] Fill `COMPANY_PHONE`.
+- [ ] Review and set `GST_NOTE` in `lib/company.ts`.
+- [ ] Review and set `WARRANTY_TERMS` in `lib/company.ts`.
+- [ ] Replace placeholder rates in `/admin/rates`.
+- [ ] Replace placeholder product and variant images in `/admin/products`.
+- [ ] Upload real CAD files in `/admin/cad` or keep the “coming soon” WhatsApp state.
+- [ ] Review `/privacy` and `/terms` with a legal advisor.
+- [ ] Enable MFA on the Supabase account and plan app-level admin MFA.
+- [ ] Change the admin password and confirm old sessions are revoked.
+- [ ] Run a real mobile test at 360, 390, 768 and 1024 px.
+- [ ] Confirm one navigation bar on mobile and no horizontal scrolling.
+- [ ] Run Lighthouse on production with the real database.
+- [ ] Open the Network tab and confirm no service-role key, admin email or cost fields leak.
+- [ ] Create a test order and move it through every stage.
+- [ ] Download the test warranty PDF after READY.
+- [ ] Submit a sample lead and confirm it appears in `/admin/leads`.
+- [ ] Export the leads CSV.
+- [ ] Check `robots.txt`, `sitemap.xml`, `security.txt`, `/og-default.png` and canonical URLs.
+- [ ] Confirm `/admin` is unlinked and returns noindex/no-store headers.
+- [ ] Rotate any temporary test credentials before launch.
+- [ ] Move to Node 22+ and upgrade Vitest to clear the dev-only audit advisories.

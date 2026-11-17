@@ -36,7 +36,7 @@ export default function NotFound() {
             )}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-700"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-emerald-700 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-800"
           >
             <MessageSquare className="w-3.5 h-3.5" />
             WhatsApp

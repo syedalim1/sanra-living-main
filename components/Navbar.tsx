@@ -43,7 +43,7 @@ export default function Navbar() {
               href="https://wa.me/91XXXXXXXXXX?text=Hello%20SANRA%20LIVING,%20I%20would%20like%20to%20enquire%20about%20factory%20steel%20furniture."
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold uppercase tracking-wider bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold uppercase tracking-wider bg-emerald-700 text-white rounded-md hover:bg-emerald-800 transition-colors shadow-sm"
             >
               Factory Enquiry
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -85,7 +85,7 @@ export default function Navbar() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-md text-sm font-semibold uppercase tracking-wider bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+                className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-md text-sm font-semibold uppercase tracking-wider bg-emerald-700 text-white hover:bg-emerald-800 transition-colors shadow-sm"
               >
                 WhatsApp Factory Enquiry
                 <ArrowUpRight className="w-4 h-4" />

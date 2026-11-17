@@ -1,3 +1,5 @@
+import "server-only";
+
 import Link from "next/link";
 import { connection } from "next/server";
 import { Plus, Search } from "lucide-react";

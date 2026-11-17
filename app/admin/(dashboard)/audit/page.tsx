@@ -1,3 +1,5 @@
+import "server-only";
+
 import { ScrollText } from "lucide-react";
 import { connection } from "next/server";
 import { requireAdmin } from "@/lib/admin/auth";

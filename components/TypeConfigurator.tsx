@@ -649,7 +649,7 @@ export default function TypeConfigurator({
 
       <div className="lg:col-span-6 space-y-8">
         <div>
-          <span className="inline-block text-[10px] font-extrabold uppercase tracking-widest text-neutral-500 bg-neutral-100 border border-neutral-200 px-3 py-1 rounded-full mb-2">
+          <span className="inline-block text-[10px] font-extrabold uppercase tracking-widest text-neutral-600 bg-neutral-100 border border-neutral-200 px-3 py-1 rounded-full mb-2">
             Factory Customizer
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
@@ -894,6 +894,7 @@ export default function TypeConfigurator({
                 type="number"
                 min={1}
                 max={500}
+                aria-label="Quantity"
                 value={quantity}
                 onChange={(event) =>
                   handleQuantityChange(parseInt(event.target.value || "1", 10))
@@ -965,8 +966,8 @@ export default function TypeConfigurator({
               disabled={whatsappStatus === "loading"}
               className={`w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors ${
                 whatsappStatus === "loading"
-                  ? "bg-emerald-600/40 text-white cursor-not-allowed"
-                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                  ? "bg-emerald-700/40 text-white cursor-not-allowed"
+                  : "bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm"
               }`}
             >
               <MessageSquare className="w-4 h-4" />

@@ -1,3 +1,5 @@
+import "server-only";
+
 import React from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -54,7 +56,7 @@ const KNOWN_PRODUCTS: Record<
     warranty_text: "10-Yr MIG Structural Warranty",
     is_knockdown_available: true,
     allowed_top_categories: ["FRAME_ONLY", "WOOD", "STONE"],
-    top_overlay_note: "Paired with 18mm Kerala Rubberwood or 18mm Export Krishnagiri Granite",
+    top_overlay_note: "Paired with 100% Seasoned Grade-A Kerala Rubberwood or 18mm Export-Grade Krishnagiri Granite",
   },
   "IMS-WS-425": {
     id: "fb-ws-425",
@@ -193,6 +195,10 @@ const KNOWN_PRODUCTS: Record<
   },
 };
 
+const HAS_SUPABASE = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
 export async function generateMetadata({ params }: SkuPageProps): Promise<Metadata> {
   const { sku } = await params;
   const upperSku = sku.toUpperCase();
@@ -203,22 +209,24 @@ export async function generateMetadata({ params }: SkuPageProps): Promise<Metada
   let image = fallback?.main_image_url ?? "/og-default.png";
   let useCases: string[] = [];
 
-  try {
-    const { data } = await supabaseServer
-      .from("products")
-      .select("name, category, main_image_url, use_cases")
-      .eq("sku", upperSku)
-      .eq("is_active", true)
-      .maybeSingle();
+  if (HAS_SUPABASE) {
+    try {
+      const { data } = await supabaseServer
+        .from("products")
+        .select("name, category, main_image_url, use_cases")
+        .eq("sku", upperSku)
+        .eq("is_active", true)
+        .maybeSingle();
 
-    if (data) {
-      name = data.name;
-      category = data.category;
-      image = data.main_image_url;
-      useCases = Array.isArray(data.use_cases) ? data.use_cases : [];
+      if (data) {
+        name = data.name;
+        category = data.category;
+        image = data.main_image_url;
+        useCases = Array.isArray(data.use_cases) ? data.use_cases : [];
+      }
+    } catch {
+      // Keep static fallback metadata.
     }
-  } catch {
-    // Keep static fallback metadata.
   }
 
   const useCaseText =

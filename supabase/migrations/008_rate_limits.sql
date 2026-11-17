@@ -50,3 +50,13 @@ $$;
 
 REVOKE ALL ON FUNCTION public.check_rate_limit(TEXT, INT, INT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.check_rate_limit(TEXT, INT, INT) TO service_role;
+-- Content hardening: approved public material labels only.
+UPDATE public.configurator_options
+SET group_label = '100% Seasoned Grade-A Kerala Rubberwood'
+WHERE option_group = 'TOP_MATERIAL'
+  AND option_code LIKE 'RUBBER_%';
+
+UPDATE public.configurator_options
+SET group_label = '18mm Export-Grade Krishnagiri Granite'
+WHERE option_group = 'TOP_MATERIAL'
+  AND option_code LIKE 'GRANITE_%';
