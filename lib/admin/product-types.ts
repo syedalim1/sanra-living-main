@@ -36,6 +36,7 @@ export interface AdminVariant {
   preview_image_url: string;
   size_option: string;
   size_multiplier: number;
+  selection_key: string | null;
 }
 
 export interface AdminOption {

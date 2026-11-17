@@ -413,6 +413,7 @@ export async function duplicateProductAction(
           preview_image_url: PRODUCT_PLACEHOLDER,
           size_option: variant.size_option,
           size_multiplier: variant.size_multiplier,
+          selection_key: variant.selection_key ?? null,
         }))
       );
 
@@ -585,6 +586,7 @@ export async function saveVariantAction(
       top_material_code: formString(formData.get("top_material_code")),
       frame_color: formString(formData.get("frame_color")),
       size_option: formString(formData.get("size_option")),
+      selection_key: formString(formData.get("selection_key")) || null,
     });
 
     if (!parsed.success) {
@@ -634,6 +636,7 @@ export async function saveVariantAction(
       top_material_code: parsed.data.top_material_code,
       frame_color: parsed.data.frame_color,
       size_option: parsed.data.size_option,
+      selection_key: parsed.data.selection_key ?? null,
       preview_image_url: previewUrl,
     };
 
@@ -767,11 +770,15 @@ export async function uploadSwatchAction(
       .eq("option_code", optionCode)
       .maybeSingle();
 
-    if (
-      error ||
-      !option ||
-      (option.option_group !== "TOP_MATERIAL" && option.option_group !== "FRAME_COLOR")
-    ) {
+    const swatchGroups = new Set([
+      "TOP_MATERIAL",
+      "FRAME_COLOR",
+      "SEAT_COLOR",
+      "FINISH",
+      "SS_FINISH",
+    ]);
+
+    if (error || !option || !swatchGroups.has(option.option_group)) {
       return { ok: false, error: "Swatch option not found." };
     }
 

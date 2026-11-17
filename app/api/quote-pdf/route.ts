@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { calculateConfigPrice } from "@/lib/pricing/configPrice";
-import { getConfigSummary } from "@/lib/configSummary";
+import {
+  calculateConfigPrice,
+  getProductTypeForSku,
+  parseNonTableConfig,
+} from "@/lib/pricing/configPrice";
+import { getConfigSummary, type ConfigSummaryInput } from "@/lib/configSummary";
 import { generateQuoteRef } from "@/lib/quoteRef";
-import { ConfigPriceInputSchema } from "@/lib/schemas";
+import { ConfigEnvelopeSchema, ConfigPriceInputSchema } from "@/lib/schemas";
 import { buildQuotePdf } from "@/lib/pdf/quotePdf";
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -44,16 +48,35 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const parsed = ConfigPriceInputSchema.safeParse(body);
+    const envelope = ConfigEnvelopeSchema.safeParse(body);
 
-    if (!parsed.success || parsed.data.size === "CUSTOM") {
+    if (!envelope.success) {
       return NextResponse.json(
         { error: "This configuration cannot be generated as a PDF." },
         { status: 400, headers: { "Cache-Control": "no-store" } }
       );
     }
 
-    const price = await calculateConfigPrice(parsed.data);
+    const productType = await getProductTypeForSku(envelope.data.sku);
+    let summaryInput: ConfigSummaryInput;
+
+    if (productType === "TABLE") {
+      const parsed = ConfigPriceInputSchema.safeParse(body);
+
+      if (!parsed.success || parsed.data.size === "CUSTOM") {
+        return NextResponse.json(
+          { error: "This configuration cannot be generated as a PDF." },
+          { status: 400, headers: { "Cache-Control": "no-store" } }
+        );
+      }
+
+      summaryInput = { productType: "TABLE", tableInput: parsed.data };
+    } else {
+      const parsed = await parseNonTableConfig(body);
+      summaryInput = { productType: parsed.product_type, nonTableInput: parsed };
+    }
+
+    const price = await calculateConfigPrice(body);
 
     if (
       price.requires_quote ||
@@ -67,7 +90,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const summary = await getConfigSummary(parsed.data);
+    const summary = await getConfigSummary(summaryInput);
     const reference = generateQuoteRef();
     const pdfBytes = await buildQuotePdf({
       summary,

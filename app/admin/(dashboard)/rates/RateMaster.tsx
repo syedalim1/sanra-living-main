@@ -52,12 +52,26 @@ const GLOBAL_LABELS: Record<string, string> = {
   QTY_DISCOUNT_4_9_PCT: "Quantity discount 4-9 units %",
   QTY_DISCOUNT_10_PLUS_PCT: "Quantity discount 10+ units %",
   SS_WEIGHT_FACTOR: "Stainless steel weight factor",
+  PACK2_SAVING: "Pack-of-2 nesting saving (₹)",
 };
 
 const OPTION_GROUP_LABELS: Record<string, string> = {
   GAUGE: "Gauge multipliers",
+  RACK_SIZE: "Rack size multipliers",
+  THICKNESS: "SS top thickness multipliers",
   ADDON: "Add-on flat prices",
   FRAME_COLOR: "Frame finish add-ons",
+  SEAT_COLOR: "Rexine color add-ons",
+  BASE: "Base add-ons",
+  FINISH: "Rack finish add-ons",
+  SS_FINISH: "SS finish add-ons",
+  METAL_TYPE: "Linked metal options",
+  STAND_MATERIAL: "Linked material options",
+  GRADE: "Linked stainless grades",
+  SEAT: "Linked seat materials",
+  SHELF: "Linked shelf materials",
+  PACK: "Pack options",
+  BUILD_TYPE: "Build options",
 };
 
 function toNumber(value: string): number | null {
@@ -128,10 +142,12 @@ export default function RateMaster({
   );
   const [optionValues, setOptionValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(
-      options.map((row) => [
-        `${row.option_code}:${row.field}`,
-        formatRateNumber(row.value),
-      ])
+      options
+        .filter((row) => row.field !== null)
+        .map((row) => [
+          `${row.option_code}:${row.field}`,
+          formatRateNumber(row.value),
+        ])
     )
   );
 
@@ -143,7 +159,9 @@ export default function RateMaster({
   );
   const [savedOptions, setSavedOptions] = useState<Record<string, number>>(() =>
     Object.fromEntries(
-      options.map((row) => [`${row.option_code}:${row.field}`, row.value])
+      options
+        .filter((row) => row.field !== null)
+        .map((row) => [`${row.option_code}:${row.field}`, row.value])
     )
   );
 
@@ -217,6 +235,8 @@ export default function RateMaster({
   const optionChanges: OptionChange[] = [];
 
   for (const row of options) {
+    if (!row.field) continue;
+
     const key = `${row.option_code}:${row.field}`;
     const raw = optionValues[key] ?? "";
     const value = toNumber(raw);
@@ -596,10 +616,30 @@ export default function RateMaster({
 
       <SectionCard
         title="Option Pricing"
-        description="Gauge multipliers and add-on flat prices from option_pricing."
+        description="Gauge, rack and SS multipliers plus flat finish/add-on prices. Linked material options are shown read-only."
       >
         <div className="divide-y divide-neutral-100">
           {options.map((row) => {
+            if (!row.field) {
+              return (
+                <div
+                  key={`${row.option_code}:readonly`}
+                  className="px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3 bg-neutral-50/50"
+                >
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-neutral-900">{row.label_en}</p>
+                    <p className="text-[10px] font-mono text-neutral-500 mt-0.5">
+                      {row.option_code} •{" "}
+                      {OPTION_GROUP_LABELS[row.option_group] ?? row.option_group}
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-semibold text-neutral-500">
+                    {row.note ?? "Read-only"}
+                  </span>
+                </div>
+              );
+            }
+
             const key = `${row.option_code}:${row.field}`;
             const changed = optionChanged(row.option_code, row.field);
             const raw = optionValues[key] ?? "";

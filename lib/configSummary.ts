@@ -1,10 +1,17 @@
 import "server-only";
 import { supabaseServer } from "@/lib/supabase/server";
 import { FALLBACK_OPTIONS, type ConfigOption } from "@/lib/configuratorOptions";
-import type { ConfigPriceInput } from "@/lib/schemas";
+import type { ConfigPriceInput, NonTableConfigInput } from "@/lib/schemas";
+import type { NonTableProductType, ProductType } from "@/lib/productTypeConfig";
 import { stripCostFragments } from "@/lib/sanitize";
 
+export interface SelectionLine {
+  label: string;
+  value: string;
+}
+
 export interface ConfigSummary {
+  product_type: ProductType;
   product_name: string;
   sku: string;
   size_label: string;
@@ -21,12 +28,24 @@ export interface ConfigSummary {
   quantity: number;
   is_stone: boolean;
   is_stainless: boolean;
+  selection_lines: SelectionLine[];
 }
+
+export type ConfigSummaryInput =
+  | { productType: "TABLE"; tableInput: ConfigPriceInput }
+  | { productType: NonTableProductType; nonTableInput: NonTableConfigInput };
 
 const FALLBACK_PRODUCT_NAMES: Record<string, string> = {
   "IMS-CF-42": "Commercial Heavy-Gauge Cafe Table (4x2 ft)",
   "IMS-WS-425": "Zero-Shake Modular Office Workstation (4x2.5 ft)",
   "IMS-DN-63": "Industrial Grade 6-Seater Dining Table (6x3 ft)",
+  "IMS-CH-01": "Cafe Chair",
+  "IMS-CH-BS": "Bar Stool",
+  "IMS-ST-12": "12-inch Stool",
+  "IMS-ST-INV": "Inverter Stand",
+  "IMS-ST-KD": "Kadai Stand",
+  "IMS-RK-01": "Boutique Garment Rack",
+  "IMS-SS-CT": "SS Canteen Table",
 };
 
 function humanize(code: string): string {
@@ -38,19 +57,41 @@ function humanize(code: string): string {
     .join(" ");
 }
 
-function findOption(options: ConfigOption[], group: string, code: string | null | undefined): ConfigOption | undefined {
+function findOption(
+  options: ConfigOption[],
+  group: string,
+  code: string | null | undefined
+): ConfigOption | undefined {
   if (!code) return undefined;
-  return options.find((option) => option.option_group === group && option.option_code === code);
+  return options.find(
+    (option) => option.option_group === group && option.option_code === code
+  );
 }
 
-function labelFor(options: ConfigOption[], group: string, code: string | null | undefined): string {
+function labelFor(
+  options: ConfigOption[],
+  group: string,
+  code: string | null | undefined
+): string {
   const option = findOption(options, group, code);
   return stripCostFragments(option?.label_en || humanize(code || ""));
 }
 
-export async function getConfigSummary(input: ConfigPriceInput): Promise<ConfigSummary> {
+function selectionLine(
+  options: ConfigOption[],
+  group: string,
+  code: string | null | undefined,
+  label: string
+): SelectionLine {
+  return { label, value: labelFor(options, group, code) };
+}
+
+async function loadOptionsAndName(sku: string): Promise<{
+  options: ConfigOption[];
+  productName: string;
+}> {
   let options: ConfigOption[] = FALLBACK_OPTIONS;
-  let productName = FALLBACK_PRODUCT_NAMES[input.sku] || input.sku;
+  let productName = FALLBACK_PRODUCT_NAMES[sku] || sku;
 
   try {
     const { data: optionRows } = await supabaseServer
@@ -69,40 +110,196 @@ export async function getConfigSummary(input: ConfigPriceInput): Promise<ConfigS
     const { data: productRow } = await supabaseServer
       .from("products")
       .select("name")
-      .eq("sku", input.sku)
+      .eq("sku", sku)
       .maybeSingle();
 
     if (productRow?.name) {
       productName = productRow.name;
     }
   } catch {
-    productName = FALLBACK_PRODUCT_NAMES[input.sku] || input.sku;
+    productName = FALLBACK_PRODUCT_NAMES[sku] || sku;
   }
 
-  const topTabLabel = labelFor(options, "TOP_TAB", input.top_tab);
-  const topMaterialLabel =
-    input.top_tab === "FRAME_ONLY" ? null : labelFor(options, "TOP_MATERIAL", input.top_material);
-  const gaugeOption = findOption(options, "GAUGE", input.gauge);
-  const isStainless = input.gauge === "SS202" || input.gauge === "SS304";
+  return { options, productName };
+}
+
+function buildNonTableLines(
+  input: NonTableConfigInput,
+  options: ConfigOption[]
+): SelectionLine[] {
+  if (input.product_type === "CHAIR") {
+    const selections = input.selections;
+    const metalOption = findOption(options, "METAL_TYPE", selections.METAL_TYPE);
+    const isSS = selections.METAL_TYPE !== "MS_COATED";
+    const lines = [
+      selectionLine(options, "METAL_TYPE", selections.METAL_TYPE, "Metal type"),
+      selectionLine(options, "SEAT", selections.SEAT, "Seat"),
+    ];
+
+    if (selections.SEAT === "SEAT_REXINE" && selections.SEAT_COLOR) {
+      lines.push(
+        selectionLine(options, "SEAT_COLOR", selections.SEAT_COLOR, "Seat color")
+      );
+    }
+
+    lines.push({
+      label: "Frame",
+      value: isSS
+        ? "Natural SS finish"
+        : labelFor(options, "FRAME_COLOR", selections.FRAME_COLOR),
+    });
+    lines.push(
+      selectionLine(options, "BUILD_TYPE", selections.BUILD_TYPE, "Build")
+    );
+
+    if (metalOption?.warranty_text) {
+      lines.push({ label: "Warranty", value: stripCostFragments(metalOption.warranty_text) });
+    }
+
+    return lines;
+  }
+
+  if (input.product_type === "STAND") {
+    const selections = input.selections;
+    return [
+      selectionLine(options, "STAND_MATERIAL", selections.STAND_MATERIAL, "Material"),
+      selectionLine(options, "PACK", selections.PACK, "Pack size"),
+      selectionLine(options, "BASE", selections.BASE, "Base"),
+    ];
+  }
+
+  if (input.product_type === "RACK") {
+    const selections = input.selections;
+    return [
+      selectionLine(options, "FINISH", selections.FINISH, "Finish"),
+      selectionLine(options, "SHELF", selections.SHELF, "Shelf"),
+      selectionLine(options, "RACK_SIZE", selections.RACK_SIZE, "Height & length"),
+    ];
+  }
+
+  const selections = input.selections;
+  return [
+    selectionLine(options, "GRADE", selections.GRADE, "Grade"),
+    selectionLine(options, "THICKNESS", selections.THICKNESS, "Top thickness"),
+    selectionLine(options, "SS_FINISH", selections.SS_FINISH, "Finish"),
+  ];
+}
+
+export async function getConfigSummary(input: ConfigSummaryInput): Promise<ConfigSummary> {
+  const sku =
+    input.productType === "TABLE" ? input.tableInput.sku : input.nonTableInput.sku;
+  const quantity =
+    input.productType === "TABLE"
+      ? input.tableInput.quantity
+      : input.nonTableInput.quantity;
+
+  const { options, productName } = await loadOptionsAndName(sku);
+
+  if (input.productType === "TABLE") {
+    const tableInput = input.tableInput;
+    const topTabLabel = labelFor(options, "TOP_TAB", tableInput.top_tab);
+    const topMaterialLabel =
+      tableInput.top_tab === "FRAME_ONLY"
+        ? null
+        : labelFor(options, "TOP_MATERIAL", tableInput.top_material);
+    const gaugeOption = findOption(options, "GAUGE", tableInput.gauge);
+    const isStainless = tableInput.gauge === "SS202" || tableInput.gauge === "SS304";
+
+    return {
+      product_type: "TABLE",
+      product_name: productName,
+      sku: tableInput.sku,
+      size_label: labelFor(options, "SIZE", tableInput.size),
+      top_tab_label: topTabLabel,
+      top_material_label: topMaterialLabel,
+      top_label: topMaterialLabel ? `${topTabLabel} — ${topMaterialLabel}` : topTabLabel,
+      gauge_code: tableInput.gauge,
+      gauge_label: labelFor(options, "GAUGE", tableInput.gauge),
+      gauge_load_kg: gaugeOption?.load_kg ?? null,
+      gauge_warranty: gaugeOption?.warranty_text ?? null,
+      frame_color_label: isStainless
+        ? "Natural Stainless Steel Finish"
+        : labelFor(options, "FRAME_COLOR", tableInput.frame_color),
+      build_label: labelFor(options, "BUILD_TYPE", tableInput.build_type),
+      addons_labels: tableInput.addons.map((addon) => labelFor(options, "ADDON", addon)),
+      quantity,
+      is_stone: tableInput.top_tab === "STONE",
+      is_stainless: isStainless,
+      selection_lines: [],
+    };
+  }
+
+  const nonTableInput = input.nonTableInput;
+  const selectionLines = buildNonTableLines(nonTableInput, options);
+
+  const base = {
+    product_name: productName,
+    sku: nonTableInput.sku,
+    size_label: "",
+    top_tab_label: "",
+    top_material_label: null,
+    top_label: "",
+    gauge_code: "",
+    gauge_label: "",
+    gauge_load_kg: null,
+    gauge_warranty: null,
+    frame_color_label: "",
+    build_label: "",
+    addons_labels: [],
+    quantity,
+    is_stone: false,
+    selection_lines: selectionLines,
+  };
+
+  if (nonTableInput.product_type === "CHAIR") {
+    const selections = nonTableInput.selections;
+    const metalOption = findOption(options, "METAL_TYPE", selections.METAL_TYPE);
+    const isMS = selections.METAL_TYPE === "MS_COATED";
+
+    return {
+      ...base,
+      product_type: "CHAIR",
+      gauge_code: selections.METAL_TYPE,
+      gauge_label: labelFor(options, "METAL_TYPE", selections.METAL_TYPE),
+      gauge_warranty: metalOption?.warranty_text ?? null,
+      frame_color_label: isMS
+        ? labelFor(options, "FRAME_COLOR", selections.FRAME_COLOR)
+        : "Natural SS finish",
+      build_label: labelFor(options, "BUILD_TYPE", selections.BUILD_TYPE),
+      is_stainless: !isMS,
+    };
+  }
+
+  if (nonTableInput.product_type === "STAND") {
+    const selections = nonTableInput.selections;
+
+    return {
+      ...base,
+      product_type: "STAND",
+      gauge_code: selections.STAND_MATERIAL,
+      gauge_label: labelFor(options, "STAND_MATERIAL", selections.STAND_MATERIAL),
+      is_stainless: selections.STAND_MATERIAL === "ST_SS304",
+    };
+  }
+
+  if (nonTableInput.product_type === "RACK") {
+    const selections = nonTableInput.selections;
+
+    return {
+      ...base,
+      product_type: "RACK",
+      size_label: labelFor(options, "RACK_SIZE", selections.RACK_SIZE),
+      is_stainless: false,
+    };
+  }
+
+  const selections = nonTableInput.selections;
 
   return {
-    product_name: productName,
-    sku: input.sku,
-    size_label: labelFor(options, "SIZE", input.size),
-    top_tab_label: topTabLabel,
-    top_material_label: topMaterialLabel,
-    top_label: topMaterialLabel ? `${topTabLabel} — ${topMaterialLabel}` : topTabLabel,
-    gauge_code: input.gauge,
-    gauge_label: labelFor(options, "GAUGE", input.gauge),
-    gauge_load_kg: gaugeOption?.load_kg ?? null,
-    gauge_warranty: gaugeOption?.warranty_text ?? null,
-    frame_color_label: isStainless
-      ? "Natural Stainless Steel Finish"
-      : labelFor(options, "FRAME_COLOR", input.frame_color),
-    build_label: labelFor(options, "BUILD_TYPE", input.build_type),
-    addons_labels: input.addons.map((addon) => labelFor(options, "ADDON", addon)),
-    quantity: input.quantity,
-    is_stone: input.top_tab === "STONE",
-    is_stainless: isStainless,
+    ...base,
+    product_type: "SS_UNIT",
+    gauge_code: selections.GRADE,
+    gauge_label: labelFor(options, "GRADE", selections.GRADE),
+    is_stainless: true,
   };
 }

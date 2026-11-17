@@ -43,7 +43,8 @@ VALUES
   ('KNOCKDOWN_PRICE_PCT', 0.00, 'Flat-pack knock-down hardware adjustment pct'),
   ('QTY_DISCOUNT_4_9_PCT', 5.00, 'Small business quantity discount pct (4 to 9 units)'),
   ('QTY_DISCOUNT_10_PLUS_PCT', 12.00, 'B2B factory wholesale quantity discount pct (10+ units)'),
-  ('SS_WEIGHT_FACTOR', 1.05, 'Stainless steel density & fabrication weight factor')
+  ('SS_WEIGHT_FACTOR', 1.05, 'Stainless steel density & fabrication weight factor'),
+  ('PACK2_SAVING', 150.00, 'Pack of 2 nesting combo saving')
 ON CONFLICT (key) DO UPDATE SET numeric_value = EXCLUDED.numeric_value;
 
 -- 3. SEED 3 SAMPLE TABLE PRODUCTS, PRICING RULES & VISUAL VARIANTS
@@ -224,4 +225,153 @@ BEGIN
     (v_prod_dining, 'GRANITE_KWHITE_OPT', 'WHITE', '/images/hero-workstation.svg', '6x3', 1.0)
   ON CONFLICT DO NOTHING;
 
+END $$;
+
+-- ==============================================================================
+-- 4. SEED CHAIR, STAND, RACK AND SS_UNIT SAMPLE PRODUCTS
+-- Selector groups, new configurator options and option_pricing are seeded by
+-- migrations/005_product_types.sql. Run all migrations before this seed file.
+-- Reuse: base_pipe_weight_18g_kg is the metal weight for every type.
+-- top_area_sqft is the table top area for TABLE, seat area for CHAIR and shelf
+-- area for RACK. Stands and SS units leave top_area_sqft at 0.
+-- ==============================================================================
+DO $$
+DECLARE
+  v_chair_cafe UUID;
+  v_chair_bar UUID;
+  v_stand_12 UUID;
+  v_stand_inv UUID;
+  v_stand_kadai UUID;
+  v_rack UUID;
+  v_ss_unit UUID;
+BEGIN
+  INSERT INTO products (
+    sku, name, category, product_type, base_length_ft, base_width_ft,
+    allowed_top_categories, is_knockdown_available, warranty_text,
+    main_image_url, hover_blueprint_img, is_active,
+    use_cases, material_tags, sort_order, top_overlay_note
+  ) VALUES (
+    'IMS-CH-01', 'Cafe Chair', 'SS & MS Chairs / Bar Stools', 'CHAIR', 1.5, 1.5,
+    '[]'::jsonb, true, '7-Year Weld Warranty',
+    '/images/placeholder-chair.svg', NULL, true,
+    ARRAY['CAFE','HOME'], ARRAY['MS','SS','WOOD'], 40, NULL
+  )
+  ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
+  RETURNING id INTO v_chair_cafe;
+
+  INSERT INTO products (
+    sku, name, category, product_type, base_length_ft, base_width_ft,
+    allowed_top_categories, is_knockdown_available, warranty_text,
+    main_image_url, hover_blueprint_img, is_active,
+    use_cases, material_tags, sort_order, top_overlay_note
+  ) VALUES (
+    'IMS-CH-BS', 'Bar Stool', 'SS & MS Chairs / Bar Stools', 'CHAIR', 1.4, 1.4,
+    '[]'::jsonb, true, '7-Year Weld Warranty',
+    '/images/placeholder-chair.svg', NULL, true,
+    ARRAY['CAFE','HOME'], ARRAY['MS','SS'], 41, NULL
+  )
+  ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
+  RETURNING id INTO v_chair_bar;
+
+  INSERT INTO products (
+    sku, name, category, product_type, base_length_ft, base_width_ft,
+    allowed_top_categories, is_knockdown_available, warranty_text,
+    main_image_url, hover_blueprint_img, is_active,
+    use_cases, material_tags, sort_order, top_overlay_note
+  ) VALUES (
+    'IMS-ST-12', '12-inch Stool', 'Home Utility Stands', 'STAND', 1.0, 1.0,
+    '[]'::jsonb, false, '7-Year Weld Warranty',
+    '/images/placeholder-stand.svg', NULL, true,
+    ARRAY['HOME'], ARRAY['MS','SS'], 42, NULL
+  )
+  ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
+  RETURNING id INTO v_stand_12;
+
+  INSERT INTO products (
+    sku, name, category, product_type, base_length_ft, base_width_ft,
+    allowed_top_categories, is_knockdown_available, warranty_text,
+    main_image_url, hover_blueprint_img, is_active,
+    use_cases, material_tags, sort_order, top_overlay_note
+  ) VALUES (
+    'IMS-ST-INV', 'Inverter Stand', 'Home Utility Stands', 'STAND', 1.5, 1.0,
+    '[]'::jsonb, false, '7-Year Weld Warranty',
+    '/images/placeholder-stand.svg', NULL, true,
+    ARRAY['HOME'], ARRAY['MS','SS'], 43, NULL
+  )
+  ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
+  RETURNING id INTO v_stand_inv;
+
+  INSERT INTO products (
+    sku, name, category, product_type, base_length_ft, base_width_ft,
+    allowed_top_categories, is_knockdown_available, warranty_text,
+    main_image_url, hover_blueprint_img, is_active,
+    use_cases, material_tags, sort_order, top_overlay_note
+  ) VALUES (
+    'IMS-ST-KD', 'Kadai Stand', 'Home Utility Stands', 'STAND', 1.2, 1.2,
+    '[]'::jsonb, false, '7-Year Weld Warranty',
+    '/images/placeholder-stand.svg', NULL, true,
+    ARRAY['HOME'], ARRAY['MS','SS'], 44, NULL
+  )
+  ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
+  RETURNING id INTO v_stand_kadai;
+
+  INSERT INTO products (
+    sku, name, category, product_type, base_length_ft, base_width_ft,
+    allowed_top_categories, is_knockdown_available, warranty_text,
+    main_image_url, hover_blueprint_img, is_active,
+    use_cases, material_tags, sort_order, top_overlay_note
+  ) VALUES (
+    'IMS-RK-01', 'Boutique Garment Rack', 'Boutique & Showroom Racks', 'RACK', 4.0, 1.5,
+    '[]'::jsonb, false, '10-Year Structural Warranty',
+    '/images/placeholder-rack.svg', NULL, true,
+    ARRAY['HOME','OFFICE'], ARRAY['MS'], 45, NULL
+  )
+  ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
+  RETURNING id INTO v_rack;
+
+  INSERT INTO products (
+    sku, name, category, product_type, base_length_ft, base_width_ft,
+    allowed_top_categories, is_knockdown_available, warranty_text,
+    main_image_url, hover_blueprint_img, is_active,
+    use_cases, material_tags, sort_order, top_overlay_note
+  ) VALUES (
+    'IMS-SS-CT', 'SS Canteen Table', 'Hospital, Canteen & Lab SS', 'SS_UNIT', 4.0, 2.0,
+    '[]'::jsonb, false, '15-Year Rust-Free Warranty',
+    '/images/placeholder-ss.svg', NULL, true,
+    ARRAY['HOSPITAL','CAFE'], ARRAY['SS'], 46, NULL
+  )
+  ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
+  RETURNING id INTO v_ss_unit;
+
+  INSERT INTO product_pricing_rules (
+    product_id, base_pipe_weight_18g_kg, top_area_sqft, consumables_cost,
+    labor_cost, overhead_pct, retail_margin_pct, b2b_margin_pct
+  ) VALUES
+    (v_chair_cafe, 4.50, 2.25, 120.00, 180.00, 12.00, 35.00, 20.00),
+    (v_chair_bar, 5.20, 2.00, 140.00, 210.00, 12.00, 35.00, 20.00),
+    (v_stand_12, 2.50, 0.00, 60.00, 100.00, 12.00, 38.00, 22.00),
+    (v_stand_inv, 4.00, 0.00, 90.00, 140.00, 12.00, 38.00, 22.00),
+    (v_stand_kadai, 3.20, 0.00, 80.00, 120.00, 12.00, 38.00, 22.00),
+    (v_rack, 8.50, 6.00, 180.00, 300.00, 12.00, 35.00, 20.00),
+    (v_ss_unit, 14.00, 0.00, 300.00, 450.00, 12.00, 32.00, 18.00)
+  ON CONFLICT (product_id) DO NOTHING;
+
+  INSERT INTO product_visual_variants (
+    product_id, top_material_code, frame_color, preview_image_url,
+    size_option, size_multiplier, selection_key
+  ) VALUES
+    (v_chair_cafe, 'SEAT_RUBBER', 'MATTE_BLACK', '/images/placeholder-chair.svg', 'STD', 1.00, 'SEAT_RUBBER||MS_COATED|MATTE_BLACK'),
+    (v_chair_cafe, 'SEAT_REXINE', 'MATTE_BLACK', '/images/placeholder-chair.svg', 'STD', 1.00, 'SEAT_REXINE|REXINE_TAN|MS_COATED|MATTE_BLACK'),
+    (v_chair_cafe, 'SEAT_RUBBER', 'SS', '/images/placeholder-chair.svg', 'STD', 1.00, 'SEAT_RUBBER||SS304|'),
+    (v_chair_bar, 'SEAT_RUBBER', 'MATTE_BLACK', '/images/placeholder-chair.svg', 'STD', 1.00, 'SEAT_RUBBER||MS_COATED|MATTE_BLACK'),
+    (v_chair_bar, 'SEAT_PERFORATED', 'SS', '/images/placeholder-chair.svg', 'STD', 1.00, 'SEAT_PERFORATED||SS202|'),
+    (v_stand_12, 'ST_MS', 'MATTE_BLACK', '/images/placeholder-stand.svg', 'STD', 1.00, 'ST_MS|PACK_1|BASE_BUSH'),
+    (v_stand_12, 'ST_SS304', 'SS', '/images/placeholder-stand.svg', 'STD', 1.00, 'ST_SS304|PACK_2|BASE_CASTOR'),
+    (v_stand_inv, 'ST_MS', 'MATTE_BLACK', '/images/placeholder-stand.svg', 'STD', 1.00, 'ST_MS|PACK_1|BASE_BUSH'),
+    (v_stand_kadai, 'ST_MS', 'MATTE_BLACK', '/images/placeholder-stand.svg', 'STD', 1.00, 'ST_MS|PACK_1|BASE_BUSH'),
+    (v_rack, 'SH_NONE', 'MATTE_BLACK', '/images/placeholder-rack.svg', 'R4', 1.00, 'RF_BLACK|SH_NONE|R4'),
+    (v_rack, 'SH_RUBBER', 'GOLD', '/images/placeholder-rack.svg', 'R6', 1.50, 'RF_GOLD_PVD|SH_RUBBER|R6'),
+    (v_ss_unit, 'SSG_202', 'SS', '/images/placeholder-ss.svg', 'STD', 1.00, 'SSG_202|TH_18G|SSF_HAIRLINE'),
+    (v_ss_unit, 'SSG_304', 'SS', '/images/placeholder-ss.svg', 'STD', 1.00, 'SSG_304|TH_16G|SSF_MIRROR')
+  ON CONFLICT DO NOTHING;
 END $$;

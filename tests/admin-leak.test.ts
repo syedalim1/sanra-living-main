@@ -11,6 +11,7 @@ const PUBLIC_SOURCES = [
   "components/Navbar.tsx",
   "components/Footer.tsx",
   "components/FloatingWhatsApp.tsx",
+  "components/TypeConfigurator.tsx",
   "app/api/price/route.ts",
   "app/api/whatsapp-link/route.ts",
   "app/api/quote-pdf/route.ts",

@@ -30,7 +30,9 @@ export default async function RatesPage() {
         .from("pricing_globals")
         .select("key, numeric_value, description, updated_at")
         .order("key"),
-      db.from("option_pricing").select("option_code, metal_cost_multiplier, flat_addon"),
+      db
+        .from("option_pricing")
+        .select("option_code, material_code, metal_cost_multiplier, flat_addon"),
       db
         .from("configurator_options")
         .select("option_group, option_code, parent_code, label_en")
@@ -40,6 +42,7 @@ export default async function RatesPage() {
         .from("products")
         .select("id, sku, name, allowed_top_categories")
         .eq("is_active", true)
+        .eq("product_type", "TABLE")
         .order("sort_order"),
     ]);
 
@@ -73,38 +76,65 @@ export default async function RatesPage() {
   const optionDefs = optionDefResult.data ?? [];
   const optionDefMap = new Map(optionDefs.map((row) => [row.option_code, row]));
 
+  const editableOptionGroups: Record<string, "metal_cost_multiplier" | "flat_addon"> = {
+    GAUGE: "metal_cost_multiplier",
+    RACK_SIZE: "metal_cost_multiplier",
+    THICKNESS: "metal_cost_multiplier",
+    ADDON: "flat_addon",
+    FRAME_COLOR: "flat_addon",
+    SEAT_COLOR: "flat_addon",
+    BASE: "flat_addon",
+    FINISH: "flat_addon",
+    SS_FINISH: "flat_addon",
+  };
+
+  const linkedOptionGroups = new Set([
+    "METAL_TYPE",
+    "STAND_MATERIAL",
+    "GRADE",
+    "SEAT",
+    "SHELF",
+    "PACK",
+    "BUILD_TYPE",
+  ]);
+
   const options: OptionRateRow[] = [];
 
   for (const row of optionResult.data ?? []) {
     const definition = optionDefMap.get(row.option_code);
     if (!definition) continue;
 
-    if (definition.option_group === "GAUGE") {
+    const editableField = editableOptionGroups[definition.option_group];
+
+    if (editableField) {
       options.push({
         option_code: row.option_code,
         option_group: definition.option_group,
         label_en: definition.label_en,
-        field: "metal_cost_multiplier",
-        value: Number(row.metal_cost_multiplier),
+        field: editableField,
+        value: Number(row[editableField]),
+        material_code: row.material_code ?? null,
       });
-    } else if (definition.option_group === "ADDON") {
+      continue;
+    }
+
+    if (linkedOptionGroups.has(definition.option_group)) {
+      let note = "No direct option price.";
+
+      if (["METAL_TYPE", "STAND_MATERIAL", "GRADE", "SEAT", "SHELF"].includes(definition.option_group)) {
+        note = `Linked to material rate: ${row.material_code ?? "—"}`;
+      } else if (definition.option_group === "PACK") {
+        note = "Pack saving is managed in Global Pricing Values";
+      }
+
       options.push({
         option_code: row.option_code,
         option_group: definition.option_group,
         label_en: definition.label_en,
-        field: "flat_addon",
-        value: Number(row.flat_addon),
-      });
-    } else if (
-      definition.option_group === "FRAME_COLOR" &&
-      Number(row.flat_addon) > 0
-    ) {
-      options.push({
-        option_code: row.option_code,
-        option_group: definition.option_group,
-        label_en: definition.label_en,
-        field: "flat_addon",
-        value: Number(row.flat_addon),
+        field: null,
+        value: 0,
+        material_code: row.material_code ?? null,
+        note,
       });
     }
   }

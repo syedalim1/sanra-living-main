@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useTransition, useCallback } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import WatermarkedImage from "@/components/WatermarkedImage";
 import PincodeEstimator from "@/components/PincodeEstimator";
@@ -1191,14 +1192,20 @@ export default function TableConfigurator({
           </div>
         </div>
 
-        {/* Complete the Set placeholder */}
-        <div className="p-4 rounded-xl border border-dashed border-neutral-300 bg-neutral-50/50 space-y-1 text-center">
+        {/* Complete the Set */}
+        <div className="p-4 rounded-xl border border-dashed border-neutral-300 bg-neutral-50/50 space-y-2 text-center">
           <span className="text-xs font-bold text-neutral-800">
             Complete the Set (Matching Chairs Combo)
           </span>
           <p className="text-[11px] text-neutral-500">
             Matching structural steel cafe chairs & industrial barstools can be added with coordinated frame finishes.
           </p>
+          <Link
+            href="/products?category=SS+%26+MS+Chairs+%2F+Bar+Stools"
+            className="inline-flex items-center justify-center px-3.5 py-2 rounded-md border border-black bg-white text-[10px] font-bold uppercase tracking-wider text-black hover:bg-neutral-100 transition-colors"
+          >
+            Browse Matching Chairs
+          </Link>
         </div>
       </div>
     </div>

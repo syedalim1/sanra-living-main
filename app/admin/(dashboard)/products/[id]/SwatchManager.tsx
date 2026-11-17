@@ -70,8 +70,22 @@ export default function SwatchManager({ options }: { options: AdminOption[] }) {
     initialState
   );
 
-  const materialOptions = options.filter((option) => option.option_group === "TOP_MATERIAL");
-  const colorOptions = options.filter((option) => option.option_group === "FRAME_COLOR");
+  const swatchGroupLabels: Record<string, string> = {
+    TOP_MATERIAL: "Top materials",
+    FRAME_COLOR: "Frame colors",
+    SEAT_COLOR: "Seat colors",
+    FINISH: "Rack finishes",
+    SS_FINISH: "SS finishes",
+  };
+
+  const groupedOptions = Object.keys(swatchGroupLabels)
+    .map((group) => ({
+      group,
+      label: swatchGroupLabels[group],
+      options: options.filter((option) => option.option_group === group),
+    }))
+    .filter((entry) => entry.options.length > 0);
+
   const withTexture = options.filter((option) => option.swatch_texture_img);
 
   return (
@@ -94,20 +108,15 @@ export default function SwatchManager({ options }: { options: AdminOption[] }) {
               name="option_code"
               className="w-full px-2.5 py-2 rounded-md border border-neutral-300 bg-white text-xs font-semibold"
             >
-              <optgroup label="Top materials">
-                {materialOptions.map((option) => (
-                  <option key={option.option_code} value={option.option_code}>
-                    {option.label_en} ({option.option_code})
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Frame colors">
-                {colorOptions.map((option) => (
-                  <option key={option.option_code} value={option.option_code}>
-                    {option.label_en} ({option.option_code})
-                  </option>
-                ))}
-              </optgroup>
+              {groupedOptions.map((entry) => (
+                <optgroup key={entry.group} label={entry.label}>
+                  {entry.options.map((option) => (
+                    <option key={option.option_code} value={option.option_code}>
+                      {option.label_en} ({option.option_code})
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </label>
 

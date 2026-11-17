@@ -1,9 +1,11 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase/server";
+import { calculateTypePrice } from "./typePricing";
 
 interface RawProductData {
   id: string;
+  product_type: string;
   allowed_top_categories: string[] | unknown;
 }
 
@@ -42,7 +44,7 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
     // 1. Fetch active products
     const { data: products, error: pErr } = await supabaseServer
       .from("products")
-      .select("id, allowed_top_categories")
+      .select("id, product_type, allowed_top_categories")
       .eq("is_active", true);
 
     if (pErr || !products || products.length === 0) {
@@ -67,9 +69,48 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
       return {};
     }
 
+    const globalRows = await supabaseServer
+      .from("pricing_globals")
+      .select("key, numeric_value");
+
+    const globals = new Map<string, number>();
+    for (const row of globalRows.data ?? []) {
+      globals.set(row.key, Number(row.numeric_value));
+    }
+
+    const optionPriceRows = await supabaseServer
+      .from("option_pricing")
+      .select("option_code, metal_cost_multiplier, flat_addon");
+
+    const optionPriceMap = new Map<
+      string,
+      { multiplier: number; flat: number }
+    >();
+    for (const row of optionPriceRows.data ?? []) {
+      optionPriceMap.set(row.option_code, {
+        multiplier: Number(row.metal_cost_multiplier),
+        flat: Number(row.flat_addon),
+      });
+    }
+
+    const optionMultiplier = (code: string, fallback = 1): number => {
+      const value = optionPriceMap.get(code)?.multiplier;
+      return value != null && Number.isFinite(value) && value > 0 ? value : fallback;
+    };
+
+    const optionFlat = (code: string): number => {
+      const value = optionPriceMap.get(code)?.flat;
+      return value != null && Number.isFinite(value) ? value : 0;
+    };
+
     const rulesMap = new Map<string, RawPricingRule>();
     for (const r of rules) {
       rulesMap.set(r.product_id, r);
+    }
+
+    const materialMap = new Map<string, number>();
+    for (const m of materials as RawMaterialRate[]) {
+      materialMap.set(m.material_code, Number(m.cost_per_unit));
     }
 
     // Identify MS_CR rate
@@ -80,9 +121,13 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
       return {};
     }
 
+    const qtyDiscount4 = globals.get("QTY_DISCOUNT_4_9_PCT") ?? 5;
+    const qtyDiscount10 = globals.get("QTY_DISCOUNT_10_PLUS_PCT") ?? 12;
+    const ssWeightFactor = globals.get("SS_WEIGHT_FACTOR") ?? 1.05;
+
     const results: Record<string, number | null> = {};
 
-    for (const p of products) {
+    for (const p of products as RawProductData[]) {
       const rule = rulesMap.get(p.id);
       if (!rule) {
         results[p.id] = null;
@@ -108,6 +153,114 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
         continue;
       }
 
+      if (p.product_type === "CHAIR") {
+        const cheapestRexineFlat = Math.min(
+          ...[ 
+            optionFlat("REXINE_BLACK"),
+            optionFlat("REXINE_TAN"),
+            optionFlat("REXINE_CHERRY"),
+          ]
+        );
+        const cheapestFrameFlat = Math.min(
+          ...[ 
+            optionFlat("MATTE_BLACK"),
+            optionFlat("WHITE"),
+            optionFlat("GREY"),
+            optionFlat("GOLD"),
+          ]
+        );
+
+        const price = calculateTypePrice({
+          baseWeight,
+          metalRate: msCrRate,
+          seatArea: topArea,
+          seatRate: 0,
+          flatAddons: cheapestRexineFlat + cheapestFrameFlat,
+          consumables,
+          labor,
+          overheadPct,
+          retailMarginPct,
+          quantity: 1,
+          qtyDiscount4to9Pct: qtyDiscount4,
+          qtyDiscount10PlusPct: qtyDiscount10,
+          ssWeightFactor,
+        });
+        results[p.id] = price.unit_price;
+        continue;
+      }
+
+      if (p.product_type === "STAND") {
+        const price = calculateTypePrice({
+          baseWeight,
+          metalRate: msCrRate,
+          flatAddons: Math.min(optionFlat("BASE_BUSH"), optionFlat("BASE_CASTOR")),
+          consumables,
+          labor,
+          overheadPct,
+          retailMarginPct,
+          quantity: 1,
+          qtyDiscount4to9Pct: qtyDiscount4,
+          qtyDiscount10PlusPct: qtyDiscount10,
+          ssWeightFactor,
+        });
+        results[p.id] = price.unit_price;
+        continue;
+      }
+
+      if (p.product_type === "RACK") {
+        const price = calculateTypePrice({
+          baseWeight,
+          metalRate: msCrRate,
+          metalMultiplier: optionMultiplier("R4"),
+          seatArea: topArea,
+          seatRate: 0,
+          flatAddons: Math.min(
+            optionFlat("RF_BLACK"),
+            optionFlat("RF_GOLD_PAINT"),
+            optionFlat("RF_GOLD_PVD")
+          ),
+          consumables,
+          labor,
+          overheadPct,
+          retailMarginPct,
+          quantity: 1,
+          qtyDiscount4to9Pct: qtyDiscount4,
+          qtyDiscount10PlusPct: qtyDiscount10,
+          ssWeightFactor,
+        });
+        results[p.id] = price.unit_price;
+        continue;
+      }
+
+      if (p.product_type === "SS_UNIT") {
+        const ssRate = materialMap.get("SS_202");
+        if (!ssRate || !Number.isFinite(ssRate) || ssRate <= 0) {
+          results[p.id] = null;
+          continue;
+        }
+
+        const price = calculateTypePrice({
+          baseWeight,
+          metalRate: ssRate,
+          isSS: true,
+          metalMultiplier: optionMultiplier("TH_18G"),
+          flatAddons: Math.min(
+            optionFlat("SSF_HAIRLINE"),
+            optionFlat("SSF_MIRROR")
+          ),
+          ssWeightFactor,
+          consumables,
+          labor,
+          overheadPct,
+          retailMarginPct,
+          quantity: 1,
+          qtyDiscount4to9Pct: qtyDiscount4,
+          qtyDiscount10PlusPct: qtyDiscount10,
+        });
+        results[p.id] = price.unit_price;
+        continue;
+      }
+
       // metal_cost = base_pipe_weight_18g_kg x MS_CR cost_per_unit
       const metalCost = baseWeight * msCrRate;
 
@@ -126,7 +279,7 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
 
       if (!allowsFrameOnly) {
         // Find materials whose category is in allowedCats
-        const matchingTops = materials.filter(
+        const matchingTops = (materials as RawMaterialRate[]).filter(
           (m) =>
             allowedCats.includes(m.category) &&
             m.cost_per_unit !== null &&

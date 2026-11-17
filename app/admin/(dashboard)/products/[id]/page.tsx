@@ -45,7 +45,9 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
       db.from("product_pricing_rules").select("*").eq("product_id", id).maybeSingle(),
       db
         .from("product_visual_variants")
-        .select("id, product_id, top_material_code, frame_color, preview_image_url, size_option, size_multiplier")
+        .select(
+          "id, product_id, top_material_code, frame_color, preview_image_url, size_option, size_multiplier, selection_key"
+        )
         .eq("product_id", id)
         .order("created_at"),
     ]);
@@ -96,6 +98,7 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
       preview_image_url: variant.preview_image_url,
       size_option: variant.size_option,
       size_multiplier: Number(variant.size_multiplier),
+      selection_key: variant.selection_key ?? null,
     }));
   }
 
@@ -126,13 +129,34 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
     category: material.category,
   }));
 
-  const topOptions = allOptions.filter((option) => option.option_group === "TOP_MATERIAL");
-  const sizeOptions = allOptions.filter(
-    (option) => option.option_group === "SIZE" && option.option_code !== "CUSTOM"
-  );
-  const swatchOptions = allOptions.filter(
-    (option) =>
-      option.option_group === "TOP_MATERIAL" || option.option_group === "FRAME_COLOR"
+  const topOptions = allOptions;
+  const sizeOptions =
+    product?.product_type === "TABLE"
+      ? allOptions.filter(
+          (option) => option.option_group === "SIZE" && option.option_code !== "CUSTOM"
+        )
+      : product?.product_type === "RACK"
+      ? allOptions.filter((option) => option.option_group === "RACK_SIZE")
+      : [
+          {
+            option_group: "SIZE",
+            option_code: "STD",
+            parent_code: null,
+            label_en: "Standard",
+            swatch_texture_img: null,
+          },
+        ];
+
+  const swatchGroups = new Set([
+    "TOP_MATERIAL",
+    "FRAME_COLOR",
+    "SEAT_COLOR",
+    "FINISH",
+    "SS_FINISH",
+  ]);
+
+  const swatchOptions = allOptions.filter((option) =>
+    swatchGroups.has(option.option_group)
   );
 
   const frameOptions = allOptions

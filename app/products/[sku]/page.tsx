@@ -2,11 +2,16 @@ import React from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-import WatermarkedImage from "@/components/WatermarkedImage";
 import TableConfigurator from "@/components/TableConfigurator";
+import TypeConfigurator from "@/components/TypeConfigurator";
 import { supabaseServer } from "@/lib/supabase/server";
 import { FALLBACK_OPTIONS, ConfigOption } from "@/lib/configuratorOptions";
+import {
+  getTypeGroupRows,
+  isProductType,
+  type OptionGroupRow,
+} from "@/lib/productTypeConfig";
+import { getFromPriceForProduct } from "@/lib/pricing/fromPrice";
 
 interface SkuPageProps {
   params: Promise<{ sku: string }>;
@@ -76,6 +81,111 @@ const KNOWN_PRODUCTS: Record<
     allowed_top_categories: ["FRAME_ONLY", "WOOD", "STONE"],
     top_overlay_note: "Heavy-duty cross-braced frame supporting up to 200 Kg load",
   },
+  "IMS-CH-01": {
+    id: "fb-chair-01",
+    sku: "IMS-CH-01",
+    name: "Cafe Chair",
+    category: "SS & MS Chairs / Bar Stools",
+    product_type: "CHAIR",
+    base_length_ft: 1.5,
+    base_width_ft: 1.5,
+    main_image_url: "/images/placeholder-chair.svg",
+    hover_blueprint_img: null,
+    warranty_text: "7-Year Weld Warranty",
+    is_knockdown_available: true,
+    allowed_top_categories: [],
+    top_overlay_note: null,
+  },
+  "IMS-CH-BS": {
+    id: "fb-chair-bs",
+    sku: "IMS-CH-BS",
+    name: "Bar Stool",
+    category: "SS & MS Chairs / Bar Stools",
+    product_type: "CHAIR",
+    base_length_ft: 1.4,
+    base_width_ft: 1.4,
+    main_image_url: "/images/placeholder-chair.svg",
+    hover_blueprint_img: null,
+    warranty_text: "7-Year Weld Warranty",
+    is_knockdown_available: true,
+    allowed_top_categories: [],
+    top_overlay_note: null,
+  },
+  "IMS-ST-12": {
+    id: "fb-stand-12",
+    sku: "IMS-ST-12",
+    name: "12-inch Stool",
+    category: "Home Utility Stands",
+    product_type: "STAND",
+    base_length_ft: 1.0,
+    base_width_ft: 1.0,
+    main_image_url: "/images/placeholder-stand.svg",
+    hover_blueprint_img: null,
+    warranty_text: "7-Year Weld Warranty",
+    is_knockdown_available: false,
+    allowed_top_categories: [],
+    top_overlay_note: null,
+  },
+  "IMS-ST-INV": {
+    id: "fb-stand-inv",
+    sku: "IMS-ST-INV",
+    name: "Inverter Stand",
+    category: "Home Utility Stands",
+    product_type: "STAND",
+    base_length_ft: 1.5,
+    base_width_ft: 1.0,
+    main_image_url: "/images/placeholder-stand.svg",
+    hover_blueprint_img: null,
+    warranty_text: "7-Year Weld Warranty",
+    is_knockdown_available: false,
+    allowed_top_categories: [],
+    top_overlay_note: null,
+  },
+  "IMS-ST-KD": {
+    id: "fb-stand-kd",
+    sku: "IMS-ST-KD",
+    name: "Kadai Stand",
+    category: "Home Utility Stands",
+    product_type: "STAND",
+    base_length_ft: 1.2,
+    base_width_ft: 1.2,
+    main_image_url: "/images/placeholder-stand.svg",
+    hover_blueprint_img: null,
+    warranty_text: "7-Year Weld Warranty",
+    is_knockdown_available: false,
+    allowed_top_categories: [],
+    top_overlay_note: null,
+  },
+  "IMS-RK-01": {
+    id: "fb-rack-01",
+    sku: "IMS-RK-01",
+    name: "Boutique Garment Rack",
+    category: "Boutique & Showroom Racks",
+    product_type: "RACK",
+    base_length_ft: 4.0,
+    base_width_ft: 1.5,
+    main_image_url: "/images/placeholder-rack.svg",
+    hover_blueprint_img: null,
+    warranty_text: "10-Year Structural Warranty",
+    is_knockdown_available: false,
+    allowed_top_categories: [],
+    top_overlay_note: null,
+  },
+  "IMS-SS-CT": {
+    id: "fb-ss-ct",
+    sku: "IMS-SS-CT",
+    name: "SS Canteen Table",
+    category: "Hospital, Canteen & Lab SS",
+    product_type: "SS_UNIT",
+    base_length_ft: 4.0,
+    base_width_ft: 2.0,
+    main_image_url: "/images/placeholder-ss.svg",
+    hover_blueprint_img: null,
+    warranty_text: "15-Year Rust-Free Warranty",
+    is_knockdown_available: false,
+    allowed_top_categories: [],
+    top_overlay_note: null,
+  },
 };
 
 export async function generateMetadata({ params }: SkuPageProps): Promise<Metadata> {
@@ -96,6 +206,7 @@ export default async function SkuPage({ params }: SkuPageProps) {
   let product: any = null;
   let visualVariants: any[] = [];
   let configuratorOptions: ConfigOption[] = FALLBACK_OPTIONS;
+  let typeGroups: OptionGroupRow[] = [];
 
   try {
     const { data: prodData } = await supabaseServer
@@ -126,7 +237,9 @@ export default async function SkuPage({ params }: SkuPageProps) {
 
       const { data: vData } = await supabaseServer
         .from("product_visual_variants")
-        .select("top_material_code, frame_color, preview_image_url, size_option")
+        .select(
+          "top_material_code, frame_color, preview_image_url, size_option, selection_key"
+        )
         .eq("product_id", prodData.id);
 
       if (vData) {
@@ -157,8 +270,44 @@ export default async function SkuPage({ params }: SkuPageProps) {
     notFound();
   }
 
-  // SCOPE CHECK: Only product_type === 'TABLE' gets the interactive configurator
-  const isTable = product.product_type === "TABLE";
+  if (isProductType(product.product_type)) {
+    typeGroups = getTypeGroupRows(product.product_type);
+
+    if (product.product_type !== "TABLE") {
+      try {
+        const { data: groupData } = await supabaseServer
+          .from("product_type_option_groups")
+          .select("*")
+          .eq("product_type", product.product_type)
+          .order("sort_order");
+
+        if (groupData && groupData.length > 0) {
+          typeGroups = getTypeGroupRows(product.product_type, groupData);
+        }
+      } catch {
+        // Keep static group mapping.
+      }
+    }
+  }
+
+  let fromPrice: number | null = null;
+
+  if (
+    product.product_type !== "TABLE" &&
+    product.id &&
+    !String(product.id).startsWith("fb-")
+  ) {
+    try {
+      fromPrice = await getFromPriceForProduct(product.id);
+    } catch {
+      fromPrice = null;
+    }
+  }
+
+  const typeGroupSet = new Set(typeGroups.map((group) => group.option_group));
+  const typeOptions = configuratorOptions.filter((option) =>
+    typeGroupSet.has(option.option_group)
+  );
 
   return (
     <div className="bg-[#FFFFFF] min-h-[70vh] py-10 md:py-14">
@@ -176,67 +325,20 @@ export default async function SkuPage({ params }: SkuPageProps) {
           <span className="text-neutral-800">{product.sku}</span>
         </div>
 
-        {isTable ? (
-          /* ================= INTERACTIVE TABLE CONFIGURATOR ================= */
+        {product.product_type === "TABLE" ? (
           <TableConfigurator
             product={product}
             options={configuratorOptions}
             visualVariants={visualVariants}
           />
         ) : (
-          /* ================= NON-TABLE PLACEHOLDER VIEW ================= */
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
-            <div>
-              <div className="rounded-xl overflow-hidden border border-neutral-200 bg-[#F5F5F7]">
-                <WatermarkedImage
-                  src={product.main_image_url}
-                  alt={product.name}
-                  aspectRatio="square"
-                  priority
-                />
-              </div>
-              <p className="mt-3 text-center text-[11px] font-bold text-neutral-500 uppercase tracking-widest">
-                SKU: {product.sku} • SIDCO Coimbatore Factory Unit
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <span className="inline-block text-[11px] font-extrabold uppercase tracking-wider text-neutral-500 bg-neutral-100 border border-neutral-200 px-3 py-1 rounded-full">
-                  {product.category}
-                </span>
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight leading-tight">
-                {product.name}
-              </h1>
-
-              <div className="flex items-center gap-3 text-sm font-semibold text-neutral-600">
-                <span>Standard size: {product.base_length_ft} × {product.base_width_ft} ft</span>
-                <span className="text-neutral-300">|</span>
-                <span>Custom sizes available</span>
-              </div>
-
-              <div className="p-5 rounded-xl bg-[#111111] text-white text-center">
-                <span className="block text-[11px] font-extrabold uppercase tracking-widest text-neutral-400 mb-2">
-                  Configurator Coming Soon
-                </span>
-                <p className="text-sm font-semibold text-neutral-200 leading-relaxed">
-                  Interactive customizer for {product.category.toLowerCase()} is being engineered for direct SIDCO dispatch.
-                </p>
-              </div>
-
-              <div className="pt-2">
-                <Link
-                  href="/products"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-600 hover:text-black uppercase tracking-wider transition-colors"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  Back to Full Catalog
-                </Link>
-              </div>
-            </div>
-          </div>
+          <TypeConfigurator
+            product={product}
+            options={typeOptions}
+            groups={typeGroups}
+            visualVariants={visualVariants}
+            fromPrice={fromPrice}
+          />
         )}
       </div>
     </div>

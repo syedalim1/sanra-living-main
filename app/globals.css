@@ -20,6 +20,12 @@ body:has([data-internal-console]) .site-floating-whatsapp {
   display: none;
 }
 
+@media (max-width: 639px) {
+  body:has([data-type-configurator]) .site-floating-whatsapp {
+    bottom: 5.7rem;
+  }
+}
+
 /* Custom subtle scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

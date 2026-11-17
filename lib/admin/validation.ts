@@ -115,6 +115,7 @@ export const VariantFormSchema = z.object({
   top_material_code: z.string().trim().min(1).max(100),
   frame_color: z.enum(VARIANT_FRAME_COLORS),
   size_option: z.string().trim().min(1).max(30),
+  selection_key: z.string().trim().max(300).nullable().optional(),
 });
 
 export const SwatchUpdateSchema = z.object({

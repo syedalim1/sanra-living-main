@@ -187,20 +187,30 @@ export async function buildQuotePdf(input: QuotePdfInput): Promise<Uint8Array> {
 
   y -= 30;
 
-  const gaugeParts = [summary.gauge_label];
-  if (summary.gauge_load_kg != null) gaugeParts.push(`${summary.gauge_load_kg} Kg Tested`);
-  if (summary.gauge_warranty) gaugeParts.push(summary.gauge_warranty);
-
   const rows: Array<[string, string]> = [
     ["Product", `${summary.product_name} (${summary.sku})`],
-    ["Size", summary.size_label],
-    ["Top material", summary.top_label],
-    ["Pipe gauge", gaugeParts.join(" • ")],
-    ["Frame color", summary.frame_color_label],
-    ["Build type", summary.build_label],
-    ["Add-ons", summary.addons_labels.length > 0 ? summary.addons_labels.join(", ") : "None"],
-    ["Quantity", String(summary.quantity)],
   ];
+
+  if (summary.product_type === "TABLE") {
+    const gaugeParts = [summary.gauge_label];
+    if (summary.gauge_load_kg != null) gaugeParts.push(`${summary.gauge_load_kg} Kg Tested`);
+    if (summary.gauge_warranty) gaugeParts.push(summary.gauge_warranty);
+
+    rows.push(
+      ["Size", summary.size_label],
+      ["Top material", summary.top_label],
+      ["Pipe gauge", gaugeParts.join(" • ")],
+      ["Frame color", summary.frame_color_label],
+      ["Build type", summary.build_label],
+      ["Add-ons", summary.addons_labels.length > 0 ? summary.addons_labels.join(", ") : "None"]
+    );
+  } else {
+    for (const line of summary.selection_lines) {
+      rows.push([line.label, line.value]);
+    }
+  }
+
+  rows.push(["Quantity", String(summary.quantity)]);
 
   const labelX = MARGIN;
   const valueX = MARGIN + 110;
@@ -298,6 +308,21 @@ export async function buildQuotePdf(input: QuotePdfInput): Promise<Uint8Array> {
         color: ACCENT,
       }
     );
+    y -= 18;
+  }
+
+  if (
+    summary.product_type === "CHAIR" ||
+    summary.product_type === "STAND" ||
+    summary.product_type === "RACK"
+  ) {
+    page.drawText("SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested)", {
+      x: labelX,
+      y,
+      size: 9,
+      font: bold,
+      color: BLACK,
+    });
     y -= 18;
   }
 

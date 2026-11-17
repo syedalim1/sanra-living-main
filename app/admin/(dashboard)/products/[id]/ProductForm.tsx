@@ -306,7 +306,7 @@ export default function ProductForm({
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <label className="space-y-1.5">
             <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              Base pipe weight 18G (kg)
+              Metal weight (kg)
             </span>
             <input
               name="base_pipe_weight_18g_kg"
@@ -320,7 +320,7 @@ export default function ProductForm({
 
           <label className="space-y-1.5">
             <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              Top area (sq.ft)
+              Top / seat / shelf area (sq.ft)
             </span>
             <input
               name="top_area_sqft"
@@ -330,6 +330,9 @@ export default function ProductForm({
               defaultValue={valueOrEmpty(pricing?.top_area_sqft)}
               className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
             />
+            <span className="block text-[9px] text-neutral-500">
+              Seat area for chairs, shelf area for racks, top area for tables.
+            </span>
           </label>
 
           <label className="space-y-1.5">

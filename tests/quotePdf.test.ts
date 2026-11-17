@@ -7,6 +7,8 @@ import { buildQuotePdf } from "../lib/pdf/quotePdf";
 import type { ConfigSummary } from "../lib/configSummary";
 
 const summary: ConfigSummary = {
+  product_type: "TABLE",
+  selection_lines: [],
   product_name: "Commercial Heavy-Gauge Cafe Table (4x2 ft)",
   sku: "IMS-CF-42",
   size_label: "4 x 2 ft",

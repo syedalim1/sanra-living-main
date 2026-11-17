@@ -19,8 +19,10 @@ export interface OptionRateRow {
   option_code: string;
   option_group: string;
   label_en: string;
-  field: "metal_cost_multiplier" | "flat_addon";
+  field: "metal_cost_multiplier" | "flat_addon" | null;
   value: number;
+  material_code?: string | null;
+  note?: string | null;
 }
 
 export interface PreviewProduct {

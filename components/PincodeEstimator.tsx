@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Package, Truck } from "lucide-react";
 
 interface PincodeEstimatorProps {
-  selectedBuildType: string;
-  onSelectFlatPack: () => void;
+  selectedBuildType?: string;
+  onSelectFlatPack?: () => void;
 }
 
 function isValidPincode(value: string): boolean {
@@ -38,6 +38,7 @@ export default function PincodeEstimator({
   const valid = isValidPincode(pin);
   const isLocal = valid && pin.startsWith("641");
   const flatPackSelected = selectedBuildType === "KNOCKDOWN";
+  const canSelectFlatPack = typeof onSelectFlatPack === "function";
 
   return (
     <div className="space-y-3 pt-4 border-t border-neutral-200">
@@ -78,14 +79,16 @@ export default function PincodeEstimator({
               VRL / Parcel Service!
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onSelectFlatPack}
-            disabled={flatPackSelected}
-            className="shrink-0 px-3.5 py-2 rounded-md border border-black bg-white text-[11px] font-bold uppercase tracking-wider text-black hover:bg-neutral-100 disabled:border-neutral-300 disabled:text-neutral-400 transition-colors"
-          >
-            {flatPackSelected ? "Flat-Pack Selected" : "Select Flat-Pack"}
-          </button>
+          {canSelectFlatPack && (
+            <button
+              type="button"
+              onClick={onSelectFlatPack}
+              disabled={flatPackSelected}
+              className="shrink-0 px-3.5 py-2 rounded-md border border-black bg-white text-[11px] font-bold uppercase tracking-wider text-black hover:bg-neutral-100 disabled:border-neutral-300 disabled:text-neutral-400 transition-colors"
+            >
+              {flatPackSelected ? "Flat-Pack Selected" : "Select Flat-Pack"}
+            </button>
+          )}
         </div>
       )}
     </div>

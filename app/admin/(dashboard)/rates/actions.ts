@@ -97,9 +97,19 @@ export async function saveRatesAction(input: unknown): Promise<ActionResult> {
         const current = optionMap.get(change.code);
         if (!group || !current) return null;
 
+        const multiplierGroups = new Set(["GAUGE", "RACK_SIZE", "THICKNESS"]);
+        const flatGroups = new Set([
+          "ADDON",
+          "FRAME_COLOR",
+          "SEAT_COLOR",
+          "BASE",
+          "FINISH",
+          "SS_FINISH",
+        ]);
+
         const allowed =
-          (group === "GAUGE" && change.field === "metal_cost_multiplier") ||
-          ((group === "ADDON" || group === "FRAME_COLOR") && change.field === "flat_addon");
+          (multiplierGroups.has(group) && change.field === "metal_cost_multiplier") ||
+          (flatGroups.has(group) && change.field === "flat_addon");
 
         if (!allowed) return null;
 

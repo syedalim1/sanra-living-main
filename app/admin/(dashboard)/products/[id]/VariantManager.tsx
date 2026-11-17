@@ -112,7 +112,7 @@ function VariantEditor({
 
         <label className="space-y-1 lg:col-span-2">
           <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-            Top material / option code
+            Material / option code
           </span>
           <select
             name="top_material_code"
@@ -173,6 +173,21 @@ function VariantEditor({
               </option>
             ))}
           </select>
+        </label>
+
+        <label className="space-y-1 lg:col-span-2">
+          <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+            Selection key (non-table preview)
+          </span>
+          <input
+            name="selection_key"
+            defaultValue={variant?.selection_key ?? ""}
+            placeholder="e.g. SEAT_RUBBER||MS_COATED|MATTE_BLACK"
+            className="w-full px-2.5 py-2 rounded-md border border-neutral-300 bg-white text-[11px] font-mono"
+          />
+          <span className="block text-[9px] text-neutral-500">
+            Optional. Must match the live configurator combination exactly.
+          </span>
         </label>
 
         <label className="space-y-1">

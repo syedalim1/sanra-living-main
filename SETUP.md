@@ -242,3 +242,72 @@ The tests confirm:
 - The public `/api/price` response keys are unchanged.
 
 Note: admin data, service-role queries, private costing, audit writes and image processing all run only after `requireAdmin()`. The service-role key is never sent to the browser.
+
+---
+
+### Step 11: Run Product Types Migration (`005_product_types.sql`)
+
+1. Open the Supabase **SQL Editor**.
+2. Open [supabase/migrations/005_product_types.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/005_product_types.sql), copy the whole file, paste it into the editor, and click **Run**.
+3. Confirm `Success. No rows returned`.
+4. Optional: re-run [supabase/seed.sql](file:///d:/Downloads/sanra-living-i/supabase/seed.sql). It includes the seven sample products and is idempotent. Run it after all migrations.
+
+Migration 005 adds:
+
+- The public `product_type_option_groups` mapping and the `QTY_TIER` membership.
+- The new CHAIR / STAND / RACK / SS_UNIT option groups, labels and private `option_pricing` rows.
+- `product_visual_variants.selection_key` and a unique partial index.
+- `PACK2_SAVING` in `pricing_globals`.
+- Seven sample products with pricing rules and placeholder preview variants.
+
+Test one product of each type:
+
+```text
+Chair:   http://localhost:3000/products/IMS-CH-01
+Stand:   http://localhost:3000/products/IMS-ST-12
+Rack:    http://localhost:3000/products/IMS-RK-01
+SS unit: http://localhost:3000/products/IMS-SS-CT
+```
+
+Other seeded products: `/products/IMS-CH-BS`, `/products/IMS-ST-INV`, `/products/IMS-ST-KD`.
+
+### Placeholder rates and images to fill in Admin
+
+**Admin → Rate Master → Material Rates**
+- `MS_CR` — MS metal base for chairs, stands and racks.
+- `SS_202` / `SS_304` — chair metal types, stand SS 304 and SS-unit grades.
+- `WOOD_RUBBER_18` — chair rubberwood seat and rack rubberwood shelf.
+- `PRELAM_18` — rack pre-lam shelf.
+- `SHEET_PERFORATED` — chair perforated metal seat.
+
+**Admin → Rate Master → Global Pricing Values**
+- `PACK2_SAVING` — pack-of-2 saving (seeded at 150).
+- `SS_WEIGHT_FACTOR` and `KNOCKDOWN_PRICE_PCT` — reused by the new strategies.
+
+**Admin → Rate Master → Option Pricing**
+- `R4` 1.00, `R5` 1.25, `R6` 1.50 — rack size multipliers.
+- `TH_18G` 1.00, `TH_16G` 1.28 — SS top thickness multipliers.
+- `REXINE_BLACK`, `REXINE_TAN`, `REXINE_CHERRY` — rexine color flat add-ons.
+- `BASE_CASTOR` 350 — lockable castor add-on.
+- `RF_GOLD_PAINT` 450, `RF_GOLD_PVD` 900 — rack finish add-ons.
+- `SSF_MIRROR` 350 — mirror-buff finish add-on.
+- Rows marked “Linked to material rate” are read-only; edit those values in Material Rates.
+- `PACK_1` / `PACK_2` are read-only; edit the saving in Global Pricing Values.
+
+**Admin → Products → each sample product**
+- Upload main and optional hover images for:
+  `IMS-CH-01`, `IMS-CH-BS`, `IMS-ST-12`, `IMS-ST-INV`, `IMS-ST-KD`, `IMS-RK-01`, `IMS-SS-CT`.
+- Add or replace variant preview images with these selection keys:
+  - `IMS-CH-01`: `SEAT_RUBBER||MS_COATED|MATTE_BLACK`, `SEAT_REXINE|REXINE_TAN|MS_COATED|MATTE_BLACK`, `SEAT_RUBBER||SS304|`
+  - `IMS-CH-BS`: `SEAT_RUBBER||MS_COATED|MATTE_BLACK`, `SEAT_PERFORATED||SS202|`
+  - `IMS-ST-12`: `ST_MS|PACK_1|BASE_BUSH`, `ST_SS304|PACK_2|BASE_CASTOR`
+  - `IMS-RK-01`: `RF_BLACK|SH_NONE|R4`, `RF_GOLD_PVD|SH_RUBBER|R6`
+  - `IMS-SS-CT`: `SSG_202|TH_18G|SSF_HAIRLINE`, `SSG_304|TH_16G|SSF_MIRROR`
+- Swatch textures can be uploaded for top materials, frame colors, seat colors, rack finishes and SS finishes.
+
+Run the full checks:
+
+```powershell
+npm run typecheck
+npm test
+```

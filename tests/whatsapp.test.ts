@@ -91,6 +91,75 @@ describe("WhatsApp booking message", () => {
     expect(message).not.toContain("₹");
   });
 
+  it("builds a chair message with type-specific selections", () => {
+    const message = buildBookingMessage({
+      ...baseInput,
+      productType: "CHAIR",
+      selectionLines: [
+        { label: "Metal type", value: "Jindal SS 304 (100% Rust-Proof + Argon TIG)" },
+        { label: "Seat", value: "Solid Kerala Rubberwood Seat (100% Seasoned Grade-A)" },
+        { label: "Frame", value: "Natural SS finish" },
+        { label: "Build", value: "100% Factory Welded (Coimbatore Local Delivery)" },
+        { label: "Warranty", value: "3-Year Free Replacement + 15 Years Rust-Free Warranty" },
+      ],
+      isCustom: false,
+      unitPrice: 8999,
+      totalPrice: 8999,
+    });
+
+    expect(message).toContain("Metal type: Jindal SS 304");
+    expect(message).toContain("Seat: Solid Kerala Rubberwood Seat");
+    expect(message).toContain("Frame: Natural SS finish");
+    expect(message).toContain("Build: 100% Factory Welded");
+    expect(message).toContain("Quoted Price: ₹8,999 (₹8,999 each)");
+    expect(message).not.toContain("Size:");
+    expect(message).not.toContain("Top:");
+    expect(message).not.toContain("Pipe/Frame:");
+  });
+
+  it("builds a stand message including the pack saving label", () => {
+    const message = buildBookingMessage({
+      ...baseInput,
+      productType: "STAND",
+      selectionLines: [
+        { label: "Material", value: "Jindal SS 304" },
+        { label: "Pack size", value: "Pack of 2 Nesting Combo (Save ₹150!)" },
+        { label: "Base", value: "Lockable Castor Wheels" },
+      ],
+      isCustom: false,
+      unitPrice: 6399,
+      totalPrice: 6399,
+    });
+
+    expect(message).toContain("Material: Jindal SS 304");
+    expect(message).toContain("Pack size: Pack of 2 Nesting Combo (Save ₹150!)");
+    expect(message).toContain("Base: Lockable Castor Wheels");
+    expect(message).toContain("Quoted Price: ₹6,399 (₹6,399 each)");
+    expect(message).not.toContain("Size:");
+    expect(message).not.toContain("Top:");
+  });
+
+  it("builds an SS unit message with grade, thickness and finish", () => {
+    const message = buildBookingMessage({
+      ...baseInput,
+      productType: "SS_UNIT",
+      selectionLines: [
+        { label: "Grade", value: "Jindal SS 304 (Medical / Food Grade)" },
+        { label: "Top thickness", value: "16G Top (Heavier)" },
+        { label: "Finish", value: "Mirror Buffed" },
+      ],
+      isCustom: false,
+      unitPrice: 12999,
+      totalPrice: 12999,
+    });
+
+    expect(message).toContain("Grade: Jindal SS 304 (Medical / Food Grade)");
+    expect(message).toContain("Top thickness: 16G Top (Heavier)");
+    expect(message).toContain("Finish: Mirror Buffed");
+    expect(message).toContain("Quoted Price: ₹12,999 (₹12,999 each)");
+    expect(message).not.toContain("Pipe/Frame:");
+  });
+
   it("never includes internal cost, weight, rate or margin wording", () => {
     const messages = [
       buildNormal(),
@@ -101,6 +170,20 @@ describe("WhatsApp booking message", () => {
         isCustom: true,
         customLengthFt: 4,
         customWidthFt: 2,
+      }),
+      buildBookingMessage({
+        ...baseInput,
+        productType: "CHAIR",
+        selectionLines: [
+          { label: "Metal type", value: "MS Powder Coated (Tata/Apollo CR)" },
+          { label: "Seat", value: "40-Density Cushion Seat with Rexine" },
+          { label: "Seat color", value: "Tan Brown" },
+          { label: "Frame", value: "Matte Black Powder Coated" },
+          { label: "Build", value: "5-Min Flat-Pack Knock-Down (Pan-India Courier)" },
+        ],
+        isCustom: false,
+        unitPrice: 4999,
+        totalPrice: 4999,
       }),
     ];
 
