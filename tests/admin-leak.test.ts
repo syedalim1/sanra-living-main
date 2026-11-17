@@ -12,7 +12,11 @@ const PUBLIC_SOURCES = [
   "components/Footer.tsx",
   "components/FloatingWhatsApp.tsx",
   "components/TypeConfigurator.tsx",
+  "components/TrackOrderForm.tsx",
+  "app/track/page.tsx",
   "app/api/price/route.ts",
+  "app/api/track/route.ts",
+  "app/api/warranty-pdf/route.ts",
   "app/api/whatsapp-link/route.ts",
   "app/api/quote-pdf/route.ts",
 ];

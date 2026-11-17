@@ -311,3 +311,138 @@ Run the full checks:
 npm run typecheck
 npm test
 ```
+
+---
+
+### Step 12: Run Orders Migration (`006_orders.sql`)
+
+1. Open the Supabase **SQL Editor**.
+2. Open [supabase/migrations/006_orders.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/006_orders.sql), copy the whole file, paste it into the editor, and click **Run**.
+3. Confirm `Success. No rows returned`.
+
+Migration 006 adds:
+
+- `customer_name_full`, `warranty_years`, `delivered_on`, `notes_internal` and `archived` to `orders` if missing.
+- Private `order_stage_events`, `order_photos` and `tracking_attempts` tables.
+- RLS enabled on all three new tables with **no anon/authenticated policies**.
+- A private `order-photos` storage bucket with no public policy.
+- Indexes for order search and tracking-attempt lockout checks.
+
+The existing random `SANRA-XXXX` tracking generator is reused. Do not replace it with a sequence, date-based code or counter.
+
+### Edit non-code warranty wording
+
+Open [lib/company.ts](file:///d:/Downloads/sanra-living-i/lib/company.ts) and edit:
+
+```ts
+export const WARRANTY_TERMS = "…";
+```
+
+That constant is printed on the warranty PDF. The certificate adds the order's warranty years, expiry date and the standard exclusions. Do not add legal promises outside this constant.
+
+### Test public tracking and warranty
+
+1. Sign in at `/admin/login`.
+2. Create an order at `/admin/orders/new`. Use a real 10-digit test mobile number.
+3. On the order detail page, use **Copy tracking link & code**.
+4. Open `/track`, enter the code and the last 4 digits of the test phone, then **Check Status**.
+5. Move the order step by step through Pipe Cut → Welded → Coated → Master Checked → Ready. On Ready, enter the delivery date; the warranty expiry is calculated from that date.
+6. Upload a WIP photo, keep it visible, and check the public tracker photo card/gallery.
+7. Download the warranty certificate only after Ready.
+
+URLs:
+
+```text
+http://localhost:3000/track
+http://localhost:3000/admin/orders
+http://localhost:3000/admin/orders/new
+http://localhost:3000/admin/orders/<order-id>
+```
+
+API endpoints:
+
+```text
+POST http://localhost:3000/api/track
+POST http://localhost:3000/api/warranty-pdf
+```
+
+Privacy and abuse controls:
+
+- `/api/track` requires both the tracking code and the last 4 phone digits.
+- Wrong code, wrong phone and unknown code all return: `No order found. Please check your code and phone digits.`
+- Per-IP limit: roughly 10 tracking requests per 10 minutes.
+- Per-code lockout: after 5 failed attempts in 15 minutes, the code is locked for 15 minutes with: `Too many attempts. Please try again later or contact us on WhatsApp.`
+- Every attempt is logged to `tracking_attempts` with a hashed IP only.
+- Public responses and the warranty PDF contain masked names, no full phone, no amounts, no addresses, no internal notes and no database IDs.
+- Tracking codes are submitted by POST and never placed in the page URL.
+- The tracker form page may be indexed; the result view injects `noindex, nofollow`.
+
+Run the live tracking response test against the dev server:
+
+```powershell
+$env:SANRA_TEST_BASE_URL="http://localhost:3000"
+npx vitest run tests/track-http.test.ts
+```
+
+Order photos use the private `order-photos` bucket and 10-minute signed URLs. The bucket name and storage path are never returned as fields by the public API.
+
+---
+
+### Step 13: Run B2B Migration (`007_b2b.sql`)
+
+1. Open the Supabase **SQL Editor**.
+2. Open [supabase/migrations/007_b2b.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/007_b2b.sql), copy the whole file, paste it into the editor, and click **Run**.
+3. Confirm `Success. No rows returned`.
+
+Migration 007 creates:
+
+- Private `leads` with sample / CAD / bulk quote kinds, status and archive flag.
+- Private `cad_files` metadata.
+- A private `cad-files` storage bucket with a 50 MB limit and no public policy.
+- RLS enabled on both tables with **no anon/authenticated policies**.
+
+Do not add a public policy to `leads`, `cad_files` or the `cad-files` storage bucket. Public CAD downloads are generated through a short-lived signed URL only after a lead is saved.
+
+### What to fill yourself
+
+- Check `NEXT_PUBLIC_WHATSAPP_NUMBER` in `.env.local` so the B2B sample, CAD, bulk WhatsApp and project-team buttons open the correct number.
+- Sign in at `/admin/cad` and upload the actual `.skp` / `.dwg` models. No CAD files are seeded.
+- Add a linked product SKU to each CAD file if you want the product name shown on `/b2b`.
+- Review the sample / CAD / bulk leads at `/admin/leads`.
+- No new environment variables are required for the B2B page.
+
+### B2B URLs
+
+```text
+http://localhost:3000/b2b
+http://localhost:3000/admin/leads
+http://localhost:3000/admin/cad
+```
+
+Public API routes:
+
+```text
+POST /api/b2b/lead
+POST /api/b2b/cad-download
+POST /api/bulk-price
+POST /api/bulk-quote-pdf
+```
+
+### B2B test flow
+
+1. Open `/b2b` and submit the express sample form. Confirm the success message and the WhatsApp continuation button.
+2. Use the room calculator. Confirm the estimated table/seat counts and use **Get a quote for these tables** to prefill the bulk sheet.
+3. Add rows, change configurations and confirm the debounced live row prices / grand total. A `CUSTOM` table size should show **Quote on WhatsApp** and be excluded from the total.
+4. Download the Bulk Quote PDF. Enter name and phone in the dialog first. Confirm the PDF filename uses the quote reference and the grand total uses Indian digit grouping.
+5. Open **Send this list on WhatsApp**; confirm the row list and quote reference. Large lists summarize to the first 10 rows and point to the PDF.
+6. On `/admin/cad`, upload a `.skp` or `.dwg` up to 50 MB, set a title and active status. Confirm it appears on `/b2b` and downloads only after the CAD lead form is submitted.
+7. On `/admin/leads`, test kind/status filters, search, the detail drawer, status updates, WhatsApp/copy phone, archive and CSV export.
+
+The B2B lead and CAD routes use a honeypot plus a 5-requests-per-hour IP limit. Bulk pricing is limited to 20 requests per minute; bulk PDF generation to 5 per minute. Lead data never appears on a public page or public API response.
+
+Run the checks:
+
+```powershell
+npm run typecheck
+npm test
+```

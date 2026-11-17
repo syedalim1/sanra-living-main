@@ -12,6 +12,9 @@ export const company = {
 
 export const GST_NOTE = "As applicable; GST invoice will be provided";
 
+export const WARRANTY_TERMS =
+  "SANRA LIVING warrants the structural steel frame against manufacturing defects for the warranty period stated on this certificate. This warranty is limited to repair or replacement of the affected structural component.";
+
 export const DEFAULT_WHATSAPP_MESSAGE =
   "Hi SANRA LIVING, I'd like to know more about your steel furniture.";
 

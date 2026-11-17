@@ -1,12 +1,20 @@
-import React from "react";
-import SectionHeading from "@/components/SectionHeading";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, MessageSquare, Truck, Clock, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
+import SectionHeading from "@/components/SectionHeading";
+import TrackOrderForm from "@/components/TrackOrderForm";
+import { company } from "@/lib/company";
+
+export const metadata: Metadata = {
+  title: "Track Your Order | SANRA LIVING",
+  description:
+    "Track your SANRA LIVING factory order with your tracking code and the last 4 digits of your order phone. View live fabrication stages and warranty status.",
+};
 
 export default function TrackPage() {
   return (
-    <div className="bg-[#FFFFFF] min-h-[70vh] py-12 md:py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="bg-[#FFFFFF] min-h-[70vh] py-10 md:py-14">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
           <Link
             href="/"
@@ -18,52 +26,24 @@ export default function TrackPage() {
         </div>
 
         <SectionHeading
-          badge="Factory Logistics Desk"
-          title="Track Order Status"
-          subtitle="Real-time dispatch status directly from our SIDCO Coimbatore manufacturing facility."
+          badge="Factory Tracking"
+          title="Track Your Order"
+          subtitle="Enter your tracking code and the last 4 digits of the phone used for the order. Your code is never placed in the page URL."
         />
 
-        <div className="max-w-2xl mx-auto mt-8 p-8 rounded-xl bg-[#F5F5F7] border border-neutral-200">
-          <div className="space-y-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-white rounded-lg border border-neutral-200 text-[#111111] shrink-0">
-                <Truck className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[#111111]">Direct Factory Despatches</h3>
-                <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                  Local Coimbatore deliveries are routed directly via our dedicated factory tempo network. Pan-India flat-pack orders ship via express freight with real-time consignment docket tracking.
-                </p>
-              </div>
-            </div>
+        <div className="mt-8">
+          <TrackOrderForm whatsappNumber={company.whatsappNumber} />
+        </div>
 
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-white rounded-lg border border-neutral-200 text-[#111111] shrink-0">
-                <Clock className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[#111111]">Live Dispatch Assistance</h3>
-                <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                  To check fabrication progress, welding completion, or the courier tracking LR number for your consignment, message our logistics desk with your Order/Invoice ID.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-neutral-200 text-center">
-              <a
-                href="https://wa.me/91XXXXXXXXXX?text=Hello%20SANRA%20LIVING,%20I%20would%20like%20to%20track%20my%20order."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs uppercase tracking-wider transition-colors shadow"
-              >
-                <MessageSquare className="w-4 h-4" />
-                Track Order via Factory WhatsApp
-              </a>
-            </div>
-          </div>
+        <div className="mt-6 flex items-start gap-2 p-4 rounded-lg bg-[#F5F5F7] border border-neutral-200">
+          <ShieldCheck className="w-4 h-4 text-neutral-600 shrink-0 mt-0.5" />
+          <p className="text-[11px] text-neutral-600 leading-relaxed">
+            Tracking shows masked customer details, factory stage updates and
+            customer-visible progress photos only. For privacy, no prices,
+            addresses or full phone numbers are shown here.
+          </p>
         </div>
       </div>
     </div>
   );
 }
-

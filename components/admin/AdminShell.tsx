@@ -8,6 +8,9 @@ import {
   X,
   SlidersHorizontal,
   Package,
+  ClipboardList,
+  Users,
+  FolderOpen,
   ScrollText,
   LogOut,
   ExternalLink,
@@ -17,10 +20,21 @@ import { logoutAction } from "@/app/admin/login/actions";
 const NAV_ITEMS = [
   { label: "Rates", href: "/admin/rates", icon: SlidersHorizontal },
   { label: "Products", href: "/admin/products", icon: Package },
+  { label: "Orders", href: "/admin/orders", icon: ClipboardList },
+  { label: "Leads", href: "/admin/leads", icon: Users, badgeKey: "leads" },
+  { label: "CAD Files", href: "/admin/cad", icon: FolderOpen },
   { label: "Audit Log", href: "/admin/audit", icon: ScrollText },
 ];
 
-function SidebarContent({ email, onNavigate }: { email: string; onNavigate?: () => void }) {
+function SidebarContent({
+  email,
+  newLeadCount,
+  onNavigate,
+}: {
+  email: string;
+  newLeadCount: number;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
 
   return (
@@ -49,6 +63,11 @@ function SidebarContent({ email, onNavigate }: { email: string; onNavigate?: () 
             >
               <Icon className="w-4 h-4" />
               {item.label}
+              {item.badgeKey === "leads" && newLeadCount > 0 && (
+                <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-emerald-500 text-[9px] font-black text-white flex items-center justify-center">
+                  {newLeadCount > 99 ? "99+" : newLeadCount}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -87,9 +106,11 @@ function SidebarContent({ email, onNavigate }: { email: string; onNavigate?: () 
 
 export default function AdminShell({
   email,
+  newLeadCount,
   children,
 }: {
   email: string;
+  newLeadCount: number;
   children: React.ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -97,7 +118,7 @@ export default function AdminShell({
   return (
     <div className="min-h-screen bg-[#F5F5F7]">
       <aside className="hidden lg:block fixed inset-y-0 left-0 w-64 z-40">
-        <SidebarContent email={email} />
+        <SidebarContent email={email} newLeadCount={newLeadCount} />
       </aside>
 
       <header className="lg:hidden sticky top-0 z-40 bg-white border-b border-neutral-200">
@@ -138,7 +159,7 @@ export default function AdminShell({
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <SidebarContent email={email} onNavigate={() => setDrawerOpen(false)} />
+            <SidebarContent email={email} newLeadCount={newLeadCount} onNavigate={() => setDrawerOpen(false)} />
           </div>
         </div>
       )}

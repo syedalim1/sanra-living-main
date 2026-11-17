@@ -13,10 +13,12 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   outputFileTracingIncludes: {
     "/api/quote-pdf": ["./lib/fonts/**/*"],
+    "/api/warranty-pdf": ["./lib/fonts/**/*"],
+    "/api/bulk-quote-pdf": ["./lib/fonts/**/*"],
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: "10mb",
+      bodySizeLimit: "55mb",
     },
   },
   async headers() {
