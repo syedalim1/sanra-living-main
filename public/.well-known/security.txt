@@ -1,0 +1,4 @@
+Contact: mailto:UPDATE-ME-security@example.com
+Expires: 2027-12-31T23:59:59Z
+Preferred-Languages: en
+Canonical: https://UPDATE-ME.example.com/.well-known/security.txt

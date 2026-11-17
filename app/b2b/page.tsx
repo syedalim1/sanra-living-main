@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import SectionHeading from "@/components/SectionHeading";
 import SampleRequestForm from "@/components/b2b/SampleRequestForm";
-import B2BOrderTools from "@/components/b2b/B2BOrderTools";
+import B2BOrderToolsLoader from "@/components/b2b/B2BOrderToolsLoader";
 import CadDownloads from "@/components/b2b/CadDownloads";
 import { supabaseServer } from "@/lib/supabase/server";
 import { company, whatsappHref } from "@/lib/company";
@@ -32,6 +32,19 @@ export const metadata: Metadata = {
   title: "Projects & B2B | SANRA LIVING",
   description:
     "Factory-direct steel furniture for cafes, offices, hostels, hospitals and architects. Request samples, estimate room layouts, build a bulk order sheet and download CAD models.",
+  alternates: { canonical: "/b2b" },
+  openGraph: {
+    title: "Projects & B2B | SANRA LIVING",
+    description: "Samples, room estimates, bulk order sheets and CAD models for commercial furniture projects.",
+    url: "/b2b",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "SANRA LIVING projects desk" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Projects & B2B | SANRA LIVING",
+    description: "Samples, room estimates, bulk order sheets and CAD models for commercial furniture projects.",
+    images: ["/og-default.png"],
+  },
 };
 
 const FALLBACK_PRODUCTS: B2BProduct[] = [
@@ -232,7 +245,7 @@ export default async function B2BPage() {
         </section>
 
         <div className="space-y-8 pb-10 md:pb-12">
-          <B2BOrderTools
+          <B2BOrderToolsLoader
             products={products}
             groups={groups}
             options={options}

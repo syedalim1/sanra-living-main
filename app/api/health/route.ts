@@ -1,7 +1,11 @@
+import "server-only";
 import { NextResponse } from "next/server";
+import { connection } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 
 export async function GET() {
+  await connection();
+
   try {
     const supabase = createServerClient();
     // Read one row count from products table only

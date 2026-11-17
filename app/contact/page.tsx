@@ -2,7 +2,27 @@ import React from "react";
 import SectionHeading from "@/components/SectionHeading";
 import Link from "next/link";
 import { ArrowLeft, MessageSquare, MapPin, Phone, Clock, FileText } from "lucide-react";
-import { company, whatsappHref } from "@/lib/company";
+import type { Metadata } from "next";
+import { company, whatsappHref, WORKING_HOURS } from "@/lib/company";
+
+export const metadata: Metadata = {
+  title: "Contact & Factory Location | SANRA LIVING",
+  description:
+    "Visit the SANRA LIVING SIDCO Coimbatore factory or contact the project desk on WhatsApp for steel furniture enquiries.",
+  alternates: { canonical: "/contact" },
+  openGraph: {
+    title: "Contact & Factory Location | SANRA LIVING",
+    description: "Factory address, phone and WhatsApp contact for SANRA LIVING.",
+    url: "/contact",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "SANRA LIVING factory contact" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact & Factory Location | SANRA LIVING",
+    description: "Factory address, phone and WhatsApp contact for SANRA LIVING.",
+    images: ["/og-default.png"],
+  },
+};
 
 export default function ContactPage() {
   return (
@@ -22,15 +42,16 @@ export default function ContactPage() {
           badge="Direct Unit Access"
           title="Factory Location & Enquiries"
           subtitle="Visit our SIDCO Kurichi manufacturing facility or connect with our engineering desk directly on WhatsApp."
+          as="h1"
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mt-8">
           {/* Unit Location Info */}
           <div className="p-8 rounded-xl bg-[#F5F5F7] border border-neutral-200 flex flex-col justify-between">
             <div className="space-y-5">
-              <h3 className="text-xl font-bold text-[#111111]">
+              <h2 className="text-xl font-bold text-[#111111]">
                 SANRA LIVING Works Unit
-              </h3>
+              </h2>
               <p className="text-xs uppercase tracking-wider text-neutral-500 font-semibold">
                 Indian Make Steel Industries
               </p>
@@ -41,6 +62,14 @@ export default function ContactPage() {
                   <div>
                     <strong className="block text-[#111111]">Factory Address</strong>
                     <span>{company.address}</span>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(company.address)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-2 text-xs font-bold uppercase tracking-wider text-emerald-700 underline underline-offset-2"
+                    >
+                      Open in Maps
+                    </a>
                   </div>
                 </div>
 
@@ -56,7 +85,7 @@ export default function ContactPage() {
                   <Clock className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
                   <div>
                     <strong className="block text-[#111111]">Operating Hours</strong>
-                    <span>Monday – Saturday: 9:00 AM – 7:00 PM IST</span>
+                    <span>{WORKING_HOURS}</span>
                   </div>
                 </div>
 
@@ -77,7 +106,7 @@ export default function ContactPage() {
               <span className="inline-block text-xs font-bold uppercase tracking-wider text-emerald-400">
                 Live Messaging
               </span>
-              <h3 className="text-2xl font-bold tracking-tight">Direct WhatsApp Desk</h3>
+              <h2 className="text-2xl font-bold tracking-tight">Direct WhatsApp Desk</h2>
               <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">
                 Connect directly with our manufacturing desk for fast estimates, drawing evaluations, surface finish options, and bulk transport logistics.
               </p>

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { productPath } from "@/lib/site";
 import WatermarkedImage from "./WatermarkedImage";
 import { ArrowRight, Eye, RefreshCw } from "lucide-react";
 
@@ -44,8 +45,9 @@ export default function ProductCard({ product }: ProductCardProps) {
     >
       {/* Product Image Container with 2-Photo Swap */}
       <div className="relative overflow-hidden bg-neutral-100 aspect-video select-none">
-        <Link href={`/products/${product.sku}`} className="block w-full h-full">
+        <Link href={productPath(product.sku)} className="block w-full h-full">
           <WatermarkedImage
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             src={currentImage}
             alt={product.name}
             aspectRatio="video"
@@ -92,7 +94,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           {/* Product Name */}
           <h3 className="text-base font-bold text-[#111111] tracking-tight group-hover:text-neutral-700 transition-colors line-clamp-2">
-            <Link href={`/products/${product.sku}`}>{product.name}</Link>
+            <Link href={productPath(product.sku)}>{product.name}</Link>
           </h3>
 
           {/* Size line */}
@@ -126,7 +128,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Primary Action Button linking to /products/[sku] */}
         <div className="mt-5 pt-3">
           <Link
-            href={`/products/${product.sku}`}
+            href={productPath(product.sku)}
             className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-[#111111] hover:bg-neutral-800 text-white font-semibold text-xs uppercase tracking-wider rounded transition-colors shadow-xs"
           >
             <span>Customize & See Live Price</span>

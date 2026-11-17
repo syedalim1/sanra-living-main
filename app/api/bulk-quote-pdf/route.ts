@@ -16,7 +16,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req.headers);
 
-  if (!checkBulkPdfRateLimit(ip)) {
+  if (!(await checkBulkPdfRateLimit(ip))) {
     return NextResponse.json(
       { error: "Too many quote downloads. Please wait a moment." },
       { status: 429, headers: NO_STORE }

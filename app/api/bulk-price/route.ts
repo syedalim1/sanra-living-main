@@ -9,7 +9,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req.headers);
 
-  if (!checkBulkPriceRateLimit(ip)) {
+  if (!(await checkBulkPriceRateLimit(ip))) {
     return NextResponse.json(
       { error: "Too many price requests. Please wait a moment." },
       { status: 429, headers: NO_STORE }

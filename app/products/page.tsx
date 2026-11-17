@@ -14,6 +14,28 @@ export const metadata: Metadata = {
   title: "Steel Furniture Catalog | SANRA LIVING",
   description:
     "Direct SIDCO Coimbatore factory steel furniture catalog. Heavy gauge MS and Jindal SS cafe tables, office workstations, dining sets, and custom frames with live prices.",
+  alternates: { canonical: "/products" },
+  openGraph: {
+    title: "Steel Furniture Catalog | SANRA LIVING",
+    description:
+      "Browse factory-direct tables, workstations, chairs, stands, racks and stainless units with live prices.",
+    url: "/products",
+    images: [
+      {
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "SANRA LIVING steel furniture catalog",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Steel Furniture Catalog | SANRA LIVING",
+    description:
+      "Factory-direct steel furniture with live prices and GST invoicing.",
+    images: ["/og-default.png"],
+  },
 };
 
 // Fallback products if DB has not been seeded yet
@@ -181,6 +203,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           title="Steel Furniture Catalog & Live Prices"
           subtitle="Explore all structural furniture manufactured at our SIDCO Kurichi unit. Transparent factory pricing with full GST invoices and zero showroom margins."
           align="left"
+          as="h1"
         />
 
         {/* Main Content Layout (Sidebar + Grid) */}

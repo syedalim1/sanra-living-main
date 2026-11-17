@@ -9,6 +9,7 @@ interface WatermarkedImageProps {
   className?: string;
   aspectRatio?: "square" | "video" | "auto" | "wide";
   priority?: boolean;
+  sizes?: string;
 }
 
 export default function WatermarkedImage({
@@ -19,6 +20,7 @@ export default function WatermarkedImage({
   className = "",
   aspectRatio = "video",
   priority = false,
+  sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
 }: WatermarkedImageProps) {
   const aspectClass =
     aspectRatio === "square"
@@ -39,6 +41,7 @@ export default function WatermarkedImage({
         width={width}
         height={height}
         priority={priority}
+        sizes={sizes}
         className="w-full h-full object-cover"
       />
       {/* Centered Faint Watermark Overlay */}

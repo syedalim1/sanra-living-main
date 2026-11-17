@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState, useTransition } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -128,20 +129,26 @@ function SafeImage({
   fallback,
   alt,
   className,
+  sizes = "100vw",
+  priority = false,
 }: {
   src: string;
   fallback: string;
   alt: string;
   className?: string;
+  sizes?: string;
+  priority?: boolean;
 }) {
   const [current, setCurrent] = useState(src);
   const [attempt, setAttempt] = useState(0);
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={current}
       alt={alt}
+      fill
+      sizes={sizes}
+      priority={priority}
       className={className}
       onError={() => {
         if (attempt === 0) {
@@ -506,6 +513,8 @@ export default function TypeConfigurator({
             fallback={product.main_image_url}
             alt={product.name}
             className="w-full h-full object-cover"
+            sizes="(max-width: 1024px) 100vw, 50vw"
+            priority
           />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <span className="text-neutral-900/15 text-xs sm:text-sm md:text-base font-extrabold tracking-[0.25em] sm:tracking-[0.35em] uppercase text-center transform -rotate-12 select-none px-4 py-1.5 border border-neutral-900/10 rounded">
@@ -550,6 +559,7 @@ export default function TypeConfigurator({
               fallback={product.main_image_url}
               alt="Main view"
               className="w-full h-full object-cover"
+              sizes="80px"
             />
             <span className="absolute bottom-1 inset-x-1 text-[9px] font-bold text-center bg-black/75 text-white rounded-xs">
               Product
@@ -571,6 +581,7 @@ export default function TypeConfigurator({
                 fallback={product.main_image_url}
                 alt="Blueprint dimensions"
                 className="w-full h-full object-cover"
+                sizes="80px"
               />
               <span className="absolute bottom-1 inset-x-1 text-[9px] font-bold text-center bg-blue-700 text-white rounded-xs">
                 Blueprint
@@ -590,9 +601,9 @@ export default function TypeConfigurator({
         )}
 
         <div className="border border-neutral-200 rounded-xl p-4 bg-white space-y-2.5">
-          <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500">
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500">
             Built For Daily Use
-          </h4>
+          </p>
           <div className="grid grid-cols-2 gap-2.5 text-xs text-neutral-800 font-medium">
             {badges.map((badge, index) => {
               const Icon = badge.icon;
@@ -667,13 +678,20 @@ export default function TypeConfigurator({
               </label>
 
               {isSwatchGroup ? (
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                <div
+                  className="grid grid-cols-3 sm:grid-cols-5 gap-2"
+                  role="radiogroup"
+                  aria-label={group.group_title}
+                >
                   {groupOptions.map((option) => {
                     const selected = selectedCode === option.option_code;
                     return (
                       <button
                         key={option.option_code}
                         type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        aria-label={option.label_en}
                         onClick={() => handleSelect(group.option_group, option.option_code)}
                         className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${
                           selected

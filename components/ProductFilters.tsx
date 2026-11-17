@@ -233,9 +233,9 @@ export default function ProductFilters() {
           <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-neutral-200">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-neutral-800" />
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#111111]">
+              <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#111111]">
                 Filters & Refinements
-              </h3>
+              </h2>
             </div>
             {activeFilterCount > 0 && (
               <span className="text-[10px] font-black bg-neutral-900 text-white rounded-full w-5 h-5 flex items-center justify-center">
@@ -280,9 +280,9 @@ export default function ProductFilters() {
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-neutral-200">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-black" />
-                <h3 className="text-sm font-extrabold uppercase tracking-wider text-black">
+                <h2 className="text-sm font-extrabold uppercase tracking-wider text-black">
                   Filters
-                </h3>
+                </h2>
               </div>
               <button
                 type="button"

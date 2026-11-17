@@ -10,6 +10,8 @@ export const company = {
   phone: clean(process.env.COMPANY_PHONE) || "UPDATE ME — Set COMPANY_PHONE in .env.local",
 };
 
+export const WORKING_HOURS = "Monday to Saturday, 9:00 AM – 7:00 PM IST";
+
 export const GST_NOTE = "As applicable; GST invoice will be provided";
 
 export const WARRANTY_TERMS =

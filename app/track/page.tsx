@@ -9,6 +9,20 @@ export const metadata: Metadata = {
   title: "Track Your Order | SANRA LIVING",
   description:
     "Track your SANRA LIVING factory order with your tracking code and the last 4 digits of your order phone. View live fabrication stages and warranty status.",
+  alternates: { canonical: "/track" },
+  robots: { index: false, follow: false },
+  openGraph: {
+    title: "Track Your Order | SANRA LIVING",
+    description: "Private order tracking for SANRA LIVING factory orders.",
+    url: "/track",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "SANRA LIVING order tracking" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Track Your Order | SANRA LIVING",
+    description: "Private order tracking for SANRA LIVING factory orders.",
+    images: ["/og-default.png"],
+  },
 };
 
 export default function TrackPage() {
@@ -29,6 +43,7 @@ export default function TrackPage() {
           badge="Factory Tracking"
           title="Track Your Order"
           subtitle="Enter your tracking code and the last 4 digits of the phone used for the order. Your code is never placed in the page URL."
+          as="h1"
         />
 
         <div className="mt-8">

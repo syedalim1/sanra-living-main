@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import {
   Check,
   ChevronRight,
@@ -84,13 +85,20 @@ function TrackPhotoCard({
         onClick ? "hover:border-neutral-400" : ""
       }`}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={photo.url}
-        alt={photo.caption ?? "Order progress photo"}
-        className="w-full object-cover"
-        onError={() => setFailed(true)}
-      />
+      <div
+        className={`relative w-full ${
+          large ? "aspect-video" : "aspect-square"
+        }`}
+      >
+        <Image
+          src={photo.url}
+          alt={photo.caption ?? "Order progress photo"}
+          fill
+          sizes={large ? "(max-width: 640px) 100vw, 50vw" : "(max-width: 640px) 50vw, 25vw"}
+          className="object-cover"
+          onError={() => setFailed(true)}
+        />
+      </div>
       {photo.caption && (
         <span className="block px-3 py-2 text-[11px] font-semibold text-neutral-700 bg-white">
           {photo.caption}
@@ -283,9 +291,9 @@ export default function TrackOrderForm({
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl border border-neutral-200 p-5 sm:p-6">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 mb-4">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 mb-4">
               Factory Progress
-            </h3>
+            </h2>
 
             <ol className="space-y-1">
               {STAGES.map((stage, index) => {
@@ -337,9 +345,9 @@ export default function TrackOrderForm({
           </div>
 
           <div className="bg-white rounded-xl border border-neutral-200 p-5 sm:p-6 space-y-4">
-            <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-500">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-neutral-500">
               Latest Factory Photo
-            </h3>
+            </h2>
 
             {latestPhoto ? (
               <TrackPhotoCard
@@ -365,9 +373,9 @@ export default function TrackOrderForm({
             )}
 
             <div>
-              <h3 className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 mb-2">
+              <h2 className="text-xs font-extrabold uppercase tracking-wider text-neutral-500 mb-2">
                 Your Items
-              </h3>
+              </h2>
               <ul className="space-y-2">
                 {result.product_lines.map((line, index) => (
                   <li
@@ -396,9 +404,9 @@ export default function TrackOrderForm({
           <div className="flex items-start gap-3">
             <ShieldCheck className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
             <div>
-              <h3 className="text-sm font-bold text-[#111111]">
+              <h2 className="text-sm font-bold text-[#111111]">
                 Warranty Certificate
-              </h3>
+              </h2>
               {result.warranty_available && result.warranty_expiry_date ? (
                 <p className="text-xs text-neutral-600 mt-1">
                   Valid until {formatDate(result.warranty_expiry_date)}.
@@ -448,9 +456,9 @@ export default function TrackOrderForm({
           <div className="fixed inset-0 z-50 bg-black/70 p-4 sm:p-8 overflow-y-auto">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-white">
+                <h2 className="text-sm font-bold text-white">
                   Factory Progress Photos
-                </h3>
+                </h2>
                 <button
                   type="button"
                   onClick={() => setGalleryOpen(false)}

@@ -15,25 +15,8 @@ import {
 } from "@/lib/schemas";
 import { buildBookingMessage } from "@/lib/whatsapp";
 import { selectionParam } from "@/lib/productTypeConfig";
-
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-
-  if (!entry || now > entry.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + 60000 });
-    return true;
-  }
-
-  if (entry.count >= 20) {
-    return false;
-  }
-
-  entry.count += 1;
-  return true;
-}
+import { checkSharedRateLimit } from "@/lib/rateLimit";
+import { productPath } from "@/lib/site";
 
 function getOrigin(req: NextRequest): string {
   const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
@@ -65,7 +48,7 @@ function tableConfigUrl(
     params.set("custom_width_ft", String(customWidth));
   }
   if (pin) params.set("pin", pin);
-  return `${origin}/products/${encodeURIComponent(input.sku)}?${params.toString()}`;
+  return `${origin}${productPath(input.sku)}?${params.toString()}`;
 }
 
 function nonTableConfigUrl(
@@ -79,7 +62,7 @@ function nonTableConfigUrl(
   }
   params.set("quantity", String(input.quantity));
   if (pin) params.set("pin", pin);
-  return `${origin}/products/${encodeURIComponent(input.sku)}?${params.toString()}`;
+  return `${origin}${productPath(input.sku)}?${params.toString()}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -89,7 +72,14 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-real-ip") ||
       "127.0.0.1";
 
-    if (!checkRateLimit(ip)) {
+    if (
+      !(await checkSharedRateLimit({
+        scope: "whatsapp",
+        ip,
+        limit: 20,
+        windowMs: 60_000,
+      }))
+    ) {
       return NextResponse.json(
         { error: "Too many requests. Please wait a moment." },
         { status: 429, headers: { "Cache-Control": "no-store" } }

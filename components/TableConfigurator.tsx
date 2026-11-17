@@ -515,6 +515,7 @@ export default function TableConfigurator({
             src={activeImage}
             alt={product.name}
             aspectRatio="square"
+            sizes="(max-width: 1024px) 100vw, 50vw"
             priority
           />
 
@@ -558,7 +559,7 @@ export default function TableConfigurator({
                 : "border-neutral-200 hover:border-neutral-400 opacity-70 hover:opacity-100"
             }`}
           >
-            <WatermarkedImage src={mainImageUrl} alt="Main view" aspectRatio="square" />
+            <WatermarkedImage src={mainImageUrl} alt="Main view" aspectRatio="square" sizes="80px" />
             <span className="absolute bottom-1 inset-x-1 text-[9px] font-bold text-center bg-black/75 text-white rounded-xs">
               Product
             </span>
@@ -578,6 +579,7 @@ export default function TableConfigurator({
                 src={product.hover_blueprint_img}
                 alt="Blueprint dimensions"
                 aspectRatio="square"
+                sizes="80px"
               />
               <span className="absolute bottom-1 inset-x-1 text-[9px] font-bold text-center bg-blue-700 text-white rounded-xs">
                 Blueprint
@@ -601,9 +603,9 @@ export default function TableConfigurator({
 
         {/* Surface Durability Badges */}
         <div className="border border-neutral-200 rounded-xl p-4 bg-white space-y-2.5">
-          <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500">
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500">
             Surface Engineering Ratings
-          </h4>
+          </p>
           <div className="grid grid-cols-2 gap-2.5 text-xs text-neutral-800 font-medium">
             {durabilityBadges.map((badge, idx) => {
               const Icon = badge.icon;
@@ -700,16 +702,23 @@ export default function TableConfigurator({
             <div className="space-y-5 pt-2">
               {Object.entries(materialGroups).map(([groupTitle, mats]) => (
                 <div key={groupTitle} className="space-y-2.5">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                  <h2 className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
                     {groupTitle}
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  </h2>
+                  <div
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-2"
+                    role="radiogroup"
+                    aria-label={groupTitle}
+                  >
                     {mats.map((mat) => {
                       const isSelected = selectedTopMaterial === mat.option_code;
                       return (
                         <button
                           key={mat.option_code}
                           type="button"
+                          role="radio"
+                          aria-checked={isSelected}
+                          aria-label={mat.label_en}
                           onClick={() => handleTopMaterialChange(mat.option_code)}
                           className={`flex items-center gap-3 p-2.5 rounded-lg border text-left transition-all ${
                             isSelected
@@ -804,13 +813,20 @@ export default function TableConfigurator({
                 Natural Jindal Stainless Steel polished finish (No powder-coat applied on SS).
               </p>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div
+                className="grid grid-cols-2 sm:grid-cols-5 gap-2"
+                role="radiogroup"
+                aria-label="Frame Color Finish"
+              >
                 {frameColors.map((col) => {
                   const isSelected = selectedFrameColor === col.option_code;
                   return (
                     <button
                       key={col.option_code}
                       type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      aria-label={col.label_en}
                       onClick={() => handleFrameColorChange(col.option_code)}
                       className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${
                         isSelected

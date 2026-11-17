@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createServerClient } from "@/lib/supabase/server";
 import { writeAudit } from "@/lib/admin/audit";
+import { productPath } from "@/lib/site";
 import {
   ProductFormSchema,
   VariantFormSchema,
@@ -40,7 +41,7 @@ function revalidateCatalog(sku?: string): void {
   revalidatePath("/admin/products");
   revalidatePath("/admin/audit");
   if (sku) {
-    revalidatePath(`/products/${sku}`);
+    revalidatePath(productPath(sku));
   }
 }
 

@@ -8,26 +8,7 @@ import { getConfigSummary, type ConfigSummaryInput } from "@/lib/configSummary";
 import { generateQuoteRef } from "@/lib/quoteRef";
 import { ConfigEnvelopeSchema, ConfigPriceInputSchema } from "@/lib/schemas";
 import { buildQuotePdf } from "@/lib/pdf/quotePdf";
-
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-
-  if (!entry || now > entry.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + 60000 });
-    return true;
-  }
-
-  if (entry.count >= 10) {
-    return false;
-  }
-
-  entry.count += 1;
-  return true;
-}
-
+import { checkSharedRateLimit } from "@/lib/rateLimit";
 function getWebsiteName(req: NextRequest): string {
   const forwardedHost = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
   return forwardedHost || req.headers.get("host") || req.nextUrl.host || "SANRA LIVING";
@@ -40,7 +21,14 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-real-ip") ||
       "127.0.0.1";
 
-    if (!checkRateLimit(ip)) {
+    if (
+      !(await checkSharedRateLimit({
+        scope: "quote-pdf",
+        ip,
+        limit: 10,
+        windowMs: 60_000,
+      }))
+    ) {
       return NextResponse.json(
         { error: "Too many requests. Please wait a moment." },
         { status: 429, headers: { "Cache-Control": "no-store" } }

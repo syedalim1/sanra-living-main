@@ -2,8 +2,7 @@ import React from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
-import TableConfigurator from "@/components/TableConfigurator";
-import TypeConfigurator from "@/components/TypeConfigurator";
+import ProductConfiguratorLoader from "@/components/ProductConfiguratorLoader";
 import { supabaseServer } from "@/lib/supabase/server";
 import { FALLBACK_OPTIONS, ConfigOption } from "@/lib/configuratorOptions";
 import {
@@ -12,6 +11,12 @@ import {
   type OptionGroupRow,
 } from "@/lib/productTypeConfig";
 import { getFromPriceForProduct } from "@/lib/pricing/fromPrice";
+import {
+  SITE_NAME,
+  absoluteUrl,
+  productPath,
+  productUrl,
+} from "@/lib/site";
 
 interface SkuPageProps {
   params: Promise<{ sku: string }>;
@@ -192,10 +197,65 @@ export async function generateMetadata({ params }: SkuPageProps): Promise<Metada
   const { sku } = await params;
   const upperSku = sku.toUpperCase();
   const fallback = KNOWN_PRODUCTS[upperSku];
-  const name = fallback?.name ?? upperSku;
+
+  let name = fallback?.name ?? upperSku;
+  let category = fallback?.category ?? "Factory steel furniture";
+  let image = fallback?.main_image_url ?? "/og-default.png";
+  let useCases: string[] = [];
+
+  try {
+    const { data } = await supabaseServer
+      .from("products")
+      .select("name, category, main_image_url, use_cases")
+      .eq("sku", upperSku)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (data) {
+      name = data.name;
+      category = data.category;
+      image = data.main_image_url;
+      useCases = Array.isArray(data.use_cases) ? data.use_cases : [];
+    }
+  } catch {
+    // Keep static fallback metadata.
+  }
+
+  const useCaseText =
+    useCases.length > 0
+      ? useCases
+          .map(
+            (useCase) =>
+              useCase.charAt(0) + useCase.slice(1).toLowerCase().replace(/_/g, " ")
+          )
+          .join(", ")
+      : category;
+
+  const description = `${name} — ${useCaseText}. Configure live factory pricing, structural steel options and direct SIDCO Coimbatore dispatch.`;
+  const canonical = productPath(upperSku);
+
   return {
-    title: `${name} | SANRA LIVING Factory Direct`,
-    description: `Configure ${name} with live factory prices. Heavy structural steel frames made in SIDCO Coimbatore with 10-Yr MIG Warranty.`,
+    title: `${name} | ${SITE_NAME} Factory Direct`,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title: `${name} | ${SITE_NAME}`,
+      description,
+      url: canonical,
+      type: "website",
+      images: [
+        {
+          url: absoluteUrl(image),
+          alt: name,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${name} | ${SITE_NAME}`,
+      description,
+      images: [absoluteUrl(image)],
+    },
   };
 }
 
@@ -292,11 +352,7 @@ export default async function SkuPage({ params }: SkuPageProps) {
 
   let fromPrice: number | null = null;
 
-  if (
-    product.product_type !== "TABLE" &&
-    product.id &&
-    !String(product.id).startsWith("fb-")
-  ) {
+  if (product.id && !String(product.id).startsWith("fb-")) {
     try {
       fromPrice = await getFromPriceForProduct(product.id);
     } catch {
@@ -309,8 +365,34 @@ export default async function SkuPage({ params }: SkuPageProps) {
     typeGroupSet.has(option.option_group)
   );
 
+  const canonicalUrl = productUrl(product.sku);
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    image: [absoluteUrl(product.main_image_url)],
+    sku: product.sku,
+    category: product.category,
+    brand: { "@type": "Brand", name: SITE_NAME },
+    ...(fromPrice != null
+      ? {
+          offers: {
+            "@type": "Offer",
+            url: canonicalUrl,
+            priceCurrency: "INR",
+            price: fromPrice,
+            availability: "https://schema.org/InStock",
+          },
+        }
+      : {}),
+  };
+
   return (
     <div className="bg-[#FFFFFF] min-h-[70vh] py-10 md:py-14">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 mb-8 text-xs text-neutral-500 font-semibold uppercase tracking-wider">
@@ -325,21 +407,14 @@ export default async function SkuPage({ params }: SkuPageProps) {
           <span className="text-neutral-800">{product.sku}</span>
         </div>
 
-        {product.product_type === "TABLE" ? (
-          <TableConfigurator
-            product={product}
-            options={configuratorOptions}
-            visualVariants={visualVariants}
-          />
-        ) : (
-          <TypeConfigurator
-            product={product}
-            options={typeOptions}
-            groups={typeGroups}
-            visualVariants={visualVariants}
-            fromPrice={fromPrice}
-          />
-        )}
+        <ProductConfiguratorLoader
+          product={product}
+          options={configuratorOptions}
+          typeOptions={typeOptions}
+          groups={typeGroups}
+          visualVariants={visualVariants}
+          fromPrice={fromPrice}
+        />
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { MessageSquare, MapPin, Phone, ShieldCheck, FileCheck } from "lucide-react";
+import { company, whatsappHref } from "@/lib/company";
 
 export default function Footer() {
   return (
@@ -20,7 +21,7 @@ export default function Footer() {
             </p>
             <div className="pt-2">
               <span className="inline-block bg-neutral-900 border border-neutral-700 text-neutral-300 text-xs px-2.5 py-1 rounded">
-                GSTIN: 33XXXXX0000X1Z5 (GST Invoice Provided)
+                GSTIN: {company.gstin} (GST Invoice Provided)
               </span>
             </div>
           </div>
@@ -49,6 +50,16 @@ export default function Footer() {
               <li>
                 <Link href="/contact" className="hover:text-white transition-colors">
                   Factory Location & Contact
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="hover:text-white transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-white transition-colors">
+                  Terms of Use
                 </Link>
               </li>
             </ul>
@@ -87,15 +98,15 @@ export default function Footer() {
             <div className="text-sm text-neutral-400 space-y-2.5">
               <p className="flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-neutral-300 shrink-0 mt-0.5" />
-                <span>SIDCO Industrial Estate, Kurichi, Coimbatore, Tamil Nadu 641021, India</span>
+                <span>{company.address}</span>
               </p>
               <p className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-neutral-300 shrink-0" />
-                <span>+91 91XXXXXXXXXX</span>
+                <span>{company.phone}</span>
               </p>
               <div className="pt-2">
                 <a
-                  href="https://wa.me/91XXXXXXXXXX?text=Hello%20SANRA%20LIVING%20Factory,%20I%20have%20an%20enquiry."
+                  href={whatsappHref("Hello SANRA LIVING Factory, I have an enquiry.")}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"

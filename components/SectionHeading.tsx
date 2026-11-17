@@ -5,6 +5,7 @@ interface SectionHeadingProps {
   title: string;
   subtitle?: string;
   align?: "left" | "center";
+  as?: "h1" | "h2";
 }
 
 export default function SectionHeading({
@@ -12,6 +13,7 @@ export default function SectionHeading({
   title,
   subtitle,
   align = "center",
+  as: Heading = "h2",
 }: SectionHeadingProps) {
   const alignmentClass = align === "center" ? "text-center items-center" : "text-left items-start";
 
@@ -22,9 +24,9 @@ export default function SectionHeading({
           {badge}
         </span>
       )}
-      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#111111] tracking-tight max-w-3xl leading-tight">
+      <Heading className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#111111] tracking-tight max-w-3xl leading-tight">
         {title}
-      </h2>
+      </Heading>
       {subtitle && (
         <p className="mt-3 text-sm sm:text-base text-neutral-600 max-w-2xl leading-relaxed">
           {subtitle}

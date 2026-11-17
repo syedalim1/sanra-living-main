@@ -14,7 +14,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req.headers);
 
-  if (!checkLeadRateLimit(ip)) {
+  if (!(await checkLeadRateLimit(ip))) {
     return NextResponse.json(
       { error: "Too many requests. Please try again later." },
       { status: 429, headers: NO_STORE }

@@ -9,6 +9,10 @@ import {
   setAdminLastSeenCookie,
 } from "@/lib/admin/auth";
 import { isAdminEmail } from "@/lib/admin/guard";
+import {
+  checkSharedRateLimit,
+  resetSharedRateLimit,
+} from "@/lib/rateLimit";
 
 interface LoginState {
   error?: string;
@@ -19,34 +23,12 @@ const LoginSchema = z.object({
   password: z.string().min(1).max(200),
 });
 
-const attempts = new Map<string, { count: number; resetTime: number }>();
-const WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 5;
-
 function getClientIp(headerStore: Headers): string {
   return (
     headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     headerStore.get("x-real-ip") ||
     "127.0.0.1"
   );
-}
-
-function canAttempt(ip: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(ip);
-
-  if (!entry || now > entry.resetTime) {
-    attempts.set(ip, { count: 1, resetTime: now + WINDOW_MS });
-    return true;
-  }
-
-  if (entry.count >= MAX_ATTEMPTS) return false;
-  entry.count += 1;
-  return true;
-}
-
-function resetAttempts(ip: string): void {
-  attempts.delete(ip);
 }
 
 async function failDelay(): Promise<void> {
@@ -60,7 +42,15 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
     const headerStore = await headers();
     const ip = getClientIp(headerStore);
 
-    if (!canAttempt(ip)) {
+    const allowed = await checkSharedRateLimit({
+      scope: "admin-login",
+      ip,
+      limit: 5,
+      windowMs: 15 * 60 * 1000,
+      failClosed: true,
+    });
+
+    if (!allowed) {
       return { error: "Too many attempts. Please try again later." };
     }
 
@@ -88,7 +78,7 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
       return { error: "Invalid credentials" };
     }
 
-    resetAttempts(ip);
+    await resetSharedRateLimit("admin-login", ip);
     await setAdminLastSeenCookie();
     signedIn = true;
   } catch {

@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { 
   ArrowRight, 
@@ -17,6 +18,27 @@ import TrustBar from "@/components/TrustBar";
 import SectionHeading from "@/components/SectionHeading";
 import CategoryCard from "@/components/CategoryCard";
 import WatermarkedImage from "@/components/WatermarkedImage";
+import { company } from "@/lib/company";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
+
+export const metadata: Metadata = {
+  title: "SANRA LIVING | Direct Steel Furniture Factory, SIDCO Coimbatore",
+  description:
+    "Shop factory-direct steel tables, workstations, chairs, stands and racks built in SIDCO Coimbatore. Live pricing, GST invoicing and pan-India dispatch.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "SANRA LIVING | Direct Steel Furniture Factory",
+    description: "Factory-direct steel furniture for cafes, offices, hostels, hospitals and projects.",
+    url: "/",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "SANRA LIVING factory steel furniture" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SANRA LIVING | Direct Steel Furniture Factory",
+    description: "Factory-direct steel furniture for cafes, offices, hostels, hospitals and projects.",
+    images: ["/og-default.png"],
+  },
+};
 
 export default function Home() {
   const categories = [
@@ -91,8 +113,26 @@ export default function Home() {
     },
   ];
 
+  const localBusinessJsonLd = {
+    "@context": "https://schema.org",
+    "@type": ["Organization", "LocalBusiness"],
+    name: SITE_NAME,
+    url: SITE_URL,
+    telephone: company.phone,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: company.address,
+      addressCountry: "IN",
+    },
+    areaServed: "India",
+  };
+
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
+      />
       {/* 1. TOP TRUST BAR */}
       <TrustBar />
 
@@ -165,6 +205,7 @@ export default function Home() {
                   alt="SANRA LIVING Factory Direct Steel Workstation and Dining Frame"
                   priority={true}
                   aspectRatio="square"
+                  sizes="(max-width: 1024px) 100vw, 42vw"
                   className="rounded-lg"
                 />
                 <div className="p-3 text-center">

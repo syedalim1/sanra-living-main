@@ -1,14 +1,30 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resetB2bRateLimitsForTests } from "../lib/b2b/rateLimit";
 
-const { saveLead } = vi.hoisted(() => ({
-  saveLead: vi.fn(async () => undefined),
-}));
+const { saveLead, checkSharedRateLimit, resetShared } = vi.hoisted(() => {
+  const counts = new Map<string, number>();
+  return {
+    saveLead: vi.fn(async () => undefined),
+    checkSharedRateLimit: vi.fn(
+      async (input: { scope: string; ip: string; limit: number }) => {
+        const key = `${input.scope}:${input.ip}`;
+        const next = (counts.get(key) ?? 0) + 1;
+        counts.set(key, next);
+        return next <= input.limit;
+      }
+    ),
+    resetShared: () => counts.clear(),
+  };
+});
 
 vi.mock("server-only", () => ({}));
 
 vi.mock("@/lib/supabase/server", () => ({
   createServerClient: vi.fn(() => ({ from: vi.fn() })),
+}));
+
+vi.mock("@/lib/rateLimit", () => ({
+  checkSharedRateLimit,
+  resetSharedRateLimit: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/lib/b2b/leadSave", () => ({
@@ -41,7 +57,8 @@ function request(body: unknown, ip: string) {
 }
 
 beforeEach(() => {
-  resetB2bRateLimitsForTests();
+  resetShared();
+  checkSharedRateLimit.mockClear();
   saveLead.mockClear();
 });
 
