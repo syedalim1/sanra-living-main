@@ -8,6 +8,7 @@ import {
   isAdminApiPath,
   isAdminPagePath,
 } from "@/lib/admin/guard";
+import { updateSession } from "@/utils/supabase/middleware";
 
 const SECURITY_HEADERS: Record<string, string> = {
   "X-Frame-Options": "DENY",
@@ -54,11 +55,11 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname === ADMIN_LOGIN_PATH) {
-    return secure(NextResponse.next());
+    return secure(await updateSession(request));
   }
 
   if (!isAdminPagePath(pathname) && !isAdminApiPath(pathname)) {
-    return NextResponse.next();
+    return updateSession(request);
   }
 
   const unauthorized = isAdminApiPath(pathname);
@@ -136,5 +137,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin", "/admin/:path*", "/api/admin/:path*"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
