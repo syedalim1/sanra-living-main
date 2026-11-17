@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 import { MessageSquare } from "lucide-react";
 
 const DEFAULT_MESSAGE =
@@ -12,7 +11,6 @@ interface FloatingWhatsAppProps {
 }
 
 export default function FloatingWhatsApp({ whatsappNumber }: FloatingWhatsAppProps) {
-  const pathname = usePathname();
   const [footerVisible, setFooterVisible] = useState(false);
 
   useEffect(() => {
@@ -28,9 +26,7 @@ export default function FloatingWhatsApp({ whatsappNumber }: FloatingWhatsAppPro
     return () => observer.disconnect();
   }, []);
 
-  if (pathname.startsWith("/admin") || footerVisible) return null;
-
-  const isConfigurator = pathname.startsWith("/products/");
+  if (footerVisible) return null;
   const base = whatsappNumber ? `https://wa.me/${whatsappNumber}` : "https://wa.me/";
   const href = `${base}?text=${encodeURIComponent(DEFAULT_MESSAGE)}`;
 
@@ -40,9 +36,7 @@ export default function FloatingWhatsApp({ whatsappNumber }: FloatingWhatsAppPro
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Chat with SANRA LIVING on WhatsApp"
-      className={`fixed right-4 z-40 flex items-center justify-center w-14 h-14 rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 transition-colors ${
-        isConfigurator ? "bottom-24 sm:bottom-6" : "bottom-6"
-      }`}
+      className="site-floating-whatsapp fixed right-4 bottom-6 z-40 flex items-center justify-center w-14 h-14 rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 transition-colors"
     >
       <MessageSquare className="w-6 h-6" />
     </a>

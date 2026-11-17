@@ -177,7 +177,7 @@ export const getCachedFromPrices = unstable_cache(
     return await computeAllFromPricesInternal();
   },
   ["sanra-products-from-prices"],
-  { revalidate: 300 }
+  { revalidate: 300, tags: ["sanra-from-prices"] }
 );
 
 /**

@@ -31,8 +31,11 @@ Add these to `.env.local`:
 | `COMPANY_ADDRESS` | Factory address printed on the PDF quote and Contact page |
 | `COMPANY_GSTIN` | GSTIN printed on the PDF quote and Contact page |
 | `COMPANY_PHONE` | Factory phone printed on the PDF quote and Contact page |
+| `ADMIN_EMAIL` | Exact email of the single Supabase Auth user allowed into `/admin` |
 
 If a company value is missing, the UI shows a visible `UPDATE ME` placeholder instead of crashing. The GST wording on the PDF comes from `GST_NOTE` in `lib/company.ts` and can be edited directly.
+
+`ADMIN_EMAIL` is server-only. It must exactly match the Supabase Auth user email (case-insensitive). If it is missing, every admin sign-in is rejected.
 
 ---
 
@@ -92,7 +95,35 @@ This creates:
 
 ---
 
-### Step 5: Verify the Database Connection
+### Step 5: Run Admin Migration (`004_admin.sql`)
+
+1. In the Supabase **SQL Editor**, click **"New query"**.
+2. Open [supabase/migrations/004_admin.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/004_admin.sql) and copy the entire file content.
+3. Paste it into the query editor and click **Run**.
+4. Confirm the result shows `Success. No rows returned`.
+
+This creates:
+
+- The private `admin_audit_log` table with RLS enabled and no public policies.
+- An index on `admin_audit_log.at` for the latest-200 audit view.
+- The `RAW` frame-color option on `product_visual_variants`.
+- An 8 MB `product-images` bucket limit for the admin upload pipeline.
+
+The audit table is accessible only through the service-role client after `requireAdmin()`. Do not add a public RLS policy.
+
+### Step 6: Configure Supabase Auth for the Admin User
+
+1. Open **Authentication → Users** in the Supabase Dashboard.
+2. Click **Add user → Create new user**.
+3. Enter the exact email you will put in `ADMIN_EMAIL`.
+4. Set a strong password and enable **Auto Confirm User**.
+5. Do not create any other admin users.
+6. In **Authentication → Providers → Email**, keep email/password enabled.
+7. Disable public sign-ups if your project settings expose that option. The app only signs in an existing user.
+
+The login page never displays the admin email, never reveals whether the email or password was wrong, and signs out any authenticated user whose email does not exactly match `ADMIN_EMAIL`.
+
+### Step 7: Verify the Database Connection
 
 ```bash
 curl http://localhost:3000/api/health
@@ -105,7 +136,7 @@ Expected response:
 
 ---
 
-### Step 6: Verify Pricing Data Privacy (Security Check)
+### Step 8: Verify Pricing Data Privacy (Security Check)
 
 The configurator and from-price engines are **strictly server-only**. Here is how to confirm that no internal cost data is ever leaked to the browser:
 
@@ -139,7 +170,7 @@ The configurator and from-price engines are **strictly server-only**. Here is ho
 
 ---
 
-### Step 7: Verify WhatsApp Booking, PDF Quotes and Delivery Estimator
+### Step 9: Verify WhatsApp Booking, PDF Quotes and Delivery Estimator
 
 Start the dev server:
 
@@ -177,3 +208,37 @@ Invoke-WebRequest -Uri "http://localhost:3000/api/quote-pdf" -Method POST -Conte
 ```
 
 The WhatsApp route returns only `{ "url": "..." }`. The PDF route returns `application/pdf` with `Cache-Control: no-store` and is limited to roughly 10 requests per minute per IP.
+
+---
+
+### Step 10: Verify the Admin Console
+
+After setting `ADMIN_EMAIL`, creating the Supabase Auth user, and running `004_admin.sql`:
+
+- `http://localhost:3000/admin/login` — staff sign-in. No public link points here.
+- `http://localhost:3000/admin` — redirects to `/admin/rates` after login.
+- `http://localhost:3000/admin/rates` — Rate Master, global pricing values, option pricing, price preview.
+- `http://localhost:3000/admin/products` — product list, search, active toggle, archive.
+- `http://localhost:3000/admin/products/new` — create a product and private costing block.
+- `http://localhost:3000/admin/products/<id>` — edit product, upload images, variants and swatch textures.
+- `http://localhost:3000/admin/audit` — latest 200 audit rows.
+- `http://localhost:3000/api/admin/health` — returns `401 Unauthorized` without an admin session.
+- `http://localhost:3000/robots.txt` — disallows `/admin` and `/api/admin/`.
+
+Admin routes return these headers: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, and `Cache-Control: no-store`. Admin pages also emit `noindex, nofollow`.
+
+Run the live protection tests against the dev server:
+
+```powershell
+$env:ADMIN_TEST_BASE_URL="http://localhost:3000"
+npx vitest run tests/admin-http.test.ts
+```
+
+The tests confirm:
+
+- `/admin/*` redirects to the staff sign-in without a session.
+- `/api/admin/*` returns `401` without a session.
+- Public HTML contains no admin links, admin email, or costing fields.
+- The public `/api/price` response keys are unchanged.
+
+Note: admin data, service-role queries, private costing, audit writes and image processing all run only after `requireAdmin()`. The service-role key is never sent to the browser.

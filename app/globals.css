@@ -14,6 +14,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+body:has([data-internal-console]) > header,
+body:has([data-internal-console]) > footer,
+body:has([data-internal-console]) .site-floating-whatsapp {
+  display: none;
+}
+
 /* Custom subtle scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
