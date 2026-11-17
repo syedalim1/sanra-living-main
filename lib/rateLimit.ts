@@ -10,8 +10,33 @@ export interface SharedRateLimitInput {
   failClosed?: boolean;
 }
 
+export type SharedRateLimitStatus = "allowed" | "limited" | "unavailable";
+
 export function rateLimitKey(scope: string, ip: string): string {
   return `${scope}:${hashIp(ip)}`;
+}
+
+export async function checkSharedRateLimitStatus({
+  scope,
+  ip,
+  limit,
+  windowMs,
+}: SharedRateLimitInput): Promise<SharedRateLimitStatus> {
+  try {
+    const db = createServerClient();
+    const { data, error } = await db.rpc("check_rate_limit", {
+      p_key: rateLimitKey(scope, ip),
+      p_window_seconds: Math.max(1, Math.ceil(windowMs / 1000)),
+      p_limit: limit,
+    });
+
+    if (error) return "unavailable";
+
+    const row = Array.isArray(data) ? data[0] : data;
+    return row?.allowed ? "allowed" : "limited";
+  } catch {
+    return "unavailable";
+  }
 }
 
 export async function checkSharedRateLimit({
@@ -21,21 +46,15 @@ export async function checkSharedRateLimit({
   windowMs,
   failClosed = false,
 }: SharedRateLimitInput): Promise<boolean> {
-  try {
-    const db = createServerClient();
-    const { data, error } = await db.rpc("check_rate_limit", {
-      p_key: rateLimitKey(scope, ip),
-      p_window_seconds: Math.max(1, Math.ceil(windowMs / 1000)),
-      p_limit: limit,
-    });
+  const status = await checkSharedRateLimitStatus({
+    scope,
+    ip,
+    limit,
+    windowMs,
+  });
 
-    if (error) return !failClosed;
-
-    const row = Array.isArray(data) ? data[0] : data;
-    return Boolean(row?.allowed);
-  } catch {
-    return !failClosed;
-  }
+  if (status === "unavailable") return !failClosed;
+  return status === "allowed";
 }
 
 export async function resetSharedRateLimit(

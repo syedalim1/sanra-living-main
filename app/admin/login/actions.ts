@@ -10,7 +10,7 @@ import {
 } from "@/lib/admin/auth";
 import { isAdminEmail } from "@/lib/admin/guard";
 import {
-  checkSharedRateLimit,
+  checkSharedRateLimitStatus,
   resetSharedRateLimit,
 } from "@/lib/rateLimit";
 
@@ -42,16 +42,22 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
     const headerStore = await headers();
     const ip = getClientIp(headerStore);
 
-    const allowed = await checkSharedRateLimit({
+    const rateLimit = await checkSharedRateLimitStatus({
       scope: "admin-login",
       ip,
       limit: 5,
       windowMs: 15 * 60 * 1000,
-      failClosed: true,
     });
 
-    if (!allowed) {
+    if (rateLimit === "limited") {
       return { error: "Too many attempts. Please try again later." };
+    }
+
+    if (rateLimit === "unavailable") {
+      console.error(
+        "Admin sign-in blocked: shared rate limiter unavailable. Verify SUPABASE_SERVICE_ROLE_KEY and migration 008_rate_limits.sql."
+      );
+      return { error: "Sign-in is temporarily unavailable. Please try again later." };
     }
 
     const parsed = LoginSchema.safeParse({
@@ -70,10 +76,18 @@ export async function loginAction(_prevState: LoginState, formData: FormData): P
       password: parsed.data.password,
     });
 
-    if (error || !data.user || !isAdminEmail(data.user.email)) {
-      if (data.user) {
-        await supabase.auth.signOut();
-      }
+    if (error || !data.user) {
+      await failDelay();
+      return { error: "Invalid credentials" };
+    }
+
+    if (!isAdminEmail(data.user.email)) {
+      await supabase.auth.signOut();
+      console.warn(
+        process.env.ADMIN_EMAIL
+          ? "Admin sign-in rejected: authenticated user email does not match ADMIN_EMAIL."
+          : "Admin sign-in rejected: ADMIN_EMAIL is not configured."
+      );
       await failDelay();
       return { error: "Invalid credentials" };
     }

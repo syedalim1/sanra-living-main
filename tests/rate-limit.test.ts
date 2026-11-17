@@ -10,7 +10,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createServerClient: vi.fn(() => ({ rpc })),
 }));
 
-import { checkSharedRateLimit } from "../lib/rateLimit";
+import { checkSharedRateLimit, checkSharedRateLimitStatus } from "../lib/rateLimit";
 
 beforeEach(() => {
   rpc.mockReset();
@@ -50,6 +50,28 @@ describe("shared serverless rate limiter", () => {
         windowMs: 60_000,
       })
     ).resolves.toBe(true);
+  });
+
+  it("distinguishes a limited attempt from an unavailable limiter", async () => {
+    rpc.mockResolvedValueOnce({ data: [{ allowed: false }], error: null });
+    await expect(
+      checkSharedRateLimitStatus({
+        scope: "admin-login",
+        ip: "203.0.113.5",
+        limit: 5,
+        windowMs: 900_000,
+      })
+    ).resolves.toBe("limited");
+
+    rpc.mockResolvedValueOnce({ data: null, error: { message: "missing function" } });
+    await expect(
+      checkSharedRateLimitStatus({
+        scope: "admin-login",
+        ip: "203.0.113.5",
+        limit: 5,
+        windowMs: 900_000,
+      })
+    ).resolves.toBe("unavailable");
   });
 
   it("fails closed for admin login and tracking", async () => {
