@@ -30,6 +30,8 @@ import { SITE_URL } from "@/lib/site";
 import { getCachedFromPrices } from "@/lib/pricing/fromPrice";
 import { supabaseServer } from "@/lib/supabase/server";
 
+export const instant = false;
+
 const HAS_SUPABASE = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
