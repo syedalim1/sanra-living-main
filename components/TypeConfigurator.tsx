@@ -937,7 +937,7 @@ export default function TypeConfigurator({
 
           {priceData.requires_quote ? (
             <div className="space-y-1">
-              <span className="text-2xl font-black text-[#111111]">Quote on Request</span>
+              <span className="text-2xl font-black text-[#111111]">Ask on WhatsApp</span>
               <p className="text-xs text-neutral-600">
                 Our factory engineer will confirm the exact specification.
               </p>
@@ -958,10 +958,17 @@ export default function TypeConfigurator({
                 GST Invoice Available • Direct SIDCO Coimbatore ex-factory quote.
               </p>
             </div>
-          ) : (
+          ) : isCalculating ? (
             <div className="flex items-center gap-2 text-sm font-bold text-neutral-600">
               <Loader2 className="w-4 h-4 animate-spin" />
               Calculating factory price...
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <span className="text-2xl font-black text-[#111111]">Ask on WhatsApp</span>
+              <p className="text-xs text-neutral-600">
+                This configuration needs a factory quote.
+              </p>
             </div>
           )}
 
@@ -1052,7 +1059,11 @@ export default function TypeConfigurator({
             Your Price
           </p>
           <p className="text-lg font-black text-[#111111]">
-            {totalPrice != null ? `₹${totalPrice.toLocaleString("en-IN")}` : "Calculating..."}
+            {totalPrice != null
+              ? `₹${totalPrice.toLocaleString("en-IN")}`
+              : isCalculating
+              ? "Calculating..."
+              : "Ask on WhatsApp"}
           </p>
         </div>
         <a

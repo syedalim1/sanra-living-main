@@ -11,6 +11,7 @@ import {
   USE_CASES,
 } from "@/lib/admin/validation";
 import { PRODUCT_CATEGORY_OPTIONS } from "@/lib/catalogCategories";
+import { labelForUseCase } from "@/lib/useCases";
 import { compressImage, formatBytes } from "@/lib/imageCompression";
 import type {
   AdminPricingRule,
@@ -505,7 +506,7 @@ export default function ProductForm({
                     defaultChecked={product?.use_cases.includes(useCase)}
                     className="w-3.5 h-3.5 accent-black"
                   />
-                  {useCase}
+                  {labelForUseCase(useCase)}
                 </label>
               ))}
             </div>

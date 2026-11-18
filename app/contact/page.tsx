@@ -1,9 +1,19 @@
 import React from "react";
 import SectionHeading from "@/components/SectionHeading";
 import Link from "next/link";
-import { ArrowLeft, MessageSquare, MapPin, Phone, Clock, FileText, Mail } from "lucide-react";
+import {
+  ArrowLeft,
+  MessageSquare,
+  MapPin,
+  Phone,
+  Clock,
+  FileText,
+  Mail,
+  Instagram,
+  Facebook,
+} from "lucide-react";
 import type { Metadata } from "next";
-import { company, whatsappHref, WORKING_HOURS, GST_NOTE } from "@/lib/company";
+import { company, whatsappHref, WORKING_HOURS, SOCIAL } from "@/lib/company";
 
 export const metadata: Metadata = {
   title: "Contact & Factory Location | SANRA LIVING",
@@ -118,7 +128,9 @@ export default function ContactPage() {
                     <div>
                       <strong className="block text-[#111111]">Commercial Invoicing</strong>
                       <span>GSTIN: {company.gstin}</span>
-                      <span className="block text-xs text-neutral-500 mt-0.5">{GST_NOTE}</span>
+                      <span className="block text-xs text-neutral-500 mt-0.5">
+                        GST Invoice Available
+                      </span>
                     </div>
                   </div>
                 )}
@@ -154,6 +166,49 @@ export default function ContactPage() {
                   <MessageSquare className="w-4 h-4" />
                   Chat with SIDCO Coimbatore Desk
                 </a>
+              </div>
+            )}
+
+            {(SOCIAL.instagram || SOCIAL.facebook || SOCIAL.google_maps) && (
+              <div className="pt-8 mt-8 border-t border-neutral-800 space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+                  Follow us
+                </p>
+                <div className="flex items-center gap-2">
+                  {SOCIAL.instagram && (
+                    <a
+                      href={SOCIAL.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="SANRA LIVING on Instagram"
+                      className="p-2.5 rounded-md bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white transition-colors"
+                    >
+                      <Instagram className="w-4 h-4" />
+                    </a>
+                  )}
+                  {SOCIAL.facebook && (
+                    <a
+                      href={SOCIAL.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="SANRA LIVING on Facebook"
+                      className="p-2.5 rounded-md bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white transition-colors"
+                    >
+                      <Facebook className="w-4 h-4" />
+                    </a>
+                  )}
+                  {SOCIAL.google_maps && (
+                    <a
+                      href={SOCIAL.google_maps}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="SANRA LIVING on Google Maps"
+                      className="p-2.5 rounded-md bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white transition-colors"
+                    >
+                      <MapPin className="w-4 h-4" />
+                    </a>
+                  )}
+                </div>
               </div>
             )}
           </div>

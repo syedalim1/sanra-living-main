@@ -3,6 +3,7 @@
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
+import { labelForUseCase } from "@/lib/useCases";
 
 interface ActiveChipsProps {
   totalCount: number;
@@ -27,7 +28,7 @@ export default function ActiveChips({ totalCount }: ActiveChipsProps) {
   const chips: { key: string; label: string }[] = [];
 
   if (category) chips.push({ key: "category", label: `Category: ${category}` });
-  if (use) chips.push({ key: "use", label: `Use: ${use}` });
+  if (use) chips.push({ key: "use", label: `Use: ${labelForUseCase(use)}` });
   if (material) chips.push({ key: "material", label: `Material: ${material}` });
   if (budget) {
     const budgetMap: Record<string, string> = {

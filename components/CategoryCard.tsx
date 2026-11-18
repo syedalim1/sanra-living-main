@@ -15,7 +15,7 @@ interface CategoryCardProps {
 export default function CategoryCard({
   name,
   imageSrc,
-  priceBadge = "From ₹499",
+  priceBadge,
   description,
   href = "/products",
 }: CategoryCardProps) {
@@ -32,12 +32,14 @@ export default function CategoryCard({
           aspectRatio="video"
           className="group-hover:scale-[1.02] transition-transform duration-300"
         />
-        {/* Price Badge on Top Right */}
-        <div className="absolute top-3 right-3 z-20">
-          <span className="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded bg-[#111111] text-white shadow-sm">
-            {priceBadge}
-          </span>
-        </div>
+        {/* Price Badge on Top Right (only when a real price exists) */}
+        {priceBadge && (
+          <div className="absolute top-3 right-3 z-20">
+            <span className="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded bg-[#111111] text-white shadow-sm">
+              {priceBadge}
+            </span>
+          </div>
+        )}
       </Link>
 
       <div className="p-5 flex flex-col flex-1 justify-between">

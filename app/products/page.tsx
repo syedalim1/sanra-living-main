@@ -141,7 +141,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     base_width_ft: Number(p.base_width_ft),
     main_image_url: p.main_image_url,
     hover_blueprint_img: p.hover_blueprint_img,
-    from_price: priceMap[p.id] ?? (p.from_price ?? null),
+    from_price: HAS_SUPABASE ? priceMap[p.id] ?? null : p.from_price ?? null,
     use_cases: p.use_cases || [],
     material_tags: p.material_tags || [],
   }));

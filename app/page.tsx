@@ -1,25 +1,38 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { 
-  ArrowRight, 
-  MessageSquare, 
-  ShieldCheck, 
-  CheckCircle2, 
-  XCircle, 
-  Truck, 
-  Package, 
-  Flame, 
-  Boxes, 
-  ShieldAlert, 
-  ScanLine 
+import { connection } from "next/server";
+import {
+  ArrowRight,
+  MessageSquare,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  Truck,
+  Package,
+  Flame,
+  Boxes,
+  ShieldAlert,
+  ScanLine,
+  UtensilsCrossed,
+  Coffee,
+  Cake,
+  HeartHandshake,
+  GraduationCap,
+  Briefcase,
 } from "lucide-react";
 import TrustBar from "@/components/TrustBar";
 import SectionHeading from "@/components/SectionHeading";
 import CategoryCard from "@/components/CategoryCard";
 import WatermarkedImage from "@/components/WatermarkedImage";
-import { company, whatsappHref } from "@/lib/company";
+import { company, whatsappHref, SOCIAL } from "@/lib/company";
 import { SITE_URL } from "@/lib/site";
+import { getCachedFromPrices } from "@/lib/pricing/fromPrice";
+import { supabaseServer } from "@/lib/supabase/server";
+
+const HAS_SUPABASE = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export const metadata: Metadata = {
   title: "SANRA LIVING | Direct Steel Furniture Factory, SIDCO Coimbatore",
@@ -40,50 +53,76 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  await connection();
+
+  const lowestByCategory = new Map<string, number>();
+  if (HAS_SUPABASE) {
+    try {
+      const [productResult, priceMap] = await Promise.all([
+        supabaseServer.from("products").select("id, category").eq("is_active", true),
+        getCachedFromPrices(),
+      ]);
+
+      for (const product of productResult.data ?? []) {
+        const price = priceMap[product.id];
+        if (price == null) continue;
+        const current = lowestByCategory.get(product.category);
+        if (current == null || price < current) {
+          lowestByCategory.set(product.category, price);
+        }
+      }
+    } catch {
+      // Show "View Range" when live prices are unavailable.
+    }
+  }
+
   const categories = [
     {
       name: "Cafe & Dining Tables",
       imageSrc: "/images/cat-dining-tables.svg",
-      priceBadge: "From ₹499",
       description: "Heavy gauge MS & SS frames paired with 100% Seasoned Grade-A Kerala Rubberwood or 18mm Export-Grade Krishnagiri Granite.",
       href: "/products?category=Cafe+%26+Dining+Tables",
     },
     {
       name: "Office & Workstation Tables",
       imageSrc: "/images/cat-workstations.svg",
-      priceBadge: "From ₹499",
       description: "Industrial grade ergonomic steel desks designed for commercial IT workspaces, call centres, and corporate offices.",
       href: "/products?category=Office+%26+Workstation+Tables",
     },
     {
       name: "SS & MS Chairs / Bar Stools",
       imageSrc: "/images/cat-chairs-stools.svg",
-      priceBadge: "From ₹499",
       description: "TIG-welded structural seating built for cafes, dining chains, and high-footfall commercial spaces.",
       href: "/products?category=SS+%26+MS+Chairs+%2F+Bar+Stools",
     },
     {
       name: "Home Utility Stands",
       imageSrc: "/images/cat-utility-stands.svg",
-      priceBadge: "From ₹499",
       description: "High-capacity washing machine, water dispenser, microwave, and heavy cylinder stands built from structural steel.",
       href: "/products?category=Home+Utility+Stands",
     },
     {
       name: "Boutique & Showroom Racks",
       imageSrc: "/images/cat-boutique-racks.svg",
-      priceBadge: "From ₹499",
       description: "Minimalist modern steel garment racks, display island shelving, and custom retail presentation units.",
       href: "/products?category=Boutique+%26+Showroom+Racks",
     },
     {
       name: "Hospital, Canteen & Lab SS",
       imageSrc: "/images/cat-hospital-lab.svg",
-      priceBadge: "From ₹499",
       description: "Anti-corrosion Jindal SS tables, medical trolley stands, and institutional kitchen workbenches.",
       href: "/products?category=Hospital%2C+Canteen+%26+Lab+SS",
     },
+  ];
+
+  const supplyChips = [
+    { label: "Hotels & Restaurants", use: "CAFE", icon: UtensilsCrossed },
+    { label: "Messes & Canteens", use: "CANTEEN", icon: Coffee },
+    { label: "Bakeries & Juice Shops", use: "BAKERY", icon: Cake },
+    { label: "Marriage Halls", use: "HALL", icon: HeartHandshake },
+    { label: "Schools", use: "SCHOOL", icon: GraduationCap },
+    { label: "Offices & Homes", use: "OFFICE", icon: Briefcase },
   ];
 
   const factoryBays = [
@@ -95,7 +134,7 @@ export default function Home() {
     },
     {
       title: "Tata MS & Jindal SS Pipe Stock",
-      description: "High-yield structural steel tubes sourced directly from primary mills, inspected for wall thickness integrity.",
+      description: "High-yield structural steel tubes from Tata MS and Jindal SS stock, inspected for wall thickness integrity.",
       icon: Boxes,
       imageSrc: "/images/bay-pipe-stock.svg",
     },
@@ -129,6 +168,9 @@ export default function Home() {
           },
         }
       : {}),
+    ...(Object.values(SOCIAL).filter(Boolean).length > 0
+      ? { sameAs: Object.values(SOCIAL).filter(Boolean) }
+      : {}),
     areaServed: "India",
   };
 
@@ -147,6 +189,11 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             {/* Left Hero Content */}
             <div className="lg:col-span-7 space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111111] text-white text-[11px] font-bold uppercase tracking-wider">
+                <span>🏆</span>
+                11+ Years of Manufacturing Experience
+              </div>
+
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 border border-neutral-200 text-xs font-semibold text-neutral-800">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 Live Factory Direct Pricing • Direct SIDCO Coimbatore Unit
@@ -239,7 +286,13 @@ export default function Home() {
                 key={cat.name}
                 name={cat.name}
                 imageSrc={cat.imageSrc}
-                priceBadge={cat.priceBadge}
+                priceBadge={
+                  lowestByCategory.has(cat.name)
+                    ? `From ₹${lowestByCategory
+                        .get(cat.name)!
+                        .toLocaleString("en-IN")}`
+                    : undefined
+                }
                 description={cat.description}
                 href={cat.href}
               />
@@ -254,6 +307,41 @@ export default function Home() {
               View Full Factory Price List
               <ArrowRight className="w-4 h-4" />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 3B. ABOUT SANRA LIVING & WHO WE SUPPLY */}
+      <section className="bg-[#FFFFFF] py-16 md:py-24 border-b border-neutral-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#111111]">
+            About SANRA LIVING
+          </h2>
+          <p className="mt-5 text-sm sm:text-base text-neutral-600 leading-relaxed">
+            SANRA LIVING is the brand of Indian Make Steel Industries, a steel furniture
+            factory in SIDCO Coimbatore. For over 11 years we have been making steel and
+            stainless steel chairs, tables and furniture for hotels, restaurants, messes,
+            canteens, bakeries and homes. You buy direct from the factory at factory
+            prices, with a GST invoice.
+          </p>
+
+          <h3 className="mt-12 text-xs font-extrabold uppercase tracking-widest text-neutral-500">
+            Who We Supply
+          </h3>
+          <div className="mt-5 flex flex-wrap justify-center gap-2.5">
+            {supplyChips.map((chip) => {
+              const Icon = chip.icon;
+              return (
+                <Link
+                  key={chip.label}
+                  href={`/products?use=${chip.use}`}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#F5F5F7] border border-neutral-200 text-xs font-semibold text-neutral-800 hover:border-neutral-400 hover:bg-neutral-100 transition-colors min-h-[44px]"
+                >
+                  <Icon className="w-4 h-4 text-neutral-600" />
+                  {chip.label}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -335,7 +423,7 @@ export default function Home() {
                 <ul className="space-y-2.5 text-xs text-neutral-900 font-medium">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>200 Kg load tested with zero dynamic tilt</span>
+                    <span>200 Kg load tested</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />

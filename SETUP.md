@@ -32,6 +32,7 @@ Add these to `.env.local`:
 | `COMPANY_GSTIN` | GSTIN printed on the PDF quote and Contact page |
 | `COMPANY_PHONE` | Factory phone. Digits are formatted as `+91 95857 45303` with a working `tel:` link |
 | `COMPANY_EMAIL` | Public contact email used in the footer, Contact page, PDFs and `security.txt` |
+| `GOOGLE_MAPS_URL` | Optional Google Maps profile link for the footer and Contact social row |
 | `NEXT_PUBLIC_SITE_URL` | Final public HTTPS origin used for canonical URLs, sitemap, Open Graph and robots |
 | `ADMIN_EMAIL` | Exact email of the single Supabase Auth user allowed into `/admin` |
 
@@ -460,6 +461,16 @@ npm test
 Migration 008 creates the private `rate_limits` table, the atomic `check_rate_limit` function and the 1-day opportunistic cleanup. The service role is the only caller. Admin login and `/api/track` fail closed if the limiter errors; public price/lead routes fail open.
 
 This migration is required before relying on admin login or tracking in production. It also normalizes the approved public wood/granite group labels.
+
+### Step 15: Run Use Cases & Loads Migration (`009_use_cases_and_loads.sql`)
+
+1. Open the Supabase **SQL Editor**.
+2. Open [supabase/migrations/009_use_cases_and_loads.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/009_use_cases_and_loads.sql), copy the whole file, paste it, and click **Run**.
+3. Confirm `Success. No rows returned`.
+
+Migration 009 allows `CAFE`, `OFFICE`, `HOME`, `HOSPITAL`, `HOSTEL`, `CANTEEN`, `BAKERY`, `HALL` and `SCHOOL` in `products.use_cases`, drops and recreates the CHECK constraint safely, and sets `load_kg` to `NULL` for `SS202` and `SS304` in `configurator_options`.
+
+After running it, re-run `supabase/seed.sql` so the sample products carry the new use-case tags.
 
 Set `NEXT_PUBLIC_SITE_URL` in `.env.local` before the final production build. It drives canonical URLs, Open Graph, the sitemap and robots. For local testing, use `http://localhost:3000`.
 

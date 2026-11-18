@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { USE_CASES } from "@/lib/useCases";
+
+export { USE_CASES };
 
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 export const ALLOWED_IMAGE_FORMATS = ["jpeg", "png", "webp"] as const;
@@ -60,7 +63,6 @@ export function formatRateNumber(value: number): string {
   return Number(value.toFixed(2)).toString();
 }
 
-export const USE_CASES = ["CAFE", "OFFICE", "HOME", "HOSPITAL", "HOSTEL"] as const;
 export const MATERIAL_TAGS = ["MS", "SS", "WOOD", "GRANITE"] as const;
 export const TOP_CATEGORIES = ["FRAME_ONLY", "WOOD", "STONE", "METAL"] as const;
 export const PRODUCT_TYPES = ["TABLE", "CHAIR", "STAND", "RACK", "SS_UNIT"] as const;

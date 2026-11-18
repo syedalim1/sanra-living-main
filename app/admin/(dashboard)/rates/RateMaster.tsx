@@ -45,6 +45,13 @@ interface OptionChange {
   newValue: number;
 }
 
+const SHEET_TOP_CODES = [
+  "SHEET_CR_16G",
+  "SHEET_MESH",
+  "SHEET_PERFORATED",
+  "SHEET_SS304",
+];
+
 const GLOBAL_LABELS: Record<string, string> = {
   BUMPER_RATE_PER_FT: "Protective steel bumper rate per ft",
   CENTER_SUPPORT_FLAT: "Center cross-support flat",
@@ -472,13 +479,15 @@ export default function RateMaster({
                     key: "METAL",
                     label: "Metal (per kg)",
                     match: (row: MaterialRateRow) =>
-                      row.category === "METAL" && row.unit.toUpperCase() !== "SQFT",
+                      row.category === "METAL" &&
+                      row.unit.toUpperCase() !== "SQFT" &&
+                      !SHEET_TOP_CODES.includes(row.material_code),
                   },
                   {
                     key: "SHEET",
                     label: "Sheet Tops (per sq.ft)",
                     match: (row: MaterialRateRow) =>
-                      row.category === "METAL" && row.unit.toUpperCase() === "SQFT",
+                      SHEET_TOP_CODES.includes(row.material_code),
                   },
                   {
                     key: "WOOD",

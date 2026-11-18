@@ -1,6 +1,15 @@
 import Link from "next/link";
-import { MessageSquare, MapPin, Phone, ShieldCheck, FileCheck, Mail } from "lucide-react";
-import { company, whatsappHref, GST_NOTE } from "@/lib/company";
+import {
+  MessageSquare,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  FileCheck,
+  Mail,
+  Instagram,
+  Facebook,
+} from "lucide-react";
+import { company, whatsappHref, SOCIAL } from "@/lib/company";
 
 export default function Footer() {
   return (
@@ -19,11 +28,10 @@ export default function Footer() {
               Direct steel furniture manufacturing unit in SIDCO Industrial Estate, Coimbatore. Heavy-gauge MS & Jindal SS frames engineered for zero wobble.
             </p>
             {company.gstin && (
-              <div className="pt-2 space-y-1.5">
+              <div className="pt-2">
                 <span className="inline-block bg-neutral-900 border border-neutral-700 text-neutral-300 text-xs px-2.5 py-1 rounded">
                   GST Invoice Available • GSTIN: {company.gstin}
                 </span>
-                <p className="text-[10px] text-neutral-500">{GST_NOTE}</p>
               </div>
             )}
           </div>
@@ -147,6 +155,42 @@ export default function Footer() {
                   </a>
                 </div>
               )}
+
+              <div className="pt-3 flex items-center gap-2">
+                {SOCIAL.instagram && (
+                  <a
+                    href={SOCIAL.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="SANRA LIVING on Instagram"
+                    className="p-2 rounded-md bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white transition-colors"
+                  >
+                    <Instagram className="w-4 h-4" />
+                  </a>
+                )}
+                {SOCIAL.facebook && (
+                  <a
+                    href={SOCIAL.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="SANRA LIVING on Facebook"
+                    className="p-2 rounded-md bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white transition-colors"
+                  >
+                    <Facebook className="w-4 h-4" />
+                  </a>
+                )}
+                {SOCIAL.google_maps && (
+                  <a
+                    href={SOCIAL.google_maps}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="SANRA LIVING on Google Maps"
+                    className="p-2 rounded-md bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white transition-colors"
+                  >
+                    <MapPin className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>

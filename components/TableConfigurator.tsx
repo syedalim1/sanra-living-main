@@ -160,14 +160,12 @@ export default function TableConfigurator({
     bumper_included?: boolean;
     requires_quote?: boolean;
   }>({
-    unit_price: 4999,
-    total_price: 4999,
     discount_pct: 0,
     bumper_included: false,
     requires_quote: false,
   });
 
-  const [isCalculating, setIsCalculating] = useState<boolean>(false);
+  const [isCalculating, setIsCalculating] = useState<boolean>(true);
 
   // Sync state to URL search params
   const updateUrlState = useCallback(
@@ -787,17 +785,19 @@ export default function TableConfigurator({
                       )}
                     </div>
                     <div className="flex items-center gap-2 text-[11px] text-neutral-500 font-medium">
-                      <span>{g.warranty_text}</span>
-                      <span>•</span>
-                      <span>{g.spec_note}</span>
+                      {g.warranty_text && <span>{g.warranty_text}</span>}
+                      {g.warranty_text && g.spec_note && <span>•</span>}
+                      {g.spec_note && <span>{g.spec_note}</span>}
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <span className="text-xs font-extrabold text-neutral-800">
-                      {g.load_kg} Kg Tested
-                    </span>
-                  </div>
+                  {g.load_kg != null && (
+                    <div className="text-right shrink-0">
+                      <span className="text-xs font-extrabold text-neutral-800">
+                        {g.load_kg} Kg Tested
+                      </span>
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -1107,16 +1107,29 @@ export default function TableConfigurator({
 
           {priceData.requires_quote ? (
             <div className="space-y-1">
-              <span className="text-2xl font-black text-[#111111]">Quote on Request</span>
+              <span className="text-2xl font-black text-[#111111]">Ask on WhatsApp</span>
               <p className="text-xs text-neutral-600">
                 Custom millimeter specifications are calculated directly by our SIDCO works engineer.
               </p>
             </div>
+          ) : priceData.total_price == null ? (
+            isCalculating ? (
+              <div className="flex items-center gap-2 text-sm font-bold text-neutral-600">
+                Calculating factory price...
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <span className="text-2xl font-black text-[#111111]">Ask on WhatsApp</span>
+                <p className="text-xs text-neutral-600">
+                  This configuration needs a factory quote.
+                </p>
+              </div>
+            )
           ) : (
             <div>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl sm:text-4xl font-black text-[#111111] tracking-tight">
-                  ₹{priceData.total_price?.toLocaleString("en-IN")}
+                  ₹{priceData.total_price.toLocaleString("en-IN")}
                 </span>
                 {quantity > 1 && (
                   <span className="text-xs text-neutral-500">

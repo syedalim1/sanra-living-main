@@ -74,7 +74,7 @@ BEGIN
     '/images/cat-dining-tables.svg',
     '/images/hero-workstation.svg',
     true,
-    ARRAY['CAFE', 'HOME'],
+    ARRAY['CAFE', 'HOME', 'CANTEEN', 'BAKERY', 'HALL', 'SCHOOL'],
     ARRAY['MS', 'WOOD', 'GRANITE'],
     10,
     'Paired with 100% Seasoned Grade-A Kerala Rubberwood or 18mm Export-Grade Krishnagiri Granite'
@@ -131,7 +131,7 @@ BEGIN
     '/images/cat-workstations.svg',
     '/images/hero-workstation.svg',
     true,
-    ARRAY['OFFICE', 'HOME'],
+    ARRAY['OFFICE', 'HOME', 'SCHOOL'],
     ARRAY['MS', 'WOOD'],
     20,
     'Engineered for dual-monitor setups with cable management channel'
@@ -188,7 +188,7 @@ BEGIN
     '/images/hero-workstation.svg',
     '/images/hero-workstation.svg',
     true,
-    ARRAY['HOME', 'CAFE'],
+    ARRAY['HOME', 'CAFE', 'CANTEEN', 'BAKERY'],
     ARRAY['MS', 'WOOD', 'GRANITE'],
     30,
     'Heavy-duty cross-braced frame supporting up to 200 Kg load'
@@ -254,7 +254,7 @@ BEGIN
     'IMS-CH-01', 'Cafe Chair', 'SS & MS Chairs / Bar Stools', 'CHAIR', 1.5, 1.5,
     '[]'::jsonb, true, '7-Year Weld Warranty',
     '/images/placeholder-chair.svg', NULL, true,
-    ARRAY['CAFE','HOME'], ARRAY['MS','SS','WOOD'], 40, NULL
+    ARRAY['CAFE','HOME','CANTEEN','HALL','SCHOOL'], ARRAY['MS','SS','WOOD'], 40, NULL
   )
   ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
   RETURNING id INTO v_chair_cafe;
@@ -268,7 +268,7 @@ BEGIN
     'IMS-CH-BS', 'Bar Stool', 'SS & MS Chairs / Bar Stools', 'CHAIR', 1.4, 1.4,
     '[]'::jsonb, true, '7-Year Weld Warranty',
     '/images/placeholder-chair.svg', NULL, true,
-    ARRAY['CAFE','HOME'], ARRAY['MS','SS'], 41, NULL
+    ARRAY['CAFE','HOME','BAKERY','HALL'], ARRAY['MS','SS'], 41, NULL
   )
   ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
   RETURNING id INTO v_chair_bar;
@@ -282,7 +282,7 @@ BEGIN
     'IMS-ST-12', '12-inch Stool', 'Home Utility Stands', 'STAND', 1.0, 1.0,
     '[]'::jsonb, false, '7-Year Weld Warranty',
     '/images/placeholder-stand.svg', NULL, true,
-    ARRAY['HOME'], ARRAY['MS','SS'], 42, NULL
+    ARRAY['HOME','SCHOOL'], ARRAY['MS','SS'], 42, NULL
   )
   ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
   RETURNING id INTO v_stand_12;
@@ -296,7 +296,7 @@ BEGIN
     'IMS-ST-INV', 'Inverter Stand', 'Home Utility Stands', 'STAND', 1.5, 1.0,
     '[]'::jsonb, false, '7-Year Weld Warranty',
     '/images/placeholder-stand.svg', NULL, true,
-    ARRAY['HOME'], ARRAY['MS','SS'], 43, NULL
+    ARRAY['HOME','SCHOOL'], ARRAY['MS','SS'], 43, NULL
   )
   ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
   RETURNING id INTO v_stand_inv;
@@ -324,7 +324,7 @@ BEGIN
     'IMS-RK-01', 'Boutique Garment Rack', 'Boutique & Showroom Racks', 'RACK', 4.0, 1.5,
     '[]'::jsonb, false, '10-Year Structural Warranty',
     '/images/placeholder-rack.svg', NULL, true,
-    ARRAY['HOME','OFFICE'], ARRAY['MS'], 45, NULL
+    ARRAY['HOME','OFFICE','HALL'], ARRAY['MS'], 45, NULL
   )
   ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
   RETURNING id INTO v_rack;
@@ -338,7 +338,7 @@ BEGIN
     'IMS-SS-CT', 'SS Canteen Table', 'Hospital, Canteen & Lab SS', 'SS_UNIT', 4.0, 2.0,
     '[]'::jsonb, false, '15-Year Rust-Free Warranty',
     '/images/placeholder-ss.svg', NULL, true,
-    ARRAY['HOSPITAL','CAFE'], ARRAY['SS'], 46, NULL
+    ARRAY['HOSPITAL','CAFE','CANTEEN','SCHOOL'], ARRAY['SS'], 46, NULL
   )
   ON CONFLICT (sku) DO UPDATE SET sku = EXCLUDED.sku
   RETURNING id INTO v_ss_unit;

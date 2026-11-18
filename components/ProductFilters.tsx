@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X, RotateCcw } from "lucide-react";
 import { PRODUCT_CATEGORY_OPTIONS } from "@/lib/catalogCategories";
+import { USE_CASE_OPTIONS } from "@/lib/useCases";
 
 interface FilterOption {
   value: string;
@@ -15,13 +16,10 @@ const CATEGORY_OPTIONS: FilterOption[] = PRODUCT_CATEGORY_OPTIONS.map((option) =
   label: option.label,
 }));
 
-const USE_OPTIONS: FilterOption[] = [
-  { value: "CAFE", label: "Cafe & Dining" },
-  { value: "OFFICE", label: "Office & IT Desks" },
-  { value: "HOME", label: "Home & Residential" },
-  { value: "HOSPITAL", label: "Hospital & Clinic" },
-  { value: "HOSTEL", label: "PG & Hostel" },
-];
+const USE_OPTIONS: FilterOption[] = USE_CASE_OPTIONS.map((option) => ({
+  value: option.value,
+  label: option.label,
+}));
 
 const MATERIAL_OPTIONS: FilterOption[] = [
   { value: "MS", label: "Mild Steel (Tata MS)" },

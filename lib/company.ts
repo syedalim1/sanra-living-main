@@ -47,6 +47,12 @@ export const company = {
     : "",
 };
 
+export const SOCIAL = {
+  instagram: "https://www.instagram.com/indian_make__steel",
+  facebook: "https://www.facebook.com/share/1e7Tuz8iKd/",
+  google_maps: clean(process.env.GOOGLE_MAPS_URL),
+};
+
 export const WORKING_HOURS = "Monday to Saturday, 9:00 AM – 7:00 PM IST";
 
 export const GST_NOTE = "As applicable; GST invoice will be provided";
