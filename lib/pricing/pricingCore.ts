@@ -44,6 +44,8 @@ export function calculateConfigPriceRaw(params: {
     bumper_rate_per_ft,
     center_support_flat,
     knockdown_price_pct,
+    qty_discount_4_9_pct,
+    qty_discount_10_plus_pct,
     ss_weight_factor,
     is_ss,
   } = params;
@@ -83,12 +85,20 @@ export function calculateConfigPriceRaw(params: {
   const unitPriceRaw = withMargin + addons_flat_total;
   const unitPrice = roundUpToClean99(unitPriceRaw);
 
-  // 7. Public pricing uses the normal unit price. Bulk discounts are confirmed on WhatsApp.
-  const discountPct = 0;
-  const totalPrice = Math.round(unitPrice * quantity);
+  // 7. Quantity tier discount
+  const discountPct =
+    quantity >= 10
+      ? qty_discount_10_plus_pct
+      : quantity >= 4
+      ? qty_discount_4_9_pct
+      : 0;
+  const discountedUnitPrice = roundUpToClean99(
+    unitPrice * (1 - discountPct / 100)
+  );
+  const totalPrice = Math.round(discountedUnitPrice * quantity);
 
   return {
-    unit_price: unitPrice,
+    unit_price: discountedUnitPrice,
     total_price: totalPrice,
     discount_pct: discountPct,
     bumper_included: is_stone,

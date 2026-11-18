@@ -29,10 +29,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const result = await calculateConfigPrice(body);
-    const publicResult: Record<string, unknown> = { ...result };
-    delete publicResult.discount_pct;
-
-    return NextResponse.json(publicResult, {
+    return NextResponse.json(result, {
       status: 200,
       headers: {
         "Cache-Control": "no-store",

@@ -53,6 +53,10 @@ interface TableConfiguratorProps {
     warranty_text: string;
     allowed_top_categories: string[];
     top_overlay_note?: string | null;
+    base_height_ft?: number | null;
+    pipe_spec?: string | null;
+    combo_config?: Record<string, unknown> | null;
+    top_category_images?: Record<string, string> | null;
   };
   options: ConfigOption[];
   visualVariants: VisualVariant[];
@@ -157,6 +161,7 @@ export default function TableConfigurator({
     total_price?: number;
     bumper_included?: boolean;
     requires_quote?: boolean;
+    discount_pct?: number;
   }>({
     bumper_included: false,
     requires_quote: false,
@@ -423,14 +428,28 @@ export default function TableConfigurator({
       (isSS ? true : v.frame_color === selectedFrameColor)
   );
 
-  const topVariantImage = topCategoryImages?.[selectedTopTab] ?? null;
+  const topVariantImage =
+    topCategoryImages?.[selectedTopTab] ??
+    (product.top_category_images?.[selectedTopTab] ?? null);
   const mainImageUrl =
     (activeThumbnailIndex === 0 ? topVariantImage : null) ||
     matchedVariant?.preview_image_url ||
     product.main_image_url;
+
+  const blueprintImage = product.hover_blueprint_img ?? null;
+  const lifestyleImages = [
+    product.main_image_url,
+    ...Object.values(topCategoryImages ?? {}),
+    ...Object.values(product.top_category_images ?? {}),
+  ].filter(Boolean);
+
+  const hasDistinctBlueprint = Boolean(
+    blueprintImage && !lifestyleImages.includes(blueprintImage)
+  );
+
   const activeImage =
-    activeThumbnailIndex === 1 && product.hover_blueprint_img
-      ? product.hover_blueprint_img
+    activeThumbnailIndex === 1 && hasDistinctBlueprint && blueprintImage
+      ? blueprintImage
       : mainImageUrl;
 
   const currentTopOption = topMaterials.find((m) => m.option_code === selectedTopMaterial);
@@ -511,13 +530,46 @@ export default function TableConfigurator({
       {/* ================= LEFT COLUMN: STICKY PRODUCT PREVIEW ================= */}
       <div className="lg:col-span-6 lg:sticky lg:top-24 space-y-5">
         <div className="relative rounded-xl overflow-hidden border border-neutral-200 bg-[#F5F5F7]">
-          <WatermarkedImage
-            src={activeImage}
-            alt={product.name}
-            aspectRatio="square"
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            priority
-          />
+          {activeThumbnailIndex === 1 && !hasDistinctBlueprint ? (
+            <div className="aspect-square p-6 sm:p-10 bg-white flex flex-col justify-center">
+              <div className="rounded-lg border-2 border-[#111111] p-5 sm:p-8">
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-500">
+                  Technical Dimension Drawing
+                </p>
+                <div className="mt-6 space-y-3 text-sm font-semibold text-[#111111]">
+                  <div className="flex justify-between gap-4 border-b border-dashed border-neutral-300 pb-2">
+                    <span>Base length</span>
+                    <span>{Number(product.base_length_ft)} ft</span>
+                  </div>
+                  <div className="flex justify-between gap-4 border-b border-dashed border-neutral-300 pb-2">
+                    <span>Base width</span>
+                    <span>{Number(product.base_width_ft)} ft</span>
+                  </div>
+                  <div className="flex justify-between gap-4 border-b border-dashed border-neutral-300 pb-2">
+                    <span>Base height</span>
+                    <span>{Number(product.base_height_ft ?? 2.5)} ft</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span>Pipe spec</span>
+                    <span className="text-right max-w-[60%]">
+                      {product.pipe_spec || "Steel tube frame"}
+                    </span>
+                  </div>
+                </div>
+                <p className="mt-6 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+                  {product.name}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <WatermarkedImage
+              src={activeImage}
+              alt={product.name}
+              aspectRatio="square"
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              priority
+            />
+          )}
 
           {/* Blueprint indicator tag */}
           {activeThumbnailIndex === 1 && (
@@ -565,27 +617,31 @@ export default function TableConfigurator({
             </span>
           </button>
 
-          {product.hover_blueprint_img && (
-            <button
-              type="button"
-              onClick={() => setActiveThumbnailIndex(1)}
-              className={`relative rounded-lg overflow-hidden border-2 w-20 h-20 bg-neutral-100 transition-all ${
-                activeThumbnailIndex === 1
-                  ? "border-black ring-1 ring-black"
-                  : "border-neutral-200 hover:border-neutral-400 opacity-70 hover:opacity-100"
-              }`}
-            >
+          <button
+            type="button"
+            onClick={() => setActiveThumbnailIndex(1)}
+            className={`relative rounded-lg overflow-hidden border-2 w-20 h-20 bg-neutral-100 transition-all ${
+              activeThumbnailIndex === 1
+                ? "border-black ring-1 ring-black"
+                : "border-neutral-200 hover:border-neutral-400 opacity-70 hover:opacity-100"
+            }`}
+          >
+            {hasDistinctBlueprint && blueprintImage ? (
               <WatermarkedImage
-                src={product.hover_blueprint_img}
+                src={blueprintImage}
                 alt="Blueprint dimensions"
                 aspectRatio="square"
                 sizes="80px"
               />
-              <span className="absolute bottom-1 inset-x-1 text-[9px] font-bold text-center bg-blue-700 text-white rounded-xs">
-                Blueprint
+            ) : (
+              <span className="flex h-full w-full items-center justify-center text-[9px] font-bold uppercase tracking-wider text-neutral-500">
+                Dims
               </span>
-            </button>
-          )}
+            )}
+            <span className="absolute bottom-1 inset-x-1 text-[9px] font-bold text-center bg-blue-700 text-white rounded-xs">
+              Blueprint
+            </span>
+          </button>
         </div>
 
         {/* Product Spec Summary & Zero-Shake Highlight */}
@@ -719,7 +775,7 @@ export default function TableConfigurator({
               <div className="text-xs">
                 <span className="font-bold">Safety upgrade included (Non-removable): </span>
                 <span className="text-[11px] leading-snug">
-                  +1-inch Protective Steel Bumper Frame + Center Cross-Support Pipe welded directly to protect granite edges against accidental chair collisions.
+                  Factory Safety Upgrade Included: Heavy-duty perimeter edge protection &amp; reinforced load support engineered for stone tops.
                 </span>
               </div>
             </div>
@@ -948,6 +1004,11 @@ export default function TableConfigurator({
           <div className="space-y-2">
             {addons.map((ad) => {
               const isChecked = selectedAddons.includes(ad.option_code);
+              const isChairCombo = ad.option_code === "CHAIRS4";
+              const chairUnit = Number(product.combo_config?.single_chair_cost) || 1150;
+              const addonLabel = isChairCombo
+                ? `+ ₹${(chairUnit * 4).toLocaleString("en-IN")} for 4 Matching Heavy-Duty Chairs`
+                : ad.label_en;
               return (
                 <button
                   key={ad.option_code}
@@ -960,7 +1021,7 @@ export default function TableConfigurator({
                   }`}
                 >
                   <div>
-                    <span className="block text-xs text-neutral-900">{ad.label_en}</span>
+                    <span className="block text-xs text-neutral-900">{addonLabel}</span>
                     <span className="block text-[11px] text-neutral-500 font-normal">{ad.spec_note}</span>
                   </div>
                   <div
@@ -1022,7 +1083,7 @@ export default function TableConfigurator({
             </button>
           </div>
 
-          {quantity >= 4 && (
+          {quantity >= 4 && !priceData.discount_pct && (
             <p className="text-[11px] font-semibold text-neutral-600">
               Bulk discount available. Confirm best price on WhatsApp.
             </p>
@@ -1067,11 +1128,15 @@ export default function TableConfigurator({
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-600 bg-neutral-200 px-2.5 py-1 rounded">
               Direct Factory Price • GST Invoice Available
             </span>
-            {isCalculating && (
-              <span className="text-[11px] font-semibold text-neutral-500 animate-pulse">
-                Updating live quote...
+            {priceData.discount_pct ? (
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded">
+                B2B {priceData.discount_pct}% Bulk Savings Applied
               </span>
-            )}
+            ) : isCalculating ? (
+              <span className="text-[11px] font-semibold text-neutral-500 animate-pulse">
+                Calculating...
+              </span>
+            ) : null}
           </div>
 
           {priceData.requires_quote ? (

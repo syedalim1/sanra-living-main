@@ -502,7 +502,7 @@ Migration 013 creates `product_sets`, `product_set_items` and the private `set_p
 2. Run [supabase/migrations/014_product_console_upgrade.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/014_product_console_upgrade.sql), then run [supabase/migrations/015_privacy_text.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/015_privacy_text.sql).
 3. Confirm `Success. No rows returned` for both.
 
-Migration 014 adds the height, pipe spec, combo, top-category images, gallery, finishing and MOQ fields and relaxes category/product type checks. Migration 015 removes sourcing locations from public option labels.
+Migration 014 adds the height, pipe spec, combo, top-category images, gallery, finishing and MOQ fields and relaxes category/product type checks. Migration 015 removes sourcing locations from public option labels. Also run `016_privacy_granite_label.sql` to rename the white granite option to "Classic Pearl White Granite".
 
 Set `NEXT_PUBLIC_SITE_URL` in `.env.local` before the final production build. It drives canonical URLs, Open Graph, the sitemap and robots. For local testing, use `http://localhost:3000`.
 

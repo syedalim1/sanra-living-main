@@ -303,6 +303,10 @@ export default async function SkuPage({ params }: SkuPageProps) {
         gallery_images: Array.isArray(prodData.gallery_images)
           ? (prodData.gallery_images as string[])
           : [],
+        combo_config:
+          prodData.combo_config && typeof prodData.combo_config === "object"
+            ? (prodData.combo_config as Record<string, unknown>)
+            : {},
         main_image_url: prodData.main_image_url,
         hover_blueprint_img: prodData.hover_blueprint_img,
         warranty_text: prodData.warranty_text,

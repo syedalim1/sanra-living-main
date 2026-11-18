@@ -57,6 +57,8 @@ export function calculateTypePrice(input: TypePriceInput): TypePriceOutput {
     quantity,
     isKnockdown = false,
     knockdownPct = 0,
+    qtyDiscount4to9Pct,
+    qtyDiscount10PlusPct,
   } = input;
 
   const metalCost =
@@ -70,8 +72,13 @@ export function calculateTypePrice(input: TypePriceInput): TypePriceOutput {
     withMargin = withMargin * (1 + knockdownPct / 100);
   }
 
-  const unitPrice = roundUpToClean99(withMargin + flatAddons);
-  const discountPct = 0;
+  const baseUnitPrice = roundUpToClean99(withMargin + flatAddons);
+  const discountPct = getQuantityDiscount(
+    quantity,
+    qtyDiscount4to9Pct,
+    qtyDiscount10PlusPct
+  );
+  const unitPrice = roundUpToClean99(baseUnitPrice * (1 - discountPct / 100));
   const totalPrice = Math.round(unitPrice * quantity);
 
   return {
@@ -93,8 +100,12 @@ export function calculatePackPrice(
     return single;
   }
 
-  const packUnitPrice = single.unit_price * 2 - pack2Saving;
-  const discountPct = 0;
+  const discountPct = getQuantityDiscount(
+    input.quantity,
+    input.qtyDiscount4to9Pct,
+    input.qtyDiscount10PlusPct
+  );
+  const packUnitPrice = (single.unit_price * 2 - pack2Saving) * (1 - discountPct / 100);
   const totalPrice = Math.round(packUnitPrice * input.quantity);
 
   return {

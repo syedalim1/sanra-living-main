@@ -20,7 +20,7 @@ VALUES
   ('WPC_OUTDOOR',        'Outdoor WPC Solid Planks (Waterproof)','WOOD',  '₹/sqft', 220.00),
   ('GRANITE_JET_BLACK',  '18mm Export-Grade Jet Black Granite',  'STONE', '₹/sqft', 210.00),
   ('GRANITE_GALAXY',     'Natural Black Galaxy Granite 18mm',    'STONE', '₹/sqft', 245.00),
-  ('GRANITE_KWHITE',     'Kashmir White Granite 18mm',           'STONE', '₹/sqft', 190.00),
+('GRANITE_KWHITE', 'Classic Pearl White Granite 18mm',     'STONE', '₹/sqft', 190.00),
   ('GRANITE_RED',        'Imperial Red Granite 18mm',            'STONE', '₹/sqft', 180.00),
   ('GRANITE_TAN_BROWN',  'Tan Brown Granite 18mm',               'STONE', '₹/sqft', 195.00),
   ('MARBLE_QUARTZ',      'Stain-Resistant Quartz Slab 18mm',     'STONE', '₹/sqft', 320.00),

@@ -807,15 +807,20 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
   // 1. Fetch Product & Pricing Rule
   let productPricing = FALLBACK_RULES[input.sku];
   let allowedTopCategories = productPricing?.allowed_top_categories || ["FRAME_ONLY", "WOOD", "STONE"];
+  let comboConfig: Record<string, unknown> = {};
 
   try {
     const { data: prodData } = await supabaseServer
       .from("products")
-      .select("id, base_length_ft, base_width_ft, allowed_top_categories")
+      .select("id, base_length_ft, base_width_ft, allowed_top_categories, combo_config")
       .eq("sku", input.sku)
       .maybeSingle();
 
     if (prodData) {
+      comboConfig =
+        prodData.combo_config && typeof prodData.combo_config === "object"
+          ? (prodData.combo_config as Record<string, unknown>)
+          : {};
       if (Array.isArray(prodData.allowed_top_categories)) {
         allowedTopCategories = prodData.allowed_top_categories as string[];
       }
@@ -924,8 +929,10 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
 
   // Add-ons total
   let addonsTotal = 0;
+  const chairUnitCost = Number(comboConfig.single_chair_cost) || 1150;
   for (const addon of input.addons) {
-    addonsTotal += ADDON_PRICES[addon] || 0;
+    addonsTotal +=
+      addon === "CHAIRS4" ? chairUnitCost * 4 : ADDON_PRICES[addon] || 0;
   }
 
   // Frame gold powder coat add-on

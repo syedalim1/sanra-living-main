@@ -145,7 +145,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
     option_group: "TOP_MATERIAL",
     option_code: "GRANITE_KWHITE_OPT",
     parent_code: "STONE",
-    label_en: "K-White / Colonial White",
+    label_en: "Classic Pearl White Granite",
     group_label: "18mm Export-Grade Natural Granite",
     swatch_color_hex: "#F1F5F9",
     sort_order: 203,
