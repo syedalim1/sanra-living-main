@@ -656,10 +656,24 @@ export default function TypeConfigurator({
           const selectedCode = selections[group.option_group];
 
           return (
-            <div key={group.option_group} className="space-y-3 pt-4 border-t border-neutral-200 first:pt-0 first:border-t-0">
-              <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
-                {index + 1}. {group.group_title}
-              </label>
+            <details
+              key={group.option_group}
+              name="type-options"
+              open={index === 0}
+              className="border-b border-neutral-200 py-1"
+            >
+              <summary className="min-h-[44px] flex items-center justify-between gap-3 cursor-pointer list-none">
+                <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  {group.group_title}
+                </span>
+                <span className="text-sm text-neutral-800 font-medium truncate">
+                  {selectedCode
+                    ? groupOptions.find((option) => option.option_code === selectedCode)
+                        ?.label_en ?? "Select"
+                    : "Select"}
+                </span>
+              </summary>
+              <div className="space-y-3 pb-4 pt-2">
 
               {isSwatchGroup ? (
                 <div
@@ -814,7 +828,8 @@ export default function TypeConfigurator({
                   Rack is ready to assemble. Choose your height.
                 </p>
               )}
-            </div>
+              </div>
+            </details>
           );
         })}
 
@@ -827,89 +842,28 @@ export default function TypeConfigurator({
           }
         />
 
-        <div className="space-y-3 pt-4 border-t border-neutral-200">
-          <div className="flex items-center justify-between">
-            <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
-              {visibleGroups.length + 1}. Quantity
-            </label>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
+                <div className="border-t border-neutral-200 pt-4 flex items-center justify-between">
+          <span className="text-xs uppercase tracking-wider text-neutral-500">Quantity</span>
+          <div className="flex items-center rounded-md border border-neutral-300">
             <button
               type="button"
-              onClick={() => handleQuantityChange(1)}
-              className={`p-2.5 rounded-lg border text-center transition-all ${
-                quantity >= 1 && quantity <= 3
-                  ? "border-black bg-neutral-50 ring-1 ring-black font-bold text-black"
-                  : "border-neutral-200 hover:border-neutral-400 bg-white text-neutral-600"
-              }`}
+              onClick={() => handleQuantityChange(quantity - 1)}
+              className="w-11 h-11 text-lg"
+              aria-label="Decrease quantity"
             >
-              <span className="block text-xs">1 - 3 Units</span>
+              -
             </button>
+            <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
             <button
               type="button"
-              onClick={() => handleQuantityChange(4)}
-              className={`p-2.5 rounded-lg border text-center transition-all ${
-                quantity >= 4 && quantity <= 9
-                  ? "border-black bg-neutral-50 ring-1 ring-black font-bold text-black"
-                  : "border-neutral-200 hover:border-neutral-400 bg-white text-neutral-600"
-              }`}
+              onClick={() => handleQuantityChange(quantity + 1)}
+              className="w-11 h-11 text-lg"
+              aria-label="Increase quantity"
             >
-              <span className="block text-xs">4 - 9 Units</span>
+              +
             </button>
-            <button
-              type="button"
-              onClick={() => handleQuantityChange(10)}
-              className={`p-2.5 rounded-lg border text-center transition-all ${
-                quantity >= 10
-                  ? "border-black bg-neutral-50 ring-1 ring-black font-bold text-black"
-                  : "border-neutral-200 hover:border-neutral-400 bg-white text-neutral-600"
-              }`}
-            >
-              <span className="block text-xs">10+ Units</span>
-            </button>
-          </div>
-
-          {quantity >= 4 && (
-            <p className="text-[11px] font-semibold text-neutral-600">
-              Bulk discount available. Confirm best price on WhatsApp.
-            </p>
-          )}
-
-          <div className="flex items-center gap-3 pt-2">
-            <span className="text-xs font-semibold text-neutral-600">Exact Quantity:</span>
-            <div className="flex items-center border border-neutral-300 rounded-md overflow-hidden bg-white">
-              <button
-                type="button"
-                onClick={() => handleQuantityChange(quantity - 1)}
-                className="px-3 py-1.5 hover:bg-neutral-100 text-neutral-700 font-bold"
-                aria-label="Decrease quantity"
-              >
-                -
-              </button>
-              <input
-                type="number"
-                min={1}
-                max={500}
-                aria-label="Quantity"
-                value={quantity}
-                onChange={(event) =>
-                  handleQuantityChange(parseInt(event.target.value || "1", 10))
-                }
-                className="w-14 text-center text-xs font-bold py-1.5 focus:outline-hidden"
-              />
-              <button
-                type="button"
-                onClick={() => handleQuantityChange(quantity + 1)}
-                className="px-3 py-1.5 hover:bg-neutral-100 text-neutral-700 font-bold"
-                aria-label="Increase quantity"
-              >
-                +
-              </button>
-            </div>
           </div>
         </div>
-
         <div
           id="type-configurator-actions"
           className="p-6 rounded-xl bg-[#F5F5F7] border border-neutral-300 space-y-4"

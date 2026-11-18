@@ -4,11 +4,9 @@ import React, { useState, useEffect, useTransition, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import WatermarkedImage from "@/components/WatermarkedImage";
-import PincodeEstimator from "@/components/PincodeEstimator";
 import { ConfigOption } from "@/lib/configuratorOptions";
 import {
-  ShieldCheck,
-  Check,
+  ChevronDown,
   Sparkles,
   Flame,
   Droplets,
@@ -17,8 +15,6 @@ import {
   Laptop,
   Zap,
   AlertTriangle,
-  Package,
-  Truck,
   MessageSquare,
   FileText,
 } from "lucide-react";
@@ -158,6 +154,9 @@ export default function TableConfigurator({
 
   // Active image toggle (0 = main product, 1 = blueprint)
   const [activeThumbnailIndex, setActiveThumbnailIndex] = useState<number>(0);
+  const [openSection, setOpenSection] = useState<string>("Top");
+  const [pincodeOpen, setPincodeOpen] = useState(false);
+  const [pincode, setPincode] = useState("");
 
   // Live pricing state
   const [priceData, setPriceData] = useState<{
@@ -555,754 +554,581 @@ export default function TableConfigurator({
   };
 
   const durabilityBadges = renderDurabilityBadges();
+  const badgeLine = durabilityBadges
+    .slice(0, 3)
+    .map((badge) => badge.text)
+    .join(" Â· ");
+
+  const currentGaugeOption = gauges.find((g) => g.option_code === selectedGauge);
+  const currentFrameOption = frameColors.find(
+    (c) => c.option_code === selectedFrameColor
+  );
+  const currentSizeOption = sizes.find((s) => s.option_code === selectedSize);
+  const currentTopLabel =
+    selectedTopTab === "FRAME_ONLY"
+      ? "Frame Only"
+      : topTabs.find((tab) => tab.option_code === selectedTopTab)?.label_en ??
+        selectedTopTab;
+
+  const gaugeLabel = (option: ConfigOption) => {
+    const short = option.label_en.split("(")[0].trim();
+    if (option.option_code === "G16") return "16G Recommended";
+    return short.replace(" Gauge", "G");
+  };
+
+  const section = (
+    key: string,
+    label: string,
+    summary: string,
+    body: React.ReactNode
+  ) => (
+    <div className="border-b border-neutral-200 last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpenSection(openSection === key ? "" : key)}
+        aria-expanded={openSection === key}
+        className="w-full min-h-[44px] flex items-center justify-between gap-4 py-3 text-left"
+      >
+        <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+          {label}
+        </span>
+        <span className="flex items-center gap-1.5 text-sm text-neutral-800 font-medium truncate">
+          <span className="truncate">{summary}</span>
+          <ChevronDown
+            className={`w-4 h-4 shrink-0 transition-transform ${
+              openSection === key ? "rotate-180" : ""
+            }`}
+          />
+        </span>
+      </button>
+      {openSection === key && <div className="pb-4 space-y-3">{body}</div>}
+    </div>
+  );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-      {/* ================= LEFT COLUMN: STICKY PRODUCT PREVIEW ================= */}
-      <div className="lg:col-span-6 lg:sticky lg:top-24 space-y-5">
-        <div className="relative rounded-xl overflow-hidden border border-neutral-200 bg-[#F5F5F7]">
-          {activeThumbnailIndex === 1 && !hasDistinctBlueprint ? (
-            <div className="aspect-square p-6 sm:p-10 bg-white flex flex-col justify-center">
-              <div className="rounded-lg border-2 border-[#111111] p-5 sm:p-8">
-                <p className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-500">
-                  Technical Dimension Drawing
-                </p>
-                <div className="mt-6 space-y-3 text-sm font-semibold text-[#111111]">
-                  <div className="flex justify-between gap-4 border-b border-dashed border-neutral-300 pb-2">
-                    <span>Base length</span>
-                    <span>{Number(product.base_length_ft)} ft</span>
-                  </div>
-                  <div className="flex justify-between gap-4 border-b border-dashed border-neutral-300 pb-2">
-                    <span>Base width</span>
-                    <span>{Number(product.base_width_ft)} ft</span>
-                  </div>
-                  <div className="flex justify-between gap-4 border-b border-dashed border-neutral-300 pb-2">
-                    <span>Base height</span>
-                    <span>{Number(product.base_height_ft ?? 2.5)} ft</span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span>Pipe spec</span>
-                    <span className="text-right max-w-[60%]">
-                      {pipeSpec || "Steel tube frame"}
-                    </span>
+    <div data-table-configurator className="pb-24 lg:pb-0">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        <div className="lg:col-span-6 lg:sticky lg:top-24 space-y-3">
+          <div className="relative rounded-lg overflow-hidden border border-neutral-200 bg-[#F5F5F7] aspect-square">
+            {activeThumbnailIndex === 1 && !hasDistinctBlueprint ? (
+              <div className="h-full w-full bg-white p-6 flex flex-col justify-center">
+                <div className="rounded-md border border-neutral-300 p-5">
+                  <p className="text-xs uppercase tracking-wider text-neutral-500">
+                    Dimension drawing
+                  </p>
+                  <div className="mt-4 space-y-2 text-sm text-neutral-800">
+                    <div className="flex justify-between border-b border-neutral-200 pb-1.5">
+                      <span>Length</span>
+                      <span>{Number(product.base_length_ft)} ft</span>
+                    </div>
+                    <div className="flex justify-between border-b border-neutral-200 pb-1.5">
+                      <span>Width</span>
+                      <span>{Number(product.base_width_ft)} ft</span>
+                    </div>
+                    <div className="flex justify-between border-b border-neutral-200 pb-1.5">
+                      <span>Height</span>
+                      <span>{Number(product.base_height_ft ?? 2.5)} ft</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Pipe</span>
+                      <span className="text-right max-w-[60%]">{pipeSpec || "Steel tube frame"}</span>
+                    </div>
                   </div>
                 </div>
-                <p className="mt-6 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-                  {product.name}
-                </p>
               </div>
-            </div>
-          ) : (
-            <WatermarkedImage
-              src={activeImage}
-              alt={product.name}
-              aspectRatio="square"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              priority
-            />
-          )}
-
-          {/* Blueprint indicator tag */}
-          {activeThumbnailIndex === 1 && (
-            <div className="absolute top-3 left-3 z-20 pointer-events-none">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest bg-blue-600 text-white px-2.5 py-1 rounded shadow-xs">
-                Blueprint & Dimension View
-              </span>
-            </div>
-          )}
-
-          {/* Swatch preview overlay chip */}
-          {selectedTopTab !== "FRAME_ONLY" && currentTopOption && activeThumbnailIndex === 0 && (
-            <div className="absolute bottom-3 left-3 z-20 pointer-events-none flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/95 border border-neutral-300 shadow-xs backdrop-blur-xs">
-              <span
-                className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0"
-                style={{ backgroundColor: currentTopOption.swatch_color_hex || "#111" }}
-              />
-              <span className="text-[11px] font-bold text-neutral-800 tracking-tight">
-                Top: {currentTopOption.label_en}
-              </span>
-            </div>
-          )}
-
-          {selectedTopTab === "FRAME_ONLY" && activeThumbnailIndex === 0 && (
-            <div className="absolute bottom-3 left-3 z-20 pointer-events-none px-3 py-1 rounded-full bg-black/85 text-white text-[11px] font-bold tracking-wider uppercase">
-              Frame Only (No Top Surface)
-            </div>
-          )}
-        </div>
-
-        {/* Thumbnail strip */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setActiveThumbnailIndex(0)}
-            className={`relative rounded-lg overflow-hidden border-2 w-20 h-20 bg-neutral-100 transition-all ${
-              activeThumbnailIndex === 0
-                ? "border-black ring-1 ring-black"
-                : "border-neutral-200 hover:border-neutral-400 opacity-70 hover:opacity-100"
-            }`}
-          >
-            <WatermarkedImage src={mainImageUrl} alt="Main view" aspectRatio="square" sizes="80px" />
-            <span className="absolute bottom-1 inset-x-1 text-[9px] font-bold text-center bg-black/75 text-white rounded-xs">
-              Product
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveThumbnailIndex(1)}
-            className={`relative rounded-lg overflow-hidden border-2 w-20 h-20 bg-neutral-100 transition-all ${
-              activeThumbnailIndex === 1
-                ? "border-black ring-1 ring-black"
-                : "border-neutral-200 hover:border-neutral-400 opacity-70 hover:opacity-100"
-            }`}
-          >
-            {hasDistinctBlueprint && blueprintImage ? (
+            ) : (
               <WatermarkedImage
-                src={blueprintImage}
-                alt="Blueprint dimensions"
+                src={activeImage}
+                alt={product.name}
                 aspectRatio="square"
-                sizes="80px"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                priority
               />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center text-[9px] font-bold uppercase tracking-wider text-neutral-500">
-                Dims
-              </span>
             )}
-            <span className="absolute bottom-1 inset-x-1 text-[9px] font-bold text-center bg-blue-700 text-white rounded-xs">
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveThumbnailIndex(0)}
+              aria-label="Product photo"
+              className={`min-h-[44px] px-3 rounded-md border text-xs font-semibold ${
+                activeThumbnailIndex === 0
+                  ? "border-neutral-900 text-neutral-900"
+                  : "border-neutral-200 text-neutral-500"
+              }`}
+            >
+              Photo
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveThumbnailIndex(1)}
+              aria-label="Blueprint and dimensions"
+              className={`min-h-[44px] px-3 rounded-md border text-xs font-semibold ${
+                activeThumbnailIndex === 1
+                  ? "border-neutral-900 text-neutral-900"
+                  : "border-neutral-200 text-neutral-500"
+              }`}
+            >
               Blueprint
-            </span>
-          </button>
-        </div>
-
-        {/* Product Spec Summary & Zero-Shake Highlight */}
-        <div className="p-4 rounded-xl bg-[#F5F5F7] border border-neutral-200 space-y-2 text-xs text-neutral-600">
-          <div className="flex items-center justify-between text-[#111111] font-bold">
-            <span>SANRA Zero-Shake Telescopic Lockâ„¢ (200 Kg Tested)</span>
+            </button>
           </div>
         </div>
 
-        {/* Surface Durability Badges */}
-        <div className="border border-neutral-200 rounded-xl p-4 bg-white space-y-2.5">
-          <p className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500">
-            Surface Engineering Ratings
-          </p>
-          <div className="grid grid-cols-2 gap-2.5 text-xs text-neutral-800 font-medium">
-            {durabilityBadges.map((badge, idx) => {
-              const Icon = badge.icon;
-              return (
-                <div key={idx} className="flex items-center gap-2 p-1.5 rounded bg-neutral-50">
-                  <Icon className="w-4 h-4 text-neutral-700 shrink-0" />
-                  <span className="text-[11px] leading-tight">{badge.text}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="p-4 rounded-xl bg-[#F5F5F7] border border-neutral-200 text-xs font-semibold text-neutral-700">
-          Built for daily commercial use
-        </div>
-      </div>
-
-      {/* ================= RIGHT COLUMN: CONFIGURATOR CONTROLS ================= */}
-      <div className="lg:col-span-6 space-y-8">
-        <div>
-          <span className="inline-block text-[10px] font-extrabold uppercase tracking-widest text-neutral-600 bg-neutral-100 border border-neutral-200 px-3 py-1 rounded-full mb-2">
-            Factory Customizer
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight">
-            {product.name}
-          </h1>
-          <p className="text-xs text-neutral-500 mt-1 uppercase tracking-wider font-semibold">
-            SKU: {product.sku} â€¢ Direct SIDCO Coimbatore Production
-          </p>
-        </div>
-
-        {/* 1. TOP MATERIAL TABS */}
-        <div className="space-y-4">
-          <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
-            1. Select Top Surface Type
-          </label>
-
-          {/* 4 Tabs */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {topTabs.map((tab) => {
-              const isSelected = selectedTopTab === tab.option_code;
-              return (
-                <button
-                  key={tab.option_code}
-                  type="button"
-                  onClick={() => handleTopTabChange(tab.option_code)}
-                  className={`py-2.5 px-3 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all text-center ${
-                    isSelected
-                      ? "border-black bg-black text-white shadow-xs"
-                      : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400"
-                  }`}
-                >
-                  {tab.label_en}
-                </button>
-              );
-            })}
+        <div className="lg:col-span-6 space-y-5">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#111111]">
+              {product.name}
+            </h1>
+            <p className="mt-1 text-xs uppercase tracking-wider text-neutral-500">
+              {product.sku} · Direct SIDCO Coimbatore production
+            </p>
           </div>
 
-          {/* Swatches under tab */}
-          {selectedTopTab === "FRAME_ONLY" ? (
-            <div className="p-4 rounded-lg bg-neutral-50 border border-neutral-200 text-xs text-neutral-600">
-              <p className="font-semibold text-neutral-800">Supply Your Own Top Slab</p>
-              <p className="text-[11px] mt-1 leading-relaxed">
-                Includes welded steel perimeter brackets pre-drilled with counter-sunk mounting holes. Ideal if you already have local marble, granite, or solid wood.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-5 pt-2">
-              {Object.entries(materialGroups).map(([groupTitle, mats]) => (
-                <div key={groupTitle} className="space-y-2.5">
-                  <h2 className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
-                    {groupTitle}
-                  </h2>
-                  <div
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-2"
-                    role="radiogroup"
-                    aria-label={groupTitle}
-                  >
-                    {mats.map((mat) => {
-                      const isSelected = selectedTopMaterial === mat.option_code;
-                      return (
-                        <button
-                          key={mat.option_code}
-                          type="button"
-                          role="radio"
-                          aria-checked={isSelected}
-                          aria-label={mat.label_en}
-                          onClick={() => handleTopMaterialChange(mat.option_code)}
-                          className={`flex items-center gap-3 p-2.5 rounded-lg border text-left transition-all ${
-                            isSelected
-                              ? "border-black bg-neutral-50 ring-1 ring-black"
-                              : "border-neutral-200 hover:border-neutral-400 bg-white"
-                          }`}
-                        >
-                          <span
-                            className="w-5 h-5 rounded-full border border-black/20 shrink-0 shadow-2xs"
-                            style={{ backgroundColor: mat.swatch_color_hex || "#111" }}
-                          />
-                          <span className="text-xs font-semibold text-neutral-900 leading-tight">
-                            {mat.label_en}
-                          </span>
-                          {isSelected && <Check className="w-3.5 h-3.5 text-black ml-auto shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
+            <p className="text-xs uppercase tracking-wider text-neutral-500">
+              Direct Factory Price • GST Invoice Available
+            </p>
 
-          {/* Granite/Stone Protective Bumper Auto-Rule Notice */}
-          {selectedTopTab === "STONE" && (
-            <div className="p-3.5 rounded-lg bg-emerald-50/80 border border-emerald-300 flex items-start gap-2.5 text-emerald-900">
-              <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-              <div className="text-xs leading-snug">
-                <span className="text-[11px] font-semibold">
-                  Factory Safety Upgrade Included: Heavy-duty perimeter edge protection &amp; reinforced load support engineered for stone tops.
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 2. PIPE GAUGE & FRAME COLOR */}
-        <div className="space-y-4 pt-4 border-t border-neutral-200">
-          <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
-            2. Structural Steel Gauge & Load Rating
-          </label>
-
-          <div className="space-y-2.5">
-            {gauges.map((g) => {
-              const isSelected = selectedGauge === g.option_code;
-              return (
-                <button
-                  key={g.option_code}
-                  type="button"
-                  onClick={() => handleGaugeChange(g.option_code)}
-                  className={`w-full flex items-center justify-between p-3.5 rounded-lg border text-left transition-all ${
-                    isSelected
-                      ? "border-black bg-neutral-50 ring-1 ring-black"
-                      : "border-neutral-200 hover:border-neutral-400 bg-white"
-                  }`}
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-[#111111]">{g.label_en}</span>
-                      {g.badge_text && (
-                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-neutral-900 text-white">
-                          {g.badge_text}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-[11px] text-neutral-500 font-medium">
-                      {g.warranty_text && <span>{g.warranty_text}</span>}
-                      {g.warranty_text && g.spec_note && <span>â€¢</span>}
-                      {g.spec_note && <span>{g.spec_note}</span>}
-                    </div>
-                  </div>
-
-                  {g.load_kg != null && (
-                    <div className="text-right shrink-0">
-                      <span className="text-xs font-extrabold text-neutral-800">
-                        {g.load_kg} Kg Tested
-                      </span>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Frame Color Swatches (Hidden for SS) */}
-          <div className="pt-2">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-500 mb-2">
-              Frame Color Finish
-            </label>
-            {isSS ? (
-              <p className="text-xs text-neutral-600 bg-neutral-100 p-2.5 rounded border border-neutral-200">
-                Natural stainless steel polished finish (No powder-coat applied on SS).
-              </p>
-            ) : (
-              <div
-                className="grid grid-cols-2 sm:grid-cols-5 gap-2"
-                role="radiogroup"
-                aria-label="Frame Color Finish"
-              >
-                {frameColors.map((col) => {
-                  const isSelected = selectedFrameColor === col.option_code;
-                  return (
-                    <button
-                      key={col.option_code}
-                      type="button"
-                      role="radio"
-                      aria-checked={isSelected}
-                      aria-label={col.label_en}
-                      onClick={() => handleFrameColorChange(col.option_code)}
-                      className={`flex flex-col items-center justify-center p-2 rounded-lg border text-center transition-all ${
-                        isSelected
-                          ? "border-black bg-neutral-50 ring-1 ring-black font-bold"
-                          : "border-neutral-200 hover:border-neutral-400 bg-white"
-                      }`}
-                    >
-                      <span
-                        className="w-4 h-4 rounded-full border border-neutral-300 mb-1"
-                        style={{ backgroundColor: col.swatch_color_hex || "#111" }}
-                      />
-                      <span className="text-[10px] text-neutral-800 leading-tight">
-                        {col.label_en}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 3. SIZE SELECTION */}
-        <div className="space-y-3 pt-4 border-t border-neutral-200">
-          <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
-            3. Frame Dimensions
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {sizes.map((s) => {
-              const isSelected = selectedSize === s.option_code;
-              return (
-                <button
-                  key={s.option_code}
-                  type="button"
-                  onClick={() => handleSizeChange(s.option_code)}
-                  className={`p-3 rounded-lg border text-left transition-all ${
-                    isSelected
-                      ? "border-black bg-neutral-50 ring-1 ring-black font-bold text-black"
-                      : "border-neutral-200 hover:border-neutral-400 bg-white text-neutral-700"
-                  }`}
-                >
-                  <span className="block text-xs">{s.label_en}</span>
-                  <span className="block text-[10px] text-neutral-500 font-normal line-clamp-1">
-                    {s.spec_note}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {selectedSize === "CUSTOM" && (
-            <div className="p-4 rounded-lg bg-neutral-100 border border-neutral-300 text-xs space-y-3">
-              <div>
-                <p className="font-bold text-neutral-900">Custom Dimension Sizing</p>
-                <p className="text-neutral-600 leading-relaxed text-[11px] mt-1">
-                  Enter your required frame size. Our SIDCO works engineer will confirm the cut list and return a custom proforma quote on WhatsApp.
+            <div>
+              {priceData.requires_quote ? (
+                <p className="text-2xl font-black text-[#111111]">Ask on WhatsApp</p>
+              ) : priceData.total_price != null ? (
+                <p className="text-3xl font-black tracking-tight text-[#111111]">
+                  ?{priceData.total_price.toLocaleString("en-IN")}
                 </p>
-              </div>
+              ) : (
+                <p className="text-sm font-semibold text-neutral-600">
+                  {isCalculating ? "Calculating price…" : "Ask on WhatsApp"}
+                </p>
+              )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <label className="space-y-1">
-                  <span className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600">
-                    Length (ft)
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={12}
-                    step={0.1}
-                    value={customLength}
-                    onChange={(event) => handleCustomLengthChange(event.target.value)}
-                    onBlur={commitCustomLength}
-                    placeholder="e.g. 5.5"
-                    className="w-full px-3 py-2 rounded-md border border-neutral-300 bg-white text-sm font-semibold text-neutral-900 focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </label>
-                <label className="space-y-1">
-                  <span className="block text-[11px] font-bold uppercase tracking-wider text-neutral-600">
-                    Width (ft)
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={12}
-                    step={0.1}
-                    value={customWidth}
-                    onChange={(event) => handleCustomWidthChange(event.target.value)}
-                    onBlur={commitCustomWidth}
-                    placeholder="e.g. 2.5"
-                    className="w-full px-3 py-2 rounded-md border border-neutral-300 bg-white text-sm font-semibold text-neutral-900 focus:outline-none focus:ring-2 focus:ring-black"
-                  />
-                </label>
-              </div>
+              {quantity > 1 && priceData.unit_price != null && (
+                <p className="mt-1 text-xs text-neutral-500">
+                  ?{priceData.unit_price.toLocaleString("en-IN")} per unit
+                </p>
+              )}
 
-              <p className="text-[11px] text-neutral-600">
-                Accepted range: 1 to 12 ft, up to one decimal place.
-              </p>
-              {!customDimsValid && (customLength !== "" || customWidth !== "") && (
-                <p className="text-[11px] font-semibold text-red-600">
-                  Enter a valid length and width between 1 and 12 ft (one decimal maximum).
+              {quantity >= 4 && !priceData.requires_quote && (
+                <p className="mt-1.5 text-xs text-neutral-500">
+                  Bulk discount available. Confirm best price on WhatsApp.
                 </p>
               )}
             </div>
-          )}
-        </div>
 
-        {/* 4. BUILD TYPE */}
-        <div className="space-y-3 pt-4 border-t border-neutral-200">
-          <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
-            4. Delivery & Assembly Mode
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {buildTypes.map((b) => {
-              const isSelected = selectedBuildType === b.option_code;
-              const isTempo = b.option_code === "WELDED";
-              return (
-                <button
-                  key={b.option_code}
-                  type="button"
-                  onClick={() => handleBuildTypeChange(b.option_code)}
-                  className={`p-3.5 rounded-lg border text-left transition-all ${
-                    isSelected
-                      ? "border-black bg-neutral-50 ring-1 ring-black"
-                      : "border-neutral-200 hover:border-neutral-400 bg-white"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-bold text-xs text-black mb-1">
-                    {isTempo ? <Truck className="w-4 h-4" /> : <Package className="w-4 h-4" />}
-                    <span>{b.label_en}</span>
-                  </div>
-                  <p className="text-[11px] text-neutral-500 leading-snug">{b.spec_note}</p>
-                </button>
-              );
-            })}
-          </div>
-
-          <PincodeEstimator
-            selectedBuildType={selectedBuildType}
-            onSelectFlatPack={() => handleBuildTypeChange("KNOCKDOWN")}
-          />
-        </div>
-
-        {/* 5. ADD-ONS */}
-        <div className="space-y-3 pt-4 border-t border-neutral-200">
-          <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
-            5. Optional Factory Add-Ons
-          </label>
-          <div className="space-y-2">
-            {addons.map((ad) => {
-              const isChecked = selectedAddons.includes(ad.option_code);
-              const isChairCombo = ad.option_code === "CHAIRS4";
-              const addonPrice = chairAddonPrice ?? 4600;
-              const addonLabel = isChairCombo
-                ? `+ â‚¹${addonPrice.toLocaleString("en-IN")} for 4 Matching Heavy-Duty Chairs`
-                : ad.label_en;
-              return (
-                <button
-                  key={ad.option_code}
-                  type="button"
-                  onClick={() => handleAddonToggle(ad.option_code)}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-all ${
-                    isChecked
-                      ? "border-black bg-neutral-50 ring-1 ring-black font-semibold"
-                      : "border-neutral-200 hover:border-neutral-400 bg-white text-neutral-700"
-                  }`}
-                >
-                  <div>
-                    <span className="block text-xs text-neutral-900">{addonLabel}</span>
-                    <span className="block text-[11px] text-neutral-500 font-normal">{ad.spec_note}</span>
-                  </div>
-                  <div
-                    className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 ${
-                      isChecked ? "bg-black border-black text-white" : "border-neutral-300 bg-white"
-                    }`}
-                  >
-                    {isChecked && <Check className="w-3.5 h-3.5" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 6. QUANTITY & B2B TIER */}
-        <div className="space-y-3 pt-4 border-t border-neutral-200">
-          <div className="flex items-center justify-between">
-            <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
-              6. Quantity
-            </label>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuantityChange(1)}
-              className={`p-2.5 rounded-lg border text-center transition-all ${
-                quantity >= 1 && quantity <= 3
-                  ? "border-black bg-neutral-50 ring-1 ring-black font-bold text-black"
-                  : "border-neutral-200 hover:border-neutral-400 bg-white text-neutral-600"
-              }`}
-            >
-              <span className="block text-xs">1 - 3 Units</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuantityChange(4)}
-              className={`p-2.5 rounded-lg border text-center transition-all ${
-                quantity >= 4 && quantity <= 9
-                  ? "border-black bg-neutral-50 ring-1 ring-black font-bold text-black"
-                  : "border-neutral-200 hover:border-neutral-400 bg-white text-neutral-600"
-              }`}
-            >
-              <span className="block text-xs">4 - 9 Units</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuantityChange(10)}
-              className={`p-2.5 rounded-lg border text-center transition-all ${
-                quantity >= 10
-                  ? "border-black bg-neutral-50 ring-1 ring-black font-bold text-black"
-                  : "border-neutral-200 hover:border-neutral-400 bg-white text-neutral-600"
-              }`}
-            >
-              <span className="block text-xs">10+ Units</span>
-            </button>
-          </div>
-
-          {quantity >= 4 && !priceData.discount_pct && (
-            <p className="text-[11px] font-semibold text-neutral-600">
-              Bulk discount available. Confirm best price on WhatsApp.
-            </p>
-          )}
-
-          {/* Quantity Stepper Input */}
-          <div className="flex items-center gap-3 pt-2">
-            <span className="text-xs font-semibold text-neutral-600">Exact Quantity:</span>
-            <div className="flex items-center border border-neutral-300 rounded-md overflow-hidden bg-white">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => handleQuantityChange(quantity - 1)}
-                className="px-3 py-1.5 hover:bg-neutral-100 text-neutral-700 font-bold"
-                aria-label="Decrease quantity"
+                onClick={handleWhatsAppBook}
+                disabled={
+                  whatsappStatus === "loading" ||
+                  pdfStatus === "loading" ||
+                  (selectedSize === "CUSTOM" && !customDimsValid)
+                }
+                className="min-h-[44px] inline-flex items-center justify-center gap-2 rounded-md bg-emerald-700 text-white text-sm font-semibold disabled:opacity-60"
               >
-                -
+                <MessageSquare className="w-4 h-4" />
+                {whatsappStatus === "loading" ? "Opening…" : "Book on WhatsApp"}
               </button>
-              <input
-                type="number"
-                min={1}
-                max={500}
-                aria-label="Quantity"
-                value={quantity}
-                onChange={(e) => handleQuantityChange(parseInt(e.target.value || "1", 10))}
-                className="w-14 text-center text-xs font-bold py-1.5 focus:outline-hidden"
-              />
               <button
                 type="button"
-                onClick={() => handleQuantityChange(quantity + 1)}
-                className="px-3 py-1.5 hover:bg-neutral-100 text-neutral-700 font-bold"
-                aria-label="Increase quantity"
+                onClick={handlePdfDownload}
+                disabled={
+                  whatsappStatus === "loading" ||
+                  pdfStatus === "loading" ||
+                  (selectedSize === "CUSTOM" && !customDimsValid)
+                }
+                className="min-h-[44px] inline-flex items-center justify-center gap-2 rounded-md bg-[#111111] text-white text-sm font-semibold disabled:opacity-60"
               >
-                +
+                <FileText className="w-4 h-4" />
+                {pdfStatus === "loading" ? "Preparing…" : "Download Quote PDF"}
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* ================= LIVE PRICE BLOCK ================= */}
-        <div className="p-6 rounded-xl bg-[#F5F5F7] border border-neutral-300 space-y-4">
-          <div className="flex items-baseline justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-600 bg-neutral-200 px-2.5 py-1 rounded">
-              Direct Factory Price â€¢ GST Invoice Available
-            </span>
-            {priceData.discount_pct ? (
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded">
-                B2B {priceData.discount_pct}% Bulk Savings Applied
-              </span>
-            ) : isCalculating ? (
-              <span className="text-[11px] font-semibold text-neutral-500 animate-pulse">
-                Calculating...
-              </span>
-            ) : null}
-          </div>
-
-          {priceData.requires_quote ? (
-            <div className="space-y-1">
-              <span className="text-2xl font-black text-[#111111]">Ask on WhatsApp</span>
-              <p className="text-xs text-neutral-600">
-                Custom millimeter specifications are calculated directly by our SIDCO works engineer.
-              </p>
-            </div>
-          ) : priceData.total_price == null ? (
-            isCalculating ? (
-              <div className="flex items-center gap-2 text-sm font-bold text-neutral-600">
-                Calculating factory price...
-              </div>
-            ) : (
-              <div className="space-y-1">
-                <span className="text-2xl font-black text-[#111111]">Ask on WhatsApp</span>
-                <p className="text-xs text-neutral-600">
-                  This configuration needs a factory quote.
-                </p>
-              </div>
-            )
-          ) : (
-            <div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl sm:text-4xl font-black text-[#111111] tracking-tight">
-                  â‚¹{priceData.total_price.toLocaleString("en-IN")}
-                </span>
-                {quantity > 1 && (
-                  <span className="text-xs text-neutral-500">
-                    (â‚¹{priceData.unit_price?.toLocaleString("en-IN")} / unit)
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-neutral-600 mt-1">
-                GST Invoice Available â€¢ Direct SIDCO Coimbatore ex-factory quote.
-              </p>
-            </div>
-          )}
-
-          <div className="pt-2 space-y-2">
-            <button
-              type="button"
-              onClick={handleWhatsAppBook}
-              disabled={
-                whatsappStatus === "loading" ||
-                (selectedSize === "CUSTOM" && !customDimsValid)
-              }
-              className={`w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors ${
-                whatsappStatus === "loading" ||
-                (selectedSize === "CUSTOM" && !customDimsValid)
-                  ? "bg-emerald-700/40 text-white cursor-not-allowed"
-                  : "bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm"
-              }`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              {whatsappStatus === "loading"
-                ? "Opening WhatsApp..."
-                : selectedSize === "CUSTOM"
-                ? "ðŸ“² Request Custom Quote on WhatsApp"
-                : "ðŸ“² Book This Configuration on WhatsApp"}
-            </button>
-
-            <button
-              type="button"
-              onClick={handlePdfDownload}
-              disabled={selectedSize === "CUSTOM" || pdfStatus === "loading"}
-              className={`w-full flex items-center justify-center gap-2 py-3 px-5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors ${
-                selectedSize === "CUSTOM" || pdfStatus === "loading"
-                  ? "bg-neutral-200 text-neutral-500 cursor-not-allowed"
-                  : "bg-neutral-900 hover:bg-black text-white shadow-sm"
-              }`}
-            >
-              <FileText className="w-4 h-4" />
-              {pdfStatus === "loading"
-                ? "Generating PDF..."
-                : "ðŸ“„ Download Instant Factory Quote (PDF)"}
-            </button>
-
-            {selectedSize === "CUSTOM" && (
-              <p className="text-[11px] text-center text-neutral-500">
-                Custom sizes are quoted on WhatsApp
-              </p>
-            )}
 
             {whatsappStatus === "error" && whatsappError && (
-              <div
-                aria-live="polite"
-                className="p-3 rounded-lg bg-red-50 border border-red-200 text-[11px] text-red-800 space-y-2"
-              >
-                <p>{whatsappError}</p>
-                <button
-                  type="button"
-                  onClick={handleWhatsAppBook}
-                  className="px-3 py-1.5 rounded-md bg-red-700 text-white font-bold uppercase tracking-wider text-[10px] hover:bg-red-800 transition-colors"
-                >
-                  Retry WhatsApp
-                </button>
+              <p aria-live="polite" className="text-xs text-red-700">
+                {whatsappError}
+              </p>
+            )}
+            {pdfStatus === "error" && pdfError && (
+              <p aria-live="polite" className="text-xs text-red-700">
+                {pdfError}
+              </p>
+            )}
+          </div>
+
+          <div className="border-t border-neutral-200">
+            {section(
+              "Top",
+              "Top",
+              selectedTopTab === "FRAME_ONLY"
+                ? "Frame Only"
+                : currentTopOption?.label_en ?? currentTopLabel,
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-1.5" role="tablist" aria-label="Top type">
+                  {topTabs.map((tab) => {
+                    const shortLabel =
+                      tab.option_code === "WOOD"
+                        ? "Wood"
+                        : tab.option_code === "STONE"
+                        ? "Granite & Marble"
+                        : tab.option_code === "METAL"
+                        ? "Metal"
+                        : "Frame Only";
+                    return (
+                      <button
+                        key={tab.option_code}
+                        type="button"
+                        role="tab"
+                        aria-selected={selectedTopTab === tab.option_code}
+                        onClick={() => handleTopTabChange(tab.option_code)}
+                        className={`min-h-[44px] rounded-md border text-xs font-semibold px-1 ${
+                          selectedTopTab === tab.option_code
+                            ? "border-neutral-900 text-neutral-900"
+                            : "border-neutral-200 text-neutral-600"
+                        }`}
+                      >
+                        {shortLabel}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedTopTab === "FRAME_ONLY" ? (
+                  <p className="text-sm text-neutral-600">
+                    Bring your own top. Mounting brackets included.
+                  </p>
+                ) : (
+                  <>
+                    {Object.entries(materialGroups).map(([groupName, items]) => (
+                      <div key={groupName}>
+                        <p className="text-xs uppercase tracking-wider text-neutral-400">
+                          {groupName}
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-1.5" role="radiogroup" aria-label={groupName}>
+                          {items.map((mat) => (
+                            <button
+                              key={mat.option_code}
+                              type="button"
+                              role="radio"
+                              aria-checked={selectedTopMaterial === mat.option_code}
+                              aria-label={mat.label_en}
+                              onClick={() => handleTopMaterialChange(mat.option_code)}
+                              className="w-11 h-11 flex items-center justify-center"
+                            >
+                              <span
+                                className={`w-10 h-10 rounded-full border ${
+                                  selectedTopMaterial === mat.option_code
+                                    ? "border-neutral-900 ring-2 ring-neutral-900"
+                                    : "border-neutral-300"
+                                }`}
+                                style={{ backgroundColor: mat.swatch_color_hex || "#E5E5EA" }}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    <p className="text-sm text-neutral-900">
+                      {currentTopOption?.label_en ?? ""}
+                    </p>
+                    {badgeLine && (
+                      <p className="text-xs text-neutral-500">{badgeLine}</p>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
-            {pdfStatus === "error" && pdfError && (
-              <div
-                aria-live="polite"
-                className="p-3 rounded-lg bg-red-50 border border-red-200 text-[11px] text-red-800 space-y-2"
-              >
-                <p>{pdfError}</p>
+            {section(
+              "Frame",
+              "Frame",
+              `${currentGaugeOption ? gaugeLabel(currentGaugeOption) : "Select gauge"} · ${
+                currentFrameOption?.label_en ?? ""
+              }`,
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Pipe gauge">
+                  {gauges.map((gauge) => (
+                    <button
+                      key={gauge.option_code}
+                      type="button"
+                      role="radio"
+                      aria-checked={selectedGauge === gauge.option_code}
+                      onClick={() => handleGaugeChange(gauge.option_code)}
+                      className={`min-h-[44px] rounded-md border text-xs font-semibold px-1 ${
+                        selectedGauge === gauge.option_code
+                          ? "border-neutral-900 text-neutral-900"
+                          : "border-neutral-200 text-neutral-600"
+                      }`}
+                    >
+                      {gaugeLabel(gauge)}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-neutral-500">
+                  {currentGaugeOption?.load_kg
+                    ? `${currentGaugeOption.load_kg} Kg tested · `
+                    : ""}
+                  {currentGaugeOption?.warranty_text || product.warranty_text} · Cafe,
+                  hotel, IT office
+                </p>
+
+                <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Frame colour">
+                  {frameColors.map((colour) => (
+                    <button
+                      key={colour.option_code}
+                      type="button"
+                      role="radio"
+                      aria-checked={selectedFrameColor === colour.option_code}
+                      aria-label={colour.label_en}
+                      onClick={() => handleFrameColorChange(colour.option_code)}
+                      className="w-11 h-11 flex items-center justify-center"
+                    >
+                      <span
+                        className={`w-8 h-8 rounded-full border ${
+                          selectedFrameColor === colour.option_code
+                            ? "border-neutral-900 ring-2 ring-neutral-900"
+                            : "border-neutral-300"
+                        }`}
+                        style={{ backgroundColor: colour.swatch_color_hex || "#E5E5EA" }}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <p className="text-sm text-neutral-900">
+                  {currentFrameOption?.label_en ?? ""}
+                </p>
+              </div>
+            )}
+
+            {section(
+              "Size",
+              "Size",
+              currentSizeOption?.label_en ?? selectedSize,
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Size">
+                  {sizes.map((size) => (
+                    <button
+                      key={size.option_code}
+                      type="button"
+                      role="radio"
+                      aria-checked={selectedSize === size.option_code}
+                      onClick={() => handleSizeChange(size.option_code)}
+                      className={`min-h-[44px] px-3 rounded-md border text-xs font-semibold ${
+                        selectedSize === size.option_code
+                          ? "border-neutral-900 text-neutral-900"
+                          : "border-neutral-200 text-neutral-600"
+                      }`}
+                    >
+                      {size.label_en}
+                    </button>
+                  ))}
+                </div>
+                {selectedSize === "CUSTOM" ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="text-xs uppercase tracking-wider text-neutral-500">
+                      Length (ft)
+                      <input
+                        type="number"
+                        min="1"
+                        max="12"
+                        step="0.1"
+                        value={customLength}
+                        onChange={(event) => handleCustomLengthChange(event.target.value)}
+                        onBlur={commitCustomLength}
+                        className="mt-1 w-full min-h-[44px] rounded-md border border-neutral-300 px-3 text-sm font-normal text-neutral-900"
+                      />
+                    </label>
+                    <label className="text-xs uppercase tracking-wider text-neutral-500">
+                      Width (ft)
+                      <input
+                        type="number"
+                        min="1"
+                        max="12"
+                        step="0.1"
+                        value={customWidth}
+                        onChange={(event) => handleCustomWidthChange(event.target.value)}
+                        onBlur={commitCustomWidth}
+                        className="mt-1 w-full min-h-[44px] rounded-md border border-neutral-300 px-3 text-sm font-normal text-neutral-900"
+                      />
+                    </label>
+                    {!customDimsValid && (
+                      <p className="col-span-2 text-xs text-red-700">
+                        Enter a length and width between 1 and 12 ft.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-neutral-500">
+                    {currentSizeOption?.spec_note || "Standard factory size"}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {section(
+              "Delivery",
+              "Delivery",
+              buildTypes.find((b) => b.option_code === selectedBuildType)?.label_en ?? "Select",
+              <div className="space-y-3">
+                <div className="space-y-1.5" role="radiogroup" aria-label="Delivery type">
+                  {buildTypes.map((build) => (
+                    <label
+                      key={build.option_code}
+                      className="min-h-[44px] flex items-start gap-2 rounded-md border border-neutral-200 px-3 py-2"
+                    >
+                      <input
+                        type="radio"
+                        name="delivery-type"
+                        checked={selectedBuildType === build.option_code}
+                        onChange={() => handleBuildTypeChange(build.option_code)}
+                        className="mt-1 accent-black"
+                      />
+                      <span>
+                        <span className="block text-sm text-neutral-900">{build.label_en}</span>
+                        {build.spec_note && (
+                          <span className="block text-xs text-neutral-500">
+                            {build.spec_note}
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+
                 <button
                   type="button"
-                  onClick={handlePdfDownload}
-                  className="px-3 py-1.5 rounded-md bg-red-700 text-white font-bold uppercase tracking-wider text-[10px] hover:bg-red-800 transition-colors"
+                  onClick={() => setPincodeOpen((open) => !open)}
+                  aria-expanded={pincodeOpen}
+                  className="min-h-[44px] text-sm text-neutral-700 underline underline-offset-2"
                 >
-                  Retry PDF
+                  Check delivery to my pincode
                 </button>
+                {pincodeOpen && (
+                  <input
+                    value={pincode}
+                    onChange={(event) =>
+                      setPincode(event.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    inputMode="numeric"
+                    placeholder="6-digit pincode"
+                    className="w-full min-h-[44px] rounded-md border border-neutral-300 px-3 text-sm"
+                  />
+                )}
+                {pincode.length === 6 && (
+                  <p className="text-xs text-neutral-500">
+                    Delivery estimate confirmed on WhatsApp.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {section(
+              "Extras",
+              "Extras",
+              quantity > 1 ? `${quantity} units` : "Optional",
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  {addons.map((addon) => {
+                    const isChair = addon.option_code === "CHAIRS4";
+                    const label = isChair
+                      ? `+ ?${(chairAddonPrice ?? 4600).toLocaleString("en-IN")} for 4 matching chairs`
+                      : addon.label_en;
+                    return (
+                      <label
+                        key={addon.option_code}
+                        className="min-h-[44px] flex items-center justify-between gap-3 rounded-md border border-neutral-200 px-3 py-2"
+                      >
+                        <span className="flex items-center gap-2 text-sm text-neutral-900">
+                          <input
+                            type="checkbox"
+                            checked={selectedAddons.includes(addon.option_code)}
+                            onChange={() => handleAddonToggle(addon.option_code)}
+                            className="accent-black"
+                          />
+                          {label}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wider text-neutral-500">
+                    Quantity
+                  </span>
+                  <div className="flex items-center rounded-md border border-neutral-300">
+                    <button
+                      type="button"
+                      onClick={() => handleQuantityChange(quantity - 1)}
+                      aria-label="Decrease quantity"
+                      className="w-11 h-11 text-lg"
+                    >
+                      -
+                    </button>
+                    <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleQuantityChange(quantity + 1)}
+                      aria-label="Increase quantity"
+                      className="w-11 h-11 text-lg"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
-        </div>
 
-        {/* Complete the Set */}
-        <div className="p-4 rounded-xl border border-dashed border-neutral-300 bg-neutral-50/50 space-y-2 text-center">
-          <span className="text-xs font-bold text-neutral-800">
-            Complete the Set (Matching Chairs Combo)
-          </span>
-          <p className="text-[11px] text-neutral-500">
-            Matching structural steel cafe chairs & industrial barstools can be added with coordinated frame finishes.
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-wider text-neutral-500">
+              Complete the Set
+            </p>
+            <div className="flex gap-2 overflow-x-auto">
+              <Link
+                href="/products?category=SS+%26+MS+Chairs+%2F+Bar+Stools"
+                className="min-w-[140px] min-h-[64px] rounded-md border border-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-800 flex items-center"
+              >
+                Matching chairs
+              </Link>
+              <Link
+                href="/sets"
+                className="min-w-[140px] min-h-[64px] rounded-md border border-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-800 flex items-center"
+              >
+                Ready-made sets
+              </Link>
+            </div>
+          </div>
+
+          <p className="text-xs text-neutral-500">
+            SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested)
           </p>
-          <Link
-            href="/products?category=SS+%26+MS+Chairs+%2F+Bar+Stools"
-            className="inline-flex items-center justify-center px-3.5 py-2 rounded-md border border-black bg-white text-[10px] font-bold uppercase tracking-wider text-black hover:bg-neutral-100 transition-colors"
-          >
-            Browse Matching Chairs
-          </Link>
         </div>
+      </div>
+
+      <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-neutral-200 bg-white px-4 py-2.5 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-lg font-black text-[#111111] truncate">
+            {priceData.requires_quote
+              ? "Ask on WhatsApp"
+              : priceData.total_price != null
+              ? `?${priceData.total_price.toLocaleString("en-IN")}`
+              : "Calculating…"}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleWhatsAppBook}
+          disabled={
+            whatsappStatus === "loading" ||
+            (selectedSize === "CUSTOM" && !customDimsValid)
+          }
+          className="min-h-[44px] px-4 rounded-md bg-emerald-700 text-white text-sm font-semibold disabled:opacity-60 shrink-0"
+        >
+          Book on WhatsApp
+        </button>
       </div>
     </div>
   );
 }
-

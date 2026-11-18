@@ -22,7 +22,8 @@ body:has([data-internal-console]) .site-floating-whatsapp {
 }
 
 @media (max-width: 639px) {
-  body:has([data-type-configurator]) .site-floating-whatsapp {
+  body:has([data-type-configurator]) .site-floating-whatsapp,
+  body:has([data-table-configurator]) .site-floating-whatsapp {
     bottom: 5.7rem;
   }
 }
