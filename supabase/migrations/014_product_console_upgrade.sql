@@ -3,8 +3,6 @@
 
 ALTER TABLE public.products
   ADD COLUMN IF NOT EXISTS base_height_ft NUMERIC(6, 2) NOT NULL DEFAULT 2.5,
-  ADD COLUMN IF NOT EXISTS pipe_spec TEXT,
-  ADD COLUMN IF NOT EXISTS combo_config JSONB NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS top_category_images JSONB NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS gallery_images TEXT[] NOT NULL DEFAULT '{}'::text[];
 

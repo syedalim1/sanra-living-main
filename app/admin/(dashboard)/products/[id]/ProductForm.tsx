@@ -419,7 +419,7 @@ export default function ProductForm({
   );
   const [closedError, setClosedError] = useState<string | null>(null);
 
-  const combo = (product?.combo_config ?? {}) as Record<string, unknown>;
+  const combo = (pricing?.combo_config ?? {}) as Record<string, unknown>;
   const [costing, setCosting] = useState({
     metalWeight: Number(valueOrEmpty(pricing?.base_pipe_weight_18g_kg) || 0),
     topArea: Number(valueOrEmpty(pricing?.top_area_sqft) || 0),
@@ -650,7 +650,7 @@ export default function ProductForm({
             </span>
             <input
               name="pipe_spec"
-              defaultValue={product?.pipe_spec ?? ""}
+              defaultValue={pricing?.pipe_spec ?? ""}
               placeholder="1.5 inch Square Tube, 16 Gauge"
               className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
             />

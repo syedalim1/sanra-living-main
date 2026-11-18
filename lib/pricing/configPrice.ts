@@ -812,15 +812,11 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
   try {
     const { data: prodData } = await supabaseServer
       .from("products")
-      .select("id, base_length_ft, base_width_ft, allowed_top_categories, combo_config")
+      .select("id, base_length_ft, base_width_ft, allowed_top_categories")
       .eq("sku", input.sku)
       .maybeSingle();
 
     if (prodData) {
-      comboConfig =
-        prodData.combo_config && typeof prodData.combo_config === "object"
-          ? (prodData.combo_config as Record<string, unknown>)
-          : {};
       if (Array.isArray(prodData.allowed_top_categories)) {
         allowedTopCategories = prodData.allowed_top_categories as string[];
       }
@@ -832,6 +828,11 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
         .maybeSingle();
 
       if (ruleData) {
+        comboConfig =
+          ruleData.combo_config && typeof ruleData.combo_config === "object"
+            ? (ruleData.combo_config as Record<string, unknown>)
+            : {};
+
         productPricing = {
           product_type: "TABLE",
           base_pipe_weight_18g_kg: Number(ruleData.base_pipe_weight_18g_kg),
@@ -930,9 +931,15 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
   // Add-ons total
   let addonsTotal = 0;
   const chairUnitCost = Number(comboConfig.single_chair_cost) || 1150;
+  const chairAddonPrice =
+    chairUnitCost *
+    4 *
+    (1 + Number(productPricing.overhead_pct ?? 0) / 100) *
+    (1 + Number(productPricing.retail_margin_pct ?? 0) / 100);
+
   for (const addon of input.addons) {
     addonsTotal +=
-      addon === "CHAIRS4" ? chairUnitCost * 4 : ADDON_PRICES[addon] || 0;
+      addon === "CHAIRS4" ? chairAddonPrice : ADDON_PRICES[addon] || 0;
   }
 
   // Frame gold powder coat add-on

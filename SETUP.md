@@ -36,6 +36,17 @@ Add these to `.env.local`:
 | `NEXT_PUBLIC_SITE_URL` | Final public HTTPS origin used for canonical URLs, sitemap, Open Graph and robots |
 | `ADMIN_EMAIL` | Exact email of the single Supabase Auth user allowed into `/admin` |
 
+Rule: Never add cost, weight, margin, discount or supplier data to a public table. Keep costing, combo configuration, pipe specifications and supplier data in the private `product_pricing_rules`, `material_rates`, `option_pricing` and `set_pricing` tables only.
+
+After migrating, run these checks in the Supabase SQL Editor:
+
+```sql
+select tablename, rowsecurity from pg_tables where schemaname='public';   -- all true
+set role anon; select combo_config from public.products limit 1;          -- must error: column does not exist
+select count(*) from public.product_pricing_rules;                        -- must be 0 or permission denied
+reset role;
+```
+
 If a company value is missing, that line is hidden instead of showing placeholder text. `COMPANY_EMAIL` must be a public address; never use the `ADMIN_EMAIL` login address. The GST wording on the PDF comes from `GST_NOTE` in `lib/company.ts` and can be edited directly.
 
 `ADMIN_EMAIL` is server-only. It must exactly match the Supabase Auth user email (case-insensitive). If it is missing, every admin sign-in is rejected.

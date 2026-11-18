@@ -111,7 +111,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     try {
       const { data, error } = await supabaseServer
         .from("products")
-        .select("*")
+        .select(
+          "id, sku, name, category, product_type, base_length_ft, base_width_ft, main_image_url, hover_blueprint_img, use_cases, material_tags, sort_order"
+        )
         .eq("is_active", true)
         .order("sort_order", { ascending: true });
 
@@ -141,7 +143,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     base_width_ft: Number(p.base_width_ft),
     main_image_url: p.main_image_url,
     hover_blueprint_img: p.hover_blueprint_img,
-    from_price: HAS_SUPABASE ? priceMap[p.id] ?? null : p.from_price ?? null,
+    from_price: HAS_SUPABASE ? priceMap[p.id] ?? null : null,
     use_cases: p.use_cases || [],
     material_tags: p.material_tags || [],
   }));

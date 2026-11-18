@@ -65,14 +65,14 @@ BEGIN
   -- TABLE: Cafe table
   INSERT INTO products (
     sku, name, category, product_type, base_length_ft, base_width_ft, base_height_ft,
-    pipe_spec, allowed_top_categories, is_knockdown_available, warranty_text,
+    allowed_top_categories, is_knockdown_available, warranty_text,
     main_image_url, hover_blueprint_img, is_active, use_cases, material_tags,
-    sort_order, top_overlay_note, combo_config, top_category_images, gallery_images
+    sort_order, top_overlay_note, top_category_images, gallery_images
   ) VALUES (
     'IMS-CF-42', 'Commercial Heavy-Gauge Cafe Table (4x2 ft)', 'Cafe & Dining Tables',
-    'TABLE', 4.0, 2.0, 2.5, '1.5 inch Square Tube, 16 Gauge',
-    ARRAY['FRAME_ONLY','WOOD','STONE']::text[], true, '10-Yr MIG Structural Warranty',
-    '/images/cat-dining-tables.jpg', '/images/hero-creative.jpg', true,
+    'TABLE', 4.0, 2.0, 2.5,
+    '["FRAME_ONLY","WOOD","STONE"]'::jsonb, true, '10-Yr MIG Structural Warranty',
+    '/images/cat-dining-tables.svg', '/images/hero-workstation.svg', true,
     ARRAY['CAFE','HOME','CANTEEN','BAKERY','HALL','SCHOOL']::text[], ARRAY['MS','WOOD','GRANITE']::text[],
     10, 'Paired with 100% Seasoned Grade-A Hardwood or 18mm Export-Grade Natural Granite',
     '{}'::jsonb, '{}'::jsonb, ARRAY[]::text[]
@@ -84,7 +84,6 @@ BEGIN
     base_length_ft = EXCLUDED.base_length_ft,
     base_width_ft = EXCLUDED.base_width_ft,
     base_height_ft = EXCLUDED.base_height_ft,
-    pipe_spec = EXCLUDED.pipe_spec,
     allowed_top_categories = EXCLUDED.allowed_top_categories,
     is_knockdown_available = EXCLUDED.is_knockdown_available,
     warranty_text = EXCLUDED.warranty_text,
@@ -95,7 +94,7 @@ BEGIN
     material_tags = EXCLUDED.material_tags,
     sort_order = EXCLUDED.sort_order,
     top_overlay_note = EXCLUDED.top_overlay_note,
-    combo_config = EXCLUDED.combo_config,
+
     top_category_images = EXCLUDED.top_category_images,
     gallery_images = EXCLUDED.gallery_images
   RETURNING id INTO p_cafe;
@@ -103,15 +102,15 @@ BEGIN
   -- TABLE: Office workstation
   INSERT INTO products (
     sku, name, category, product_type, base_length_ft, base_width_ft, base_height_ft,
-    pipe_spec, allowed_top_categories, is_knockdown_available, warranty_text,
+    allowed_top_categories, is_knockdown_available, warranty_text,
     main_image_url, hover_blueprint_img, is_active, use_cases, material_tags,
-    sort_order, top_overlay_note, combo_config, top_category_images, gallery_images
+    sort_order, top_overlay_note, top_category_images, gallery_images
   ) VALUES (
     'IMS-WS-425', 'Zero-Shake Modular Office Workstation (4x2.5 ft)',
     'Office & Workstation Tables', 'TABLE', 4.0, 2.5, 2.5,
-    '1.5 inch Square Tube, 16 Gauge', ARRAY['FRAME_ONLY','WOOD','METAL']::text[],
-    true, '10-Yr MIG Structural Warranty', '/images/cat-workstations.jpg',
-    '/images/hero-creative.jpg', true, ARRAY['OFFICE','HOME','SCHOOL']::text[],
+    '["FRAME_ONLY","WOOD","METAL"]'::jsonb,
+    true, '10-Yr MIG Structural Warranty', '/images/cat-workstations.svg',
+    '/images/hero-workstation.svg', true, ARRAY['OFFICE','HOME','SCHOOL']::text[],
     ARRAY['MS','WOOD']::text[], 20,
     'Engineered for dual-monitor setups with cable management channel',
     '{}'::jsonb, '{}'::jsonb, ARRAY[]::text[]
@@ -123,7 +122,6 @@ BEGIN
     base_length_ft = EXCLUDED.base_length_ft,
     base_width_ft = EXCLUDED.base_width_ft,
     base_height_ft = EXCLUDED.base_height_ft,
-    pipe_spec = EXCLUDED.pipe_spec,
     allowed_top_categories = EXCLUDED.allowed_top_categories,
     is_knockdown_available = EXCLUDED.is_knockdown_available,
     warranty_text = EXCLUDED.warranty_text,
@@ -134,7 +132,7 @@ BEGIN
     material_tags = EXCLUDED.material_tags,
     sort_order = EXCLUDED.sort_order,
     top_overlay_note = EXCLUDED.top_overlay_note,
-    combo_config = EXCLUDED.combo_config,
+
     top_category_images = EXCLUDED.top_category_images,
     gallery_images = EXCLUDED.gallery_images
   RETURNING id INTO p_work;
@@ -142,15 +140,15 @@ BEGIN
   -- TABLE: Dining table
   INSERT INTO products (
     sku, name, category, product_type, base_length_ft, base_width_ft, base_height_ft,
-    pipe_spec, allowed_top_categories, is_knockdown_available, warranty_text,
+    allowed_top_categories, is_knockdown_available, warranty_text,
     main_image_url, hover_blueprint_img, is_active, use_cases, material_tags,
-    sort_order, top_overlay_note, combo_config, top_category_images, gallery_images
+    sort_order, top_overlay_note, top_category_images, gallery_images
   ) VALUES (
     'IMS-DN-63', 'Industrial Grade 6-Seater Dining Table (6x3 ft)',
     'Cafe & Dining Tables', 'TABLE', 6.0, 3.0, 2.5,
-    '2 inch Square Tube, 14 Gauge', ARRAY['FRAME_ONLY','WOOD','STONE']::text[],
-    true, '10-Yr MIG Structural Warranty', '/images/hero-creative.jpg',
-    '/images/hero-creative.jpg', true, ARRAY['HOME','CAFE','CANTEEN','BAKERY']::text[],
+    '["FRAME_ONLY","WOOD","STONE"]'::jsonb,
+    true, '10-Yr MIG Structural Warranty', '/images/hero-workstation.svg',
+    '/images/hero-workstation.svg', true, ARRAY['HOME','CAFE','CANTEEN','BAKERY']::text[],
     ARRAY['MS','WOOD','GRANITE']::text[], 30,
     'Heavy-duty cross-braced frame supporting up to 200 Kg load',
     '{}'::jsonb, '{}'::jsonb, ARRAY[]::text[]
@@ -162,7 +160,6 @@ BEGIN
     base_length_ft = EXCLUDED.base_length_ft,
     base_width_ft = EXCLUDED.base_width_ft,
     base_height_ft = EXCLUDED.base_height_ft,
-    pipe_spec = EXCLUDED.pipe_spec,
     allowed_top_categories = EXCLUDED.allowed_top_categories,
     is_knockdown_available = EXCLUDED.is_knockdown_available,
     warranty_text = EXCLUDED.warranty_text,
@@ -173,7 +170,7 @@ BEGIN
     material_tags = EXCLUDED.material_tags,
     sort_order = EXCLUDED.sort_order,
     top_overlay_note = EXCLUDED.top_overlay_note,
-    combo_config = EXCLUDED.combo_config,
+
     top_category_images = EXCLUDED.top_category_images,
     gallery_images = EXCLUDED.gallery_images
   RETURNING id INTO p_dine;
@@ -181,43 +178,43 @@ BEGIN
   -- CHAIR / STAND / RACK / SS_UNIT products
   INSERT INTO products (
     sku, name, category, product_type, base_length_ft, base_width_ft, base_height_ft,
-    pipe_spec, allowed_top_categories, is_knockdown_available, warranty_text,
+    allowed_top_categories, is_knockdown_available, warranty_text,
     main_image_url, hover_blueprint_img, is_active, use_cases, material_tags,
-    sort_order, top_overlay_note, combo_config, top_category_images, gallery_images
+    sort_order, top_overlay_note, top_category_images, gallery_images
   ) VALUES
     ('IMS-CH-01', 'Cafe Chair', 'SS & MS Chairs / Bar Stools', 'CHAIR', 1.5, 1.5, 2.5,
-     '1 inch Square Tube, 16 Gauge', ARRAY[]::text[], true, '7-Year Weld Warranty',
-     '/images/cat-chairs-stools.jpg', NULL, true,
+     '[]'::jsonb, true, '7-Year Weld Warranty',
+     '/images/cat-chairs-stools.svg', NULL, true,
      ARRAY['CAFE','HOME','CANTEEN','HALL','SCHOOL']::text[], ARRAY['MS','SS','WOOD']::text[], 40, NULL,
      '{}'::jsonb, '{}'::jsonb, ARRAY[]::text[]),
     ('IMS-CH-BS', 'Bar Stool', 'SS & MS Chairs / Bar Stools', 'CHAIR', 1.4, 1.4, 2.5,
-     '1 inch Square Tube, 16 Gauge', ARRAY[]::text[], true, '7-Year Weld Warranty',
-     '/images/cat-chairs-stools.jpg', NULL, true,
+     '[]'::jsonb, true, '7-Year Weld Warranty',
+     '/images/cat-chairs-stools.svg', NULL, true,
      ARRAY['CAFE','HOME','BAKERY','HALL']::text[], ARRAY['MS','SS']::text[], 41, NULL,
      '{}'::jsonb, '{}'::jsonb, ARRAY[]::text[]),
     ('IMS-ST-12', '12-inch Stool', 'Home Utility Stands', 'STAND', 1.0, 1.0, 1.5,
-     '1 inch Square Tube, 16 Gauge', ARRAY[]::text[], false, '7-Year Weld Warranty',
-     '/images/cat-utility-stands.jpg', NULL, true,
+     '[]'::jsonb, false, '7-Year Weld Warranty',
+     '/images/cat-utility-stands.svg', NULL, true,
      ARRAY['HOME','SCHOOL']::text[], ARRAY['MS','SS']::text[], 42, NULL,
      '{}'::jsonb, '{}'::jsonb, ARRAY[]::text[]),
     ('IMS-ST-INV', 'Inverter Stand', 'Home Utility Stands', 'STAND', 1.5, 1.0, 2.0,
-     '1 inch Square Tube, 16 Gauge', ARRAY[]::text[], false, '7-Year Weld Warranty',
-     '/images/cat-utility-stands.jpg', NULL, true,
+     '[]'::jsonb, false, '7-Year Weld Warranty',
+     '/images/cat-utility-stands.svg', NULL, true,
      ARRAY['HOME','SCHOOL']::text[], ARRAY['MS','SS']::text[], 43, NULL,
      '{}'::jsonb, '{}'::jsonb, ARRAY[]::text[]),
     ('IMS-ST-KD', 'Kadai Stand', 'Home Utility Stands', 'STAND', 1.2, 1.2, 1.5,
-     '1 inch Square Tube, 16 Gauge', ARRAY[]::text[], false, '7-Year Weld Warranty',
-     '/images/cat-utility-stands.jpg', NULL, true,
+     '[]'::jsonb, false, '7-Year Weld Warranty',
+     '/images/cat-utility-stands.svg', NULL, true,
      ARRAY['HOME']::text[], ARRAY['MS','SS']::text[], 44, NULL,
      '{}'::jsonb, '{}'::jsonb, ARRAY[]::text[]),
     ('IMS-RK-01', 'Boutique Garment Rack', 'Boutique & Showroom Racks', 'RACK', 4.0, 1.5, 6.0,
-     '1.5 inch Square Tube, 16 Gauge', ARRAY[]::text[], false, '10-Year Structural Warranty',
-     '/images/cat-boutique-racks.jpg', NULL, true,
+     '[]'::jsonb, false, '10-Year Structural Warranty',
+     '/images/cat-boutique-racks.svg', NULL, true,
      ARRAY['HOME','OFFICE','HALL']::text[], ARRAY['MS']::text[], 45, NULL,
      '{}'::jsonb, '{}'::jsonb, ARRAY[]::text[]),
     ('IMS-SS-CT', 'SS Canteen Table', 'Hospital, Canteen & Lab SS', 'SS_UNIT', 4.0, 2.0, 2.5,
-     '1.5 inch Square Tube, 16 Gauge', ARRAY[]::text[], false, '15-Year Rust-Free Warranty',
-     '/images/cat-hospital-lab.jpg', NULL, true,
+     '[]'::jsonb, false, '15-Year Rust-Free Warranty',
+     '/images/cat-hospital-lab.svg', NULL, true,
      ARRAY['HOSPITAL','CAFE','CANTEEN','SCHOOL']::text[], ARRAY['SS']::text[], 46, NULL,
      '{}'::jsonb, '{}'::jsonb, ARRAY[]::text[])
   ON CONFLICT (sku) DO UPDATE SET
@@ -227,7 +224,6 @@ BEGIN
     base_length_ft = EXCLUDED.base_length_ft,
     base_width_ft = EXCLUDED.base_width_ft,
     base_height_ft = EXCLUDED.base_height_ft,
-    pipe_spec = EXCLUDED.pipe_spec,
     allowed_top_categories = EXCLUDED.allowed_top_categories,
     is_knockdown_available = EXCLUDED.is_knockdown_available,
     warranty_text = EXCLUDED.warranty_text,
@@ -238,7 +234,7 @@ BEGIN
     material_tags = EXCLUDED.material_tags,
     sort_order = EXCLUDED.sort_order,
     top_overlay_note = EXCLUDED.top_overlay_note,
-    combo_config = EXCLUDED.combo_config,
+
     top_category_images = EXCLUDED.top_category_images,
     gallery_images = EXCLUDED.gallery_images;
 
@@ -294,26 +290,26 @@ BEGIN
     product_id, top_material_code, frame_color, preview_image_url,
     size_option, size_multiplier, selection_key
   ) VALUES
-    (p_cafe, 'RUBBER_HONEY_TEAK', 'MATTE_BLACK', '/images/cat-dining-tables.jpg', '4x2', 1.0, 'SEED-CF-1'),
-    (p_cafe, 'GRANITE_JET_BLACK_OPT', 'MATTE_BLACK', '/images/cat-dining-tables.jpg', '4x2', 1.0, 'SEED-CF-2'),
-    (p_cafe, 'RUBBER_HONEY_TEAK', 'WHITE', '/images/cat-dining-tables.jpg', '4x2', 1.0, 'SEED-CF-3'),
-    (p_work, 'RUBBER_HONEY_TEAK', 'MATTE_BLACK', '/images/cat-workstations.jpg', '4x2.5', 1.0, 'SEED-WS-1'),
-    (p_work, 'PRELAM_WHITE', 'GREY', '/images/cat-workstations.jpg', '4x2.5', 1.0, 'SEED-WS-2'),
-    (p_work, 'PRELAM_CARBON_BLACK', 'WHITE', '/images/cat-workstations.jpg', '4x2.5', 1.0, 'SEED-WS-3'),
-    (p_dine, 'RUBBER_HONEY_TEAK', 'MATTE_BLACK', '/images/hero-creative.jpg', '6x3', 1.0, 'SEED-DN-1'),
-    (p_dine, 'GRANITE_JET_BLACK_OPT', 'MATTE_BLACK', '/images/hero-creative.jpg', '6x3', 1.0, 'SEED-DN-2'),
-    (p_dine, 'GRANITE_KWHITE_OPT', 'WHITE', '/images/hero-creative.jpg', '6x3', 1.0, 'SEED-DN-3'),
-    (p_chair, 'SEAT_RUBBER', 'MATTE_BLACK', '/images/cat-chairs-stools.jpg', 'STD', 1.00, 'SEED-CH-1'),
-    (p_chair, 'SEAT_REXINE', 'MATTE_BLACK', '/images/cat-chairs-stools.jpg', 'STD', 1.00, 'SEED-CH-2'),
-    (p_chair, 'SEAT_RUBBER', 'SS', '/images/cat-chairs-stools.jpg', 'STD', 1.00, 'SEED-CH-3'),
-    (p_bar, 'SEAT_RUBBER', 'MATTE_BLACK', '/images/cat-chairs-stools.jpg', 'STD', 1.00, 'SEED-BS-1'),
-    (p_bar, 'SEAT_PERFORATED', 'SS', '/images/cat-chairs-stools.jpg', 'STD', 1.00, 'SEED-BS-2'),
-    (p_st12, 'ST_MS', 'MATTE_BLACK', '/images/cat-utility-stands.jpg', 'STD', 1.00, 'SEED-ST12-1'),
-    (p_st12, 'ST_SS304', 'SS', '/images/cat-utility-stands.jpg', 'STD', 1.00, 'SEED-ST12-2'),
-    (p_stinv, 'ST_MS', 'MATTE_BLACK', '/images/cat-utility-stands.jpg', 'STD', 1.00, 'SEED-STINV-1'),
-    (p_stkd, 'ST_MS', 'MATTE_BLACK', '/images/cat-utility-stands.jpg', 'STD', 1.00, 'SEED-STKD-1'),
-    (p_rack, 'SH_NONE', 'MATTE_BLACK', '/images/cat-boutique-racks.jpg', 'R4', 1.00, 'SEED-RK-1'),
-    (p_rack, 'SH_RUBBER', 'GOLD', '/images/cat-boutique-racks.jpg', 'R6', 1.50, 'SEED-RK-2'),
-    (p_ss, 'SSG_202', 'SS', '/images/cat-hospital-lab.jpg', 'STD', 1.00, 'SEED-SS-1'),
-    (p_ss, 'SSG_304', 'SS', '/images/cat-hospital-lab.jpg', 'STD', 1.00, 'SEED-SS-2');
+    (p_cafe, 'RUBBER_HONEY_TEAK', 'MATTE_BLACK', '/images/cat-dining-tables.svg', '4x2', 1.0, 'SEED-CF-1'),
+    (p_cafe, 'GRANITE_JET_BLACK_OPT', 'MATTE_BLACK', '/images/cat-dining-tables.svg', '4x2', 1.0, 'SEED-CF-2'),
+    (p_cafe, 'RUBBER_HONEY_TEAK', 'WHITE', '/images/cat-dining-tables.svg', '4x2', 1.0, 'SEED-CF-3'),
+    (p_work, 'RUBBER_HONEY_TEAK', 'MATTE_BLACK', '/images/cat-workstations.svg', '4x2.5', 1.0, 'SEED-WS-1'),
+    (p_work, 'PRELAM_WHITE', 'GREY', '/images/cat-workstations.svg', '4x2.5', 1.0, 'SEED-WS-2'),
+    (p_work, 'PRELAM_CARBON_BLACK', 'WHITE', '/images/cat-workstations.svg', '4x2.5', 1.0, 'SEED-WS-3'),
+    (p_dine, 'RUBBER_HONEY_TEAK', 'MATTE_BLACK', '/images/hero-workstation.svg', '6x3', 1.0, 'SEED-DN-1'),
+    (p_dine, 'GRANITE_JET_BLACK_OPT', 'MATTE_BLACK', '/images/hero-workstation.svg', '6x3', 1.0, 'SEED-DN-2'),
+    (p_dine, 'GRANITE_KWHITE_OPT', 'WHITE', '/images/hero-workstation.svg', '6x3', 1.0, 'SEED-DN-3'),
+    (p_chair, 'SEAT_RUBBER', 'MATTE_BLACK', '/images/cat-chairs-stools.svg', 'STD', 1.00, 'SEED-CH-1'),
+    (p_chair, 'SEAT_REXINE', 'MATTE_BLACK', '/images/cat-chairs-stools.svg', 'STD', 1.00, 'SEED-CH-2'),
+    (p_chair, 'SEAT_RUBBER', 'SS', '/images/cat-chairs-stools.svg', 'STD', 1.00, 'SEED-CH-3'),
+    (p_bar, 'SEAT_RUBBER', 'MATTE_BLACK', '/images/cat-chairs-stools.svg', 'STD', 1.00, 'SEED-BS-1'),
+    (p_bar, 'SEAT_PERFORATED', 'SS', '/images/cat-chairs-stools.svg', 'STD', 1.00, 'SEED-BS-2'),
+    (p_st12, 'ST_MS', 'MATTE_BLACK', '/images/cat-utility-stands.svg', 'STD', 1.00, 'SEED-ST12-1'),
+    (p_st12, 'ST_SS304', 'SS', '/images/cat-utility-stands.svg', 'STD', 1.00, 'SEED-ST12-2'),
+    (p_stinv, 'ST_MS', 'MATTE_BLACK', '/images/cat-utility-stands.svg', 'STD', 1.00, 'SEED-STINV-1'),
+    (p_stkd, 'ST_MS', 'MATTE_BLACK', '/images/cat-utility-stands.svg', 'STD', 1.00, 'SEED-STKD-1'),
+    (p_rack, 'SH_NONE', 'MATTE_BLACK', '/images/cat-boutique-racks.svg', 'R4', 1.00, 'SEED-RK-1'),
+    (p_rack, 'SH_RUBBER', 'GOLD', '/images/cat-boutique-racks.svg', 'R6', 1.50, 'SEED-RK-2'),
+    (p_ss, 'SSG_202', 'SS', '/images/cat-hospital-lab.svg', 'STD', 1.00, 'SEED-SS-1'),
+    (p_ss, 'SSG_304', 'SS', '/images/cat-hospital-lab.svg', 'STD', 1.00, 'SEED-SS-2');
 END $$;

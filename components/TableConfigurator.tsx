@@ -61,6 +61,8 @@ interface TableConfiguratorProps {
   options: ConfigOption[];
   visualVariants: VisualVariant[];
   topCategoryImages?: Record<string, string> | null;
+  pipeSpec?: string | null;
+  chairAddonPrice?: number | null;
 }
 
 export default function TableConfigurator({
@@ -68,6 +70,8 @@ export default function TableConfigurator({
   options,
   visualVariants,
   topCategoryImages,
+  pipeSpec,
+  chairAddonPrice,
 }: TableConfiguratorProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -579,7 +583,7 @@ export default function TableConfigurator({
                   <div className="flex justify-between gap-4">
                     <span>Pipe spec</span>
                     <span className="text-right max-w-[60%]">
-                      {product.pipe_spec || "Steel tube frame"}
+                      {pipeSpec || "Steel tube frame"}
                     </span>
                   </div>
                 </div>
@@ -1031,9 +1035,9 @@ export default function TableConfigurator({
             {addons.map((ad) => {
               const isChecked = selectedAddons.includes(ad.option_code);
               const isChairCombo = ad.option_code === "CHAIRS4";
-              const chairUnit = Number(product.combo_config?.single_chair_cost) || 1150;
+              const addonPrice = chairAddonPrice ?? 4600;
               const addonLabel = isChairCombo
-                ? `+ ₹${(chairUnit * 4).toLocaleString("en-IN")} for 4 Matching Heavy-Duty Chairs`
+                ? `+ ₹${addonPrice.toLocaleString("en-IN")} for 4 Matching Heavy-Duty Chairs`
                 : ad.label_en;
               return (
                 <button

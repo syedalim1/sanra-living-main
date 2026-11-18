@@ -239,8 +239,6 @@ export async function saveProductAction(
       base_length_ft: values.base_length_ft,
       base_width_ft: values.base_width_ft,
       base_height_ft: values.base_height_ft,
-      pipe_spec: values.pipe_spec || null,
-      combo_config: comboConfig,
       allowed_top_categories: values.allowed_top_categories,
       is_knockdown_available: values.is_knockdown_available,
       warranty_text: values.warranty_text,
@@ -360,6 +358,8 @@ export async function saveProductAction(
       {
         product_id: savedProductId,
         ...values.costing,
+        combo_config: comboConfig,
+        pipe_spec: values.pipe_spec || null,
       },
       { onConflict: "product_id" }
     );
@@ -562,6 +562,10 @@ export async function duplicateProductAction(
         overhead_pct: rule.overhead_pct,
         retail_margin_pct: rule.retail_margin_pct,
         b2b_margin_pct: rule.b2b_margin_pct,
+        finishing_cost: rule.finishing_cost ?? 0,
+        b2b_moq: rule.b2b_moq ?? 1,
+        combo_config: rule.combo_config ?? {},
+        pipe_spec: rule.pipe_spec ?? null,
       });
 
       if (ruleError) {

@@ -267,6 +267,12 @@ export async function generateMetadata({ params }: SkuPageProps): Promise<Metada
   };
 }
 
+function safeOverlayNote(note: string | null | undefined): string | null {
+  if (!note) return null;
+  if (/discount|combo\s*discount|\boff\b|%/i.test(note)) return null;
+  return note;
+}
+
 export default async function SkuPage({ params }: SkuPageProps) {
   const { sku } = await params;
   const upperSku = sku.toUpperCase();
@@ -275,11 +281,15 @@ export default async function SkuPage({ params }: SkuPageProps) {
   let visualVariants: any[] = [];
   let configuratorOptions: ConfigOption[] = FALLBACK_OPTIONS;
   let typeGroups: OptionGroupRow[] = [];
+  let pipeSpec: string | null = null;
+  let chairAddonPrice: number | null = null;
 
   try {
     const { data: prodData } = await supabaseServer
       .from("products")
-      .select("*")
+      .select(
+        "id, sku, name, category, product_type, base_length_ft, base_width_ft, base_height_ft, allowed_top_categories, is_knockdown_available, warranty_text, main_image_url, hover_blueprint_img, is_active, use_cases, material_tags, sort_order, top_overlay_note, top_category_images, gallery_images"
+      )
       .eq("sku", upperSku)
       .eq("is_active", true)
       .maybeSingle();
@@ -294,7 +304,6 @@ export default async function SkuPage({ params }: SkuPageProps) {
         base_length_ft: Number(prodData.base_length_ft),
         base_width_ft: Number(prodData.base_width_ft),
         base_height_ft: Number(prodData.base_height_ft ?? 2.5),
-        pipe_spec: prodData.pipe_spec ?? null,
         top_category_images:
           prodData.top_category_images &&
           typeof prodData.top_category_images === "object"
@@ -303,10 +312,6 @@ export default async function SkuPage({ params }: SkuPageProps) {
         gallery_images: Array.isArray(prodData.gallery_images)
           ? (prodData.gallery_images as string[])
           : [],
-        combo_config:
-          prodData.combo_config && typeof prodData.combo_config === "object"
-            ? (prodData.combo_config as Record<string, unknown>)
-            : {},
         main_image_url: prodData.main_image_url,
         hover_blueprint_img: prodData.hover_blueprint_img,
         warranty_text: prodData.warranty_text,
@@ -314,8 +319,29 @@ export default async function SkuPage({ params }: SkuPageProps) {
         allowed_top_categories: Array.isArray(prodData.allowed_top_categories)
           ? prodData.allowed_top_categories
           : ["FRAME_ONLY", "WOOD", "STONE"],
-        top_overlay_note: prodData.top_overlay_note,
+        top_overlay_note: safeOverlayNote(prodData.top_overlay_note),
       };
+
+      const { data: pricingRule } = await supabaseServer
+        .from("product_pricing_rules")
+        .select("pipe_spec, combo_config, overhead_pct, retail_margin_pct")
+        .eq("product_id", prodData.id)
+        .maybeSingle();
+
+      if (pricingRule) {
+        pipeSpec = pricingRule.pipe_spec ?? null;
+        const combo =
+          pricingRule.combo_config && typeof pricingRule.combo_config === "object"
+            ? (pricingRule.combo_config as Record<string, unknown>)
+            : {};
+        const chairUnitCost = Number(combo.single_chair_cost) || 1150;
+        chairAddonPrice = Math.round(
+          chairUnitCost *
+            4 *
+            (1 + Number(pricingRule.overhead_pct ?? 0) / 100) *
+            (1 + Number(pricingRule.retail_margin_pct ?? 0) / 100)
+        );
+      }
 
       const { data: vData } = await supabaseServer
         .from("product_visual_variants")
@@ -485,6 +511,8 @@ export default async function SkuPage({ params }: SkuPageProps) {
           topCategoryImages={
             (product.top_category_images as Record<string, string> | undefined) ?? null
           }
+          pipeSpec={pipeSpec}
+          chairAddonPrice={chairAddonPrice}
         />
 
         {relatedSets.length > 0 && (

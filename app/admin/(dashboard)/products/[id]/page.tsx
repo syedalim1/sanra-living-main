@@ -69,11 +69,6 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
       base_length_ft: Number(row.base_length_ft),
       base_width_ft: Number(row.base_width_ft),
       base_height_ft: Number(row.base_height_ft ?? 2.5),
-      pipe_spec: row.pipe_spec ?? null,
-      combo_config:
-        row.combo_config && typeof row.combo_config === "object"
-          ? (row.combo_config as Record<string, unknown>)
-          : {},
       top_category_images:
         row.top_category_images && typeof row.top_category_images === "object"
           ? (row.top_category_images as Record<string, string>)
@@ -103,6 +98,12 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
         b2b_margin_pct: Number(pricingResult.data.b2b_margin_pct ?? 0),
         finishing_cost: Number(pricingResult.data.finishing_cost ?? 0),
         b2b_moq: Number(pricingResult.data.b2b_moq ?? 1),
+        combo_config:
+          pricingResult.data.combo_config &&
+          typeof pricingResult.data.combo_config === "object"
+            ? (pricingResult.data.combo_config as Record<string, unknown>)
+            : {},
+        pipe_spec: pricingResult.data.pipe_spec ?? null,
       };
     }
 

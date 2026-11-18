@@ -33,6 +33,8 @@ export interface AdminPricingRule {
   b2b_margin_pct: number;
   finishing_cost: number;
   b2b_moq: number;
+  combo_config?: Record<string, unknown> | null;
+  pipe_spec?: string | null;
 }
 
 export interface AdminVariant {
