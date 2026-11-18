@@ -122,6 +122,24 @@ const nextConfig: NextConfig = {
       { source: "/terms", headers: publicPageCacheHeaders },
       { source: "/products", headers: catalogCacheHeaders },
       { source: "/products/:path*", headers: catalogCacheHeaders },
+      {
+        source: "/images/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
+      {
+        source: "/og-default.png",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
       { source: "/admin", headers: adminSecurityHeaders },
       { source: "/admin/:path*", headers: adminSecurityHeaders },
       { source: "/api/admin/:path*", headers: adminSecurityHeaders },

@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, Save, Trash2 } from "lucide-react";
 import AdminToast, { type ToastKind } from "@/components/admin/Toast";
+import CompressedFileInput from "@/components/admin/CompressedFileInput";
 import {
   deleteVariantAction,
   saveVariantAction,
@@ -194,14 +195,13 @@ function VariantEditor({
           <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
             Preview image
           </span>
-          <input
-            type="file"
+          <CompressedFileInput
             name="file"
             accept="image/jpeg,image/png,image/webp"
             className="block w-full text-[10px] text-neutral-600 file:mr-2 file:px-2 file:py-1 file:rounded file:border-0 file:bg-neutral-900 file:text-white file:text-[9px] file:font-bold file:uppercase"
           />
           <span className="block text-[9px] text-neutral-500">
-            Optional. Watermarked and converted to WEBP.
+            Optional. Compressed in your browser first, then watermarked and saved as WEBP.
           </span>
         </label>
 

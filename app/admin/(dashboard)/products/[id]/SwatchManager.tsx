@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Trash2, Upload } from "lucide-react";
 import AdminToast, { type ToastKind } from "@/components/admin/Toast";
+import CompressedFileInput from "@/components/admin/CompressedFileInput";
 import {
   deleteSwatchAction,
   uploadSwatchAction,
@@ -124,8 +125,7 @@ export default function SwatchManager({ options }: { options: AdminOption[] }) {
             <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
               Texture image
             </span>
-            <input
-              type="file"
+            <CompressedFileInput
               name="file"
               required
               accept="image/jpeg,image/png,image/webp"

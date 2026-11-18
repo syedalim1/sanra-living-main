@@ -11,6 +11,7 @@ import {
   USE_CASES,
 } from "@/lib/admin/validation";
 import { PRODUCT_CATEGORY_OPTIONS } from "@/lib/catalogCategories";
+import { compressImage, formatBytes } from "@/lib/imageCompression";
 import type {
   AdminPricingRule,
   AdminProduct,
@@ -25,11 +26,6 @@ const initialState: AdminActionResult = {};
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const PRODUCT_PLACEHOLDER = "/images/product-placeholder.svg";
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function ImageDropField({
   name,
@@ -50,9 +46,14 @@ function ImageDropField({
   const [removeExisting, setRemoveExisting] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState<
+    { original: number; compressed: number } | null
+  >(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
+  const selectionToken = useRef(0);
 
   const hasExisting = Boolean(currentUrl && currentUrl !== PRODUCT_PLACEHOLDER);
   const shownUrl = previewUrl ?? (removeExisting ? null : hasExisting ? currentUrl : null);
@@ -70,7 +71,7 @@ function ImageDropField({
     }
   }
 
-  function applyFile(file: File | undefined) {
+  async function applyFile(file: File | undefined) {
     if (!file) return;
 
     if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
@@ -83,31 +84,13 @@ function ImageDropField({
       return;
     }
 
-    releaseObjectUrl();
-    const url = URL.createObjectURL(file);
-    objectUrlRef.current = url;
-    setPreviewUrl(url);
+    const token = ++selectionToken.current;
+    setError(null);
+    setRemoveExisting(false);
+    setCompressionInfo(null);
     setSelectedName(file.name);
     setSelectedSize(file.size);
-    setRemoveExisting(false);
-    setError(null);
-  }
-
-  function clearSelection() {
-    releaseObjectUrl();
-    setPreviewUrl(null);
-    setSelectedName(null);
-    setSelectedSize(null);
-    setError(null);
-    if (inputRef.current) inputRef.current.value = "";
-  }
-
-  function handleDrop(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    setDragging(false);
-
-    const file = event.dataTransfer.files?.[0];
-    if (!file) return;
+    setCompressing(true);
 
     if (inputRef.current) {
       const transfer = new DataTransfer();
@@ -115,7 +98,53 @@ function ImageDropField({
       inputRef.current.files = transfer.files;
     }
 
-    applyFile(file);
+    releaseObjectUrl();
+    const preview = URL.createObjectURL(file);
+    objectUrlRef.current = preview;
+    setPreviewUrl(preview);
+
+    const result = await compressImage(file);
+    if (token !== selectionToken.current) return;
+
+    if (inputRef.current) {
+      const transfer = new DataTransfer();
+      transfer.items.add(result.file);
+      inputRef.current.files = transfer.files;
+    }
+
+    if (result.compressed) {
+      releaseObjectUrl();
+      const compressedPreview = URL.createObjectURL(result.file);
+      objectUrlRef.current = compressedPreview;
+      setPreviewUrl(compressedPreview);
+      setSelectedName(result.file.name);
+    }
+
+    setSelectedSize(result.compressedSize);
+    setCompressionInfo(
+      result.compressed
+        ? { original: result.originalSize, compressed: result.compressedSize }
+        : null
+    );
+    setCompressing(false);
+  }
+
+  function clearSelection() {
+    selectionToken.current += 1;
+    releaseObjectUrl();
+    setPreviewUrl(null);
+    setSelectedName(null);
+    setSelectedSize(null);
+    setCompressionInfo(null);
+    setCompressing(false);
+    setError(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setDragging(false);
+    void applyFile(event.dataTransfer.files?.[0]);
   }
 
   return (
@@ -174,7 +203,7 @@ function ImageDropField({
         type="file"
         name={name}
         accept="image/jpeg,image/png,image/webp"
-        onChange={(event) => applyFile(event.target.files?.[0])}
+        onChange={(event) => void applyFile(event.target.files?.[0])}
         className="sr-only"
       />
 
@@ -191,10 +220,22 @@ function ImageDropField({
           {selectedName ? "Change image" : hasExisting ? "Replace image" : "Choose image"}
         </button>
 
-        {selectedName && (
-          <span className="text-[10px] text-neutral-500 truncate max-w-[180px]">
+        {compressing && (
+          <span className="text-[10px] font-semibold text-amber-700">
+            Compressing for faster upload…
+          </span>
+        )}
+
+        {!compressing && selectedName && (
+          <span className="text-[10px] text-neutral-500 truncate max-w-[220px]">
             {selectedName}
-            {selectedSize != null ? ` · ${formatFileSize(selectedSize)}` : ""}
+            {compressionInfo
+              ? ` · ${formatBytes(compressionInfo.original)} → ${formatBytes(
+                  compressionInfo.compressed
+                )}`
+              : selectedSize != null
+              ? ` · ${formatBytes(selectedSize)}`
+              : ""}
           </span>
         )}
       </div>
@@ -415,8 +456,8 @@ export default function ProductForm({
           <h2 className="text-sm font-bold text-[#111111]">Product Images</h2>
           <p className="text-[11px] text-neutral-500 mt-1">
             {isEdit
-              ? "Replace or remove images and save. Files are converted to WEBP with a faint SANRA LIVING watermark."
-              : "Add images now — they upload when you create the product. JPG, PNG or WEBP up to 8 MB."}
+              ? "Replace or remove images and save. Photos are compressed in your browser to 1600 px WEBP for faster uploads."
+              : "Add images now — they upload when you create the product. Photos are compressed in your browser to 1600 px WEBP before upload."}
           </p>
         </div>
 

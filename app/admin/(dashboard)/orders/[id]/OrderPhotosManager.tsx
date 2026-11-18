@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ImagePlus, Loader2, Trash2 } from "lucide-react";
 import AdminToast, { type ToastKind } from "@/components/admin/Toast";
+import CompressedFileInput from "@/components/admin/CompressedFileInput";
 import {
   deleteOrderPhotoAction,
   toggleOrderPhotoVisibilityAction,
@@ -182,8 +183,7 @@ export default function OrderPhotosManager({
             <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
               Photo
             </span>
-            <input
-              type="file"
+            <CompressedFileInput
               name="file"
               required
               accept="image/jpeg,image/png,image/webp"
