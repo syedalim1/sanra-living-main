@@ -26,13 +26,11 @@ export default function Footer() {
             <p className="text-sm text-neutral-400 leading-relaxed">
               Direct steel furniture manufacturing unit in SIDCO Industrial Estate, Coimbatore. Heavy-gauge MS and stainless steel frames built for daily use.
             </p>
-            {company.gstin && (
-              <div className="pt-2">
-                <span className="inline-block bg-neutral-900 border border-neutral-700 text-neutral-300 text-xs px-2.5 py-1 rounded">
-                  GST Invoice Available • GSTIN: {company.gstin}
-                </span>
-              </div>
-            )}
+            <div className="pt-2">
+              <span className="inline-block bg-neutral-900 border border-neutral-700 text-neutral-300 text-xs px-2.5 py-1 rounded">
+                GST Invoice Available
+              </span>
+            </div>
           </div>
 
           {/* Quick Navigation */}
@@ -86,11 +84,11 @@ export default function Footer() {
               </li>
               <li className="flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-neutral-300 shrink-0 mt-0.5" />
-                <span>100% Seasoned Grade-A Kerala Rubberwood</span>
+                <span>100% Seasoned Grade-A Hardwood</span>
               </li>
               <li className="flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-neutral-300 shrink-0 mt-0.5" />
-                <span>18mm Export-Grade Krishnagiri Granite</span>
+                <span>18mm Export-Grade Natural Granite</span>
               </li>
               <li className="flex items-start gap-2">
                 <FileCheck className="w-4 h-4 text-neutral-300 shrink-0 mt-0.5" />

@@ -56,7 +56,7 @@ const KNOWN_PRODUCTS: Record<
     warranty_text: "10-Yr MIG Structural Warranty",
     is_knockdown_available: true,
     allowed_top_categories: ["FRAME_ONLY", "WOOD", "STONE"],
-    top_overlay_note: "Paired with 100% Seasoned Grade-A Kerala Rubberwood or 18mm Export-Grade Krishnagiri Granite",
+    top_overlay_note: "Paired with 100% Seasoned Grade-A Hardwood or 18mm Export-Grade Natural Granite",
   },
   "IMS-WS-425": {
     id: "fb-ws-425",
@@ -293,6 +293,16 @@ export default async function SkuPage({ params }: SkuPageProps) {
         product_type: prodData.product_type,
         base_length_ft: Number(prodData.base_length_ft),
         base_width_ft: Number(prodData.base_width_ft),
+        base_height_ft: Number(prodData.base_height_ft ?? 2.5),
+        pipe_spec: prodData.pipe_spec ?? null,
+        top_category_images:
+          prodData.top_category_images &&
+          typeof prodData.top_category_images === "object"
+            ? (prodData.top_category_images as Record<string, string>)
+            : {},
+        gallery_images: Array.isArray(prodData.gallery_images)
+          ? (prodData.gallery_images as string[])
+          : [],
         main_image_url: prodData.main_image_url,
         hover_blueprint_img: prodData.hover_blueprint_img,
         warranty_text: prodData.warranty_text,
@@ -338,23 +348,25 @@ export default async function SkuPage({ params }: SkuPageProps) {
     notFound();
   }
 
-  if (isProductType(product.product_type)) {
-    typeGroups = getTypeGroupRows(product.product_type);
+  const engineProductType = isProductType(product.product_type)
+    ? product.product_type
+    : "TABLE";
 
-    if (product.product_type !== "TABLE") {
-      try {
-        const { data: groupData } = await supabaseServer
-          .from("product_type_option_groups")
-          .select("*")
-          .eq("product_type", product.product_type)
-          .order("sort_order");
+  typeGroups = getTypeGroupRows(engineProductType);
 
-        if (groupData && groupData.length > 0) {
-          typeGroups = getTypeGroupRows(product.product_type, groupData);
-        }
-      } catch {
-        // Keep static group mapping.
+  if (engineProductType !== "TABLE") {
+    try {
+      const { data: groupData } = await supabaseServer
+        .from("product_type_option_groups")
+        .select("*")
+        .eq("product_type", engineProductType)
+        .order("sort_order");
+
+      if (groupData && groupData.length > 0) {
+        typeGroups = getTypeGroupRows(engineProductType, groupData);
       }
+    } catch {
+      // Keep static group mapping.
     }
   }
 
@@ -465,6 +477,10 @@ export default async function SkuPage({ params }: SkuPageProps) {
           groups={typeGroups}
           visualVariants={visualVariants}
           fromPrice={fromPrice}
+          engineProductType={engineProductType}
+          topCategoryImages={
+            (product.top_category_images as Record<string, string> | undefined) ?? null
+          }
         />
 
         {relatedSets.length > 0 && (

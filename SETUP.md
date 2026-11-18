@@ -496,6 +496,14 @@ Migration 012 adds the admin-managed option fields, per-product availability, pr
 
 Migration 013 creates `product_sets`, `product_set_items` and the private `set_pricing` table with RLS. It is safe to re-run. After it succeeds, open `/admin/sets` to create sets, add products and set the private adjustment.
 
+### Step 19: Run Product Console Upgrade (`014_product_console_upgrade.sql`) and Privacy Text (`015_privacy_text.sql`)
+
+1. Open the Supabase **SQL Editor**.
+2. Run [supabase/migrations/014_product_console_upgrade.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/014_product_console_upgrade.sql), then run [supabase/migrations/015_privacy_text.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/015_privacy_text.sql).
+3. Confirm `Success. No rows returned` for both.
+
+Migration 014 adds the height, pipe spec, combo, top-category images, gallery, finishing and MOQ fields and relaxes category/product type checks. Migration 015 removes sourcing locations from public option labels.
+
 Set `NEXT_PUBLIC_SITE_URL` in `.env.local` before the final production build. It drives canonical URLs, Open Graph, the sitemap and robots. For local testing, use `http://localhost:3000`.
 
 The final hardening also adds the security headers/CSP, `/.well-known/security.txt`, robots/sitemap rules, privacy/terms pages, branded error pages, the `GET /api/health` check and the launch/operations docs.

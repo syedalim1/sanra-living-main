@@ -178,7 +178,7 @@ export default async function Home() {
     {
       name: "Cafe & Dining Tables",
       imageSrc: "/images/cat-dining-tables.jpg",
-      description: "Heavy gauge MS & SS frames paired with 100% Seasoned Grade-A Kerala Rubberwood or 18mm Export-Grade Krishnagiri Granite.",
+      description: "Heavy gauge MS & SS frames paired with 100% Seasoned Grade-A Hardwood or 18mm Export-Grade Natural Granite.",
       href: "/products?category=Cafe+%26+Dining+Tables",
     },
     {
@@ -398,10 +398,10 @@ export default async function Home() {
 
           <div className="mt-12 text-center">
             <Link
-              href="/products"
-              className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#111111] hover:bg-neutral-800 text-white font-semibold text-sm uppercase tracking-wider rounded transition-colors shadow-sm"
-            >
-              View Full Factory Price List
+            href="/b2b"
+            className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#111111] hover:bg-neutral-800 text-white font-semibold text-sm uppercase tracking-wider rounded transition-colors shadow-sm"
+          >
+          View Full Factory Price List
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -715,7 +715,7 @@ export default async function Home() {
               Authentic Direct Sourcing Guarantee
             </h4>
             <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
-              We manufacture on-site at SIDCO Kurichi using quality structural steel pipes. Table tops are paired with <strong>100% Seasoned Grade-A Kerala Rubberwood</strong> and <strong>18mm Krishnagiri Granite</strong>.
+              We manufacture on-site at SIDCO Kurichi using quality structural steel pipes. Table tops are paired with <strong>100% Seasoned Grade-A Hardwood</strong> and <strong>18mm Natural Granite</strong>.
             </p>
           </div>
         </div>

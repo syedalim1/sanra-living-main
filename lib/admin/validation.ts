@@ -63,9 +63,20 @@ export function formatRateNumber(value: number): string {
   return Number(value.toFixed(2)).toString();
 }
 
-export const MATERIAL_TAGS = ["MS", "SS", "WOOD", "GRANITE"] as const;
+export const MATERIAL_TAGS = ["MS", "SS", "WOOD", "GRANITE", "MOLDED_PP", "PLYWOOD"] as const;
 export const TOP_CATEGORIES = ["FRAME_ONLY", "WOOD", "STONE", "METAL"] as const;
-export const PRODUCT_TYPES = ["TABLE", "CHAIR", "STAND", "RACK", "SS_UNIT"] as const;
+export const PRODUCT_TYPES = [
+  "TABLE",
+  "CHAIR",
+  "STAND",
+  "RACK",
+  "SS_UNIT",
+  "CHAIR_TABLE_SET",
+  "BENCH_DESK",
+  "COT_BUNK",
+  "TROLLEY",
+  "CUSTOM",
+] as const;
 export const VARIANT_FRAME_COLORS = ["MATTE_BLACK", "WHITE", "GREY", "GOLD", "RAW", "SS"] as const;
 
 export const SKU_PATTERN = /^[A-Z0-9]+(?:-[A-Z0-9]+)+$/;
@@ -88,11 +99,19 @@ export const ProductFormSchema = z.object({
     }),
   name: z.string().trim().min(2).max(160),
   category: z.string().trim().min(2).max(80),
-  product_type: z.enum(PRODUCT_TYPES),
+  product_type: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .min(2)
+    .max(40)
+    .regex(/^[A-Z0-9_]+$/, { message: "Product type must be uppercase letters, numbers or underscores." }),
   base_length_ft: DimensionSchema,
   base_width_ft: DimensionSchema,
-  use_cases: z.array(z.enum(USE_CASES)).max(USE_CASES.length),
-  material_tags: z.array(z.enum(MATERIAL_TAGS)).max(MATERIAL_TAGS.length),
+  base_height_ft: z.number().min(0).max(200),
+  pipe_spec: z.string().trim().max(160).optional().default(""),
+  use_cases: z.array(z.string().trim().min(1).max(40)).max(20),
+  material_tags: z.array(z.string().trim().min(1).max(40)).max(20),
   sort_order: z.number().int().min(0).max(100000),
   warranty_text: z.string().trim().min(2).max(240),
   is_active: z.boolean(),
@@ -106,6 +125,8 @@ export const ProductFormSchema = z.object({
     overhead_pct: NonNegativeMoney.max(100),
     retail_margin_pct: NonNegativeMoney.max(100),
     b2b_margin_pct: NonNegativeMoney.max(100),
+    finishing_cost: NonNegativeMoney.max(10000000),
+    b2b_moq: z.number().int().min(1).max(100000),
   }),
 });
 

@@ -36,6 +36,8 @@ interface ProductConfiguratorLoaderProps {
   groups: OptionGroupRow[];
   visualVariants: Array<Record<string, unknown>>;
   fromPrice: number | null;
+  engineProductType?: string;
+  topCategoryImages?: Record<string, string> | null;
 }
 
 export default function ProductConfiguratorLoader({
@@ -45,13 +47,16 @@ export default function ProductConfiguratorLoader({
   groups,
   visualVariants,
   fromPrice,
+  engineProductType,
+  topCategoryImages,
 }: ProductConfiguratorLoaderProps) {
-  if (product.product_type === "TABLE") {
+  if ((engineProductType ?? product.product_type) === "TABLE") {
     return (
       <TableConfigurator
         product={product as never}
         options={options}
         visualVariants={visualVariants as never}
+        topCategoryImages={topCategoryImages ?? null}
       />
     );
   }

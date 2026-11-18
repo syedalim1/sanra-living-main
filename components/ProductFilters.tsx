@@ -25,8 +25,10 @@ const USE_OPTIONS: FilterOption[] = USE_CASE_OPTIONS.map((option) => ({
 const MATERIAL_OPTIONS: FilterOption[] = [
   { value: "MS", label: "Mild Steel" },
   { value: "SS", label: "Stainless Steel" },
-  { value: "WOOD", label: "100% Seasoned Grade-A Kerala Rubberwood" },
-  { value: "GRANITE", label: "18mm Export-Grade Krishnagiri Granite" },
+  { value: "WOOD", label: "100% Seasoned Grade-A Hardwood" },
+  { value: "GRANITE", label: "18mm Export-Grade Natural Granite" },
+  { value: "MOLDED_PP", label: "Molded PP" },
+  { value: "PLYWOOD", label: "Plywood" },
 ];
 
 const BUDGET_OPTIONS: FilterOption[] = [
@@ -46,6 +48,8 @@ export default function ProductFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [customUse, setCustomUse] = useState("");
+  const [customMaterial, setCustomMaterial] = useState("");
 
   // Current filter state from URL
   const currentCategory = searchParams.get("category") || "";
@@ -156,6 +160,26 @@ export default function ProductFilters() {
               </button>
             );
           })}
+          <div className="flex gap-1.5 pt-1">
+            <input
+              value={customUse}
+              onChange={(event) => setCustomUse(event.target.value)}
+              placeholder="+ Add Custom Use Case"
+              className="min-w-0 flex-1 text-[11px] px-2 py-1.5 rounded border border-neutral-300"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const value = customUse.trim().toUpperCase().replace(/[^A-Z0-9_]/g, "_");
+                if (!value) return;
+                updateFilter("use", value);
+                setCustomUse("");
+              }}
+              className="px-2 py-1.5 rounded bg-[#111111] text-white text-[10px] font-bold"
+            >
+              Add
+            </button>
+          </div>
         </div>
       </div>
 
@@ -183,6 +207,29 @@ export default function ProductFilters() {
               </button>
             );
           })}
+          <div className="flex gap-1.5 pt-1">
+            <input
+              value={customMaterial}
+              onChange={(event) => setCustomMaterial(event.target.value)}
+              placeholder="+ Add Custom Material"
+              className="min-w-0 flex-1 text-[11px] px-2 py-1.5 rounded border border-neutral-300"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const value = customMaterial
+                  .trim()
+                  .toUpperCase()
+                  .replace(/[^A-Z0-9_]/g, "_");
+                if (!value) return;
+                updateFilter("material", value);
+                setCustomMaterial("");
+              }}
+              className="px-2 py-1.5 rounded bg-[#111111] text-white text-[10px] font-bold"
+            >
+              Add
+            </button>
+          </div>
         </div>
       </div>
 

@@ -59,7 +59,7 @@ function getUploadFile(formData: FormData): File | null {
 async function storeProductImage(
   db: SupabaseClient,
   sku: string,
-  kind: "main" | "hover",
+  kind: string,
   file: File
 ): Promise<string> {
   validateImageSize(file.size);
@@ -117,14 +117,15 @@ export async function saveProductAction(
       product_type: productType,
       base_length_ft: parseNumber(formData.get("base_length_ft")),
       base_width_ft: parseNumber(formData.get("base_width_ft")),
+      base_height_ft: parseNumber(formData.get("base_height_ft"), 2.5),
+      pipe_spec: formString(formData.get("pipe_spec")),
       use_cases: formStringArray(formData, "use_cases"),
       material_tags: formStringArray(formData, "material_tags"),
       sort_order: Math.trunc(parseNumber(formData.get("sort_order"), 100)),
       warranty_text: formString(formData.get("warranty_text")),
       is_active: parseBoolean(formData.get("is_active")),
       is_knockdown_available: parseBoolean(formData.get("is_knockdown_available")),
-      allowed_top_categories:
-        productType === "TABLE" ? formStringArray(formData, "allowed_top_categories") : [],
+      allowed_top_categories: formStringArray(formData, "allowed_top_categories"),
       costing: {
         base_pipe_weight_18g_kg: parseNumber(formData.get("base_pipe_weight_18g_kg")),
         top_area_sqft: parseNumber(formData.get("top_area_sqft")),
@@ -133,6 +134,8 @@ export async function saveProductAction(
         overhead_pct: parseNumber(formData.get("overhead_pct")),
         retail_margin_pct: parseNumber(formData.get("retail_margin_pct")),
         b2b_margin_pct: parseNumber(formData.get("b2b_margin_pct")),
+        finishing_cost: parseNumber(formData.get("finishing_cost"), 0),
+        b2b_moq: Math.max(1, Math.trunc(parseNumber(formData.get("b2b_moq"), 1))),
       },
     });
 
@@ -165,6 +168,15 @@ export async function saveProductAction(
 
     let uploadedMainUrl: string | null = null;
     let uploadedHoverUrl: string | null = null;
+    const uploadedTopImages: Record<string, string> = {};
+    const uploadedGallery: string[] = [];
+
+    const topImageFields = [
+      { field: "top_wood_image", key: "WOOD", prefix: "top-wood" },
+      { field: "top_stone_image", key: "STONE", prefix: "top-stone" },
+      { field: "top_frame_image", key: "FRAME_ONLY", prefix: "top-frame" },
+      { field: "top_metal_image", key: "METAL", prefix: "top-metal" },
+    ];
 
     try {
       if (mainFile) {
@@ -173,13 +185,51 @@ export async function saveProductAction(
       if (hoverFile) {
         uploadedHoverUrl = await storeProductImage(db, values.sku, "hover", hoverFile);
       }
+
+      for (const entry of topImageFields) {
+        const file = getFormFile(formData, entry.field);
+        if (file) {
+          uploadedTopImages[entry.key] = await storeProductImage(
+            db,
+            values.sku,
+            entry.prefix,
+            file
+          );
+        }
+      }
+
+      for (let index = 1; index <= 4; index += 1) {
+        const file = getFormFile(formData, `gallery_image_${index}`);
+        if (file) {
+          uploadedGallery.push(
+            await storeProductImage(db, values.sku, `gallery-${index}`, file)
+          );
+        }
+      }
     } catch (error) {
-      await discardUploads(db, [uploadedMainUrl, uploadedHoverUrl]);
+      await discardUploads(db, [
+        uploadedMainUrl,
+        uploadedHoverUrl,
+        ...Object.values(uploadedTopImages),
+        ...uploadedGallery,
+      ]);
       return {
         ok: false,
         error: error instanceof Error ? error.message : "Image upload failed.",
       };
     }
+
+    const comboConfig =
+      productType === "CHAIR_TABLE_SET" || productType === "BENCH_DESK"
+        ? {
+            set_configuration: formString(formData.get("set_configuration")),
+            seating_type: formString(formData.get("seating_type")),
+            chair_quantity: Math.max(0, Math.trunc(parseNumber(formData.get("chair_quantity"), 0))),
+            single_chair_cost: parseNumber(formData.get("single_chair_cost"), 0),
+            chair_metal_weight_kg: parseNumber(formData.get("chair_metal_weight_kg"), 0),
+            combo_discount_pct: parseNumber(formData.get("combo_discount_pct"), 0),
+          }
+        : {};
 
     const productRow = {
       sku: values.sku,
@@ -188,6 +238,9 @@ export async function saveProductAction(
       product_type: values.product_type,
       base_length_ft: values.base_length_ft,
       base_width_ft: values.base_width_ft,
+      base_height_ft: values.base_height_ft,
+      pipe_spec: values.pipe_spec || null,
+      combo_config: comboConfig,
       allowed_top_categories: values.allowed_top_categories,
       is_knockdown_available: values.is_knockdown_available,
       warranty_text: values.warranty_text,
@@ -202,12 +255,19 @@ export async function saveProductAction(
     if (productId) {
       const existing = await db
         .from("products")
-        .select("id, sku, main_image_url, hover_blueprint_img")
+        .select(
+          "id, sku, main_image_url, hover_blueprint_img, top_category_images, gallery_images"
+        )
         .eq("id", productId)
         .maybeSingle();
 
       if (existing.error || !existing.data) {
-        await discardUploads(db, [uploadedMainUrl, uploadedHoverUrl]);
+        await discardUploads(db, [
+          uploadedMainUrl,
+          uploadedHoverUrl,
+          ...Object.values(uploadedTopImages),
+          ...uploadedGallery,
+        ]);
         return { ok: false, error: "Product not found." };
       }
 
@@ -225,9 +285,28 @@ export async function saveProductAction(
         productUpdate.hover_blueprint_img = null;
       }
 
+      if (Object.keys(uploadedTopImages).length > 0) {
+        productUpdate.top_category_images = {
+          ...((existing.data.top_category_images ?? {}) as Record<string, string>),
+          ...uploadedTopImages,
+        };
+      }
+
+      if (uploadedGallery.length > 0) {
+        const existingGallery = Array.isArray(existing.data.gallery_images)
+          ? (existing.data.gallery_images as string[])
+          : [];
+        productUpdate.gallery_images = [...existingGallery, ...uploadedGallery].slice(-8);
+      }
+
       const { error } = await db.from("products").update(productUpdate).eq("id", productId);
       if (error) {
-        await discardUploads(db, [uploadedMainUrl, uploadedHoverUrl]);
+        await discardUploads(db, [
+          uploadedMainUrl,
+          uploadedHoverUrl,
+          ...Object.values(uploadedTopImages),
+          ...uploadedGallery,
+        ]);
         return {
           ok: false,
           error: isUniqueViolation(error) ? "That SKU already exists." : "Unable to save product.",
@@ -255,12 +334,19 @@ export async function saveProductAction(
           ...productRow,
           main_image_url: uploadedMainUrl ?? PRODUCT_PLACEHOLDER,
           hover_blueprint_img: uploadedHoverUrl,
+          top_category_images: uploadedTopImages,
+          gallery_images: uploadedGallery,
         })
         .select("id")
         .single();
 
       if (error || !data) {
-        await discardUploads(db, [uploadedMainUrl, uploadedHoverUrl]);
+        await discardUploads(db, [
+          uploadedMainUrl,
+          uploadedHoverUrl,
+          ...Object.values(uploadedTopImages),
+          ...uploadedGallery,
+        ]);
         return {
           ok: false,
           error: isUniqueViolation(error) ? "That SKU already exists." : "Unable to create product.",

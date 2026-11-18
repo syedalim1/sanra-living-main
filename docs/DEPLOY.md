@@ -32,7 +32,7 @@ GOOGLE_MAPS_URL
 
 ## 4. Database
 
-1. Run migrations in order: `001_init.sql` through `013_sets.sql` (migration 011 is not used).
+1. Run migrations in order: `001_init.sql` through `015_privacy_text.sql` (migration 011 is not used).
 2. Run `supabase/seed.sql` if you want the sample catalog.
 3. Create the admin Auth user with the exact `ADMIN_EMAIL` and a strong password.
 4. Keep the email/password provider enabled; disable public sign-ups.

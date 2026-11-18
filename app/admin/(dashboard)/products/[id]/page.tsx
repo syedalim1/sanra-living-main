@@ -68,6 +68,17 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
       product_type: row.product_type,
       base_length_ft: Number(row.base_length_ft),
       base_width_ft: Number(row.base_width_ft),
+      base_height_ft: Number(row.base_height_ft ?? 2.5),
+      pipe_spec: row.pipe_spec ?? null,
+      combo_config:
+        row.combo_config && typeof row.combo_config === "object"
+          ? (row.combo_config as Record<string, unknown>)
+          : {},
+      top_category_images:
+        row.top_category_images && typeof row.top_category_images === "object"
+          ? (row.top_category_images as Record<string, string>)
+          : {},
+      gallery_images: Array.isArray(row.gallery_images) ? row.gallery_images : [],
       allowed_top_categories: Array.isArray(row.allowed_top_categories)
         ? (row.allowed_top_categories as string[])
         : [],
@@ -90,6 +101,8 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
         overhead_pct: Number(pricingResult.data.overhead_pct),
         retail_margin_pct: Number(pricingResult.data.retail_margin_pct),
         b2b_margin_pct: Number(pricingResult.data.b2b_margin_pct ?? 0),
+        finishing_cost: Number(pricingResult.data.finishing_cost ?? 0),
+        b2b_moq: Number(pricingResult.data.b2b_moq ?? 1),
       };
     }
 
@@ -113,7 +126,7 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
       .order("sort_order"),
     db
       .from("material_rates")
-      .select("material_code, display_name, category")
+      .select("material_code, display_name, category, cost_per_unit")
       .order("category")
       .order("display_name"),
   ]);
@@ -131,6 +144,19 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
     display_name: material.display_name,
     category: material.category,
   }));
+
+  const rateMap = new Map(
+    (materialResult.data ?? []).map((material) => [
+      material.material_code,
+      Number(material.cost_per_unit),
+    ])
+  );
+  const formMaterialRates = {
+    ms: rateMap.get("MS_CR") ?? 0,
+    wood: rateMap.get("WOOD_RUBBER_18") ?? 0,
+    stone: rateMap.get("GRANITE_JET_BLACK") ?? 0,
+    metal: rateMap.get("SHEET_CR_16G") ?? 0,
+  };
 
   const topOptions = allOptions;
   const sizeOptions =
@@ -252,7 +278,11 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
         </div>
       </div>
 
-      <ProductForm product={product} pricing={pricing} />
+      <ProductForm
+        product={product}
+        pricing={pricing}
+        materialRates={formMaterialRates}
+      />
 
       {product && (
         <>

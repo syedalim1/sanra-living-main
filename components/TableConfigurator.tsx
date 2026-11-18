@@ -56,12 +56,14 @@ interface TableConfiguratorProps {
   };
   options: ConfigOption[];
   visualVariants: VisualVariant[];
+  topCategoryImages?: Record<string, string> | null;
 }
 
 export default function TableConfigurator({
   product,
   options,
   visualVariants,
+  topCategoryImages,
 }: TableConfiguratorProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -238,6 +240,7 @@ export default function TableConfigurator({
 
   // Tab switch handler: auto-select first material in that tab
   const handleTopTabChange = (tabCode: string) => {
+    setActiveThumbnailIndex(0);
     setSelectedTopTab(tabCode);
     const available = topMaterials.filter((m) => m.parent_code === tabCode);
     const nextMat = tabCode === "FRAME_ONLY" ? null : available[0]?.option_code || null;
@@ -420,7 +423,11 @@ export default function TableConfigurator({
       (isSS ? true : v.frame_color === selectedFrameColor)
   );
 
-  const mainImageUrl = matchedVariant?.preview_image_url || product.main_image_url;
+  const topVariantImage = topCategoryImages?.[selectedTopTab] ?? null;
+  const mainImageUrl =
+    (activeThumbnailIndex === 0 ? topVariantImage : null) ||
+    matchedVariant?.preview_image_url ||
+    product.main_image_url;
   const activeImage =
     activeThumbnailIndex === 1 && product.hover_blueprint_img
       ? product.hover_blueprint_img
@@ -474,7 +481,7 @@ export default function TableConfigurator({
       }
       // Rubberwood
       return [
-        { icon: Layers, text: "100% Seasoned Grade-A Kerala Rubberwood" },
+        { icon: Layers, text: "100% Seasoned Grade-A Hardwood" },
         { icon: Droplets, text: "Polyurethane Water Guard Seal" },
         { icon: Shield, text: "18mm Finger-Jointed Solid Hardwood" },
         { icon: Sparkles, text: "Natural Grain Architecture" },

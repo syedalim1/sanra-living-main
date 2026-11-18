@@ -16,6 +16,7 @@ import {
 import SectionHeading from "@/components/SectionHeading";
 import SampleRequestForm from "@/components/b2b/SampleRequestForm";
 import B2BOrderToolsLoader from "@/components/b2b/B2BOrderToolsLoader";
+import B2BPriceGate from "@/components/b2b/B2BPriceGate";
 import CadDownloads from "@/components/b2b/CadDownloads";
 import { supabaseServer } from "@/lib/supabase/server";
 import { company, whatsappHref } from "@/lib/company";
@@ -256,12 +257,14 @@ export default async function B2BPage() {
         </section>
 
         <div className="space-y-8 pb-10 md:pb-12">
-          <B2BOrderToolsLoader
-            products={bulkProducts}
-            groups={groups}
-            options={options}
-            whatsappNumber={company.whatsappNumber}
-          />
+          <B2BPriceGate>
+            <B2BOrderToolsLoader
+              products={bulkProducts}
+              groups={groups}
+              options={options}
+              whatsappNumber={company.whatsappNumber}
+            />
+          </B2BPriceGate>
         </div>
 
         <section id="cad" className="scroll-mt-24 pb-10 md:pb-12">

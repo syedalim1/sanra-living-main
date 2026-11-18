@@ -14,7 +14,7 @@ VALUES
   ('SS_304', 'Stainless Steel 304', 'METAL', 'KG', 260.00, '#E5E5EA', NULL),
 
   -- Woods (Cost per SQFT)
-  ('WOOD_RUBBER_18', '100% Seasoned Grade-A Kerala Rubberwood (18mm)', 'WOOD', 'SQFT', 165.00, '#C29B38', NULL),
+  ('WOOD_RUBBER_18', '100% Seasoned Grade-A Hardwood (18mm)', 'WOOD', 'SQFT', 165.00, '#C29B38', NULL),
   ('PRELAM_18', 'Prelam Engineered Board 18mm', 'WOOD', 'SQFT', 68.00, '#D4B996', NULL),
   ('PRELAM_25', 'Prelam Engineered Board 25mm Heavy Core', 'WOOD', 'SQFT', 95.00, '#BC9A74', NULL),
   ('BWR_PLY_MICA', 'BWR Waterproof Ply with High-Gloss Laminate', 'WOOD', 'SQFT', 140.00, '#E0D5C1', NULL),
@@ -77,7 +77,7 @@ BEGIN
     ARRAY['CAFE', 'HOME', 'CANTEEN', 'BAKERY', 'HALL', 'SCHOOL'],
     ARRAY['MS', 'WOOD', 'GRANITE'],
     10,
-    'Paired with 100% Seasoned Grade-A Kerala Rubberwood or 18mm Export-Grade Krishnagiri Granite'
+    'Paired with 100% Seasoned Grade-A Hardwood or 18mm Export-Grade Natural Granite'
   )
   ON CONFLICT (sku) DO UPDATE SET 
     name = EXCLUDED.name,
