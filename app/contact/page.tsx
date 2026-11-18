@@ -9,10 +9,9 @@ import {
   Clock,
   FileText,
   Mail,
-  Instagram,
-  Facebook,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { InstagramIcon, FacebookIcon } from "@/components/SocialIcons";
 import { company, whatsappHref, WORKING_HOURS, SOCIAL } from "@/lib/company";
 
 export const metadata: Metadata = {
@@ -183,7 +182,7 @@ export default function ContactPage() {
                       aria-label="SANRA LIVING on Instagram"
                       className="p-2.5 rounded-md bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white transition-colors"
                     >
-                      <Instagram className="w-4 h-4" />
+                      <InstagramIcon className="w-4 h-4" />
                     </a>
                   )}
                   {SOCIAL.facebook && (
@@ -194,7 +193,7 @@ export default function ContactPage() {
                       aria-label="SANRA LIVING on Facebook"
                       className="p-2.5 rounded-md bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white transition-colors"
                     >
-                      <Facebook className="w-4 h-4" />
+                      <FacebookIcon className="w-4 h-4" />
                     </a>
                   )}
                   {SOCIAL.google_maps && (
