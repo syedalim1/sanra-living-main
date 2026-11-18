@@ -34,12 +34,12 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden lg:flex items-center space-x-5 xl:space-x-8 whitespace-nowrap">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-neutral-700 hover:text-black transition-colors"
+                className="text-sm font-medium text-neutral-700 hover:text-black transition-colors whitespace-nowrap"
               >
                 {link.label}
               </Link>
@@ -48,7 +48,7 @@ export default function Navbar() {
               href={ENQUIRY_LINK}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold uppercase tracking-wider bg-emerald-700 text-white rounded-md hover:bg-emerald-800 transition-colors shadow-sm"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold uppercase tracking-wider bg-emerald-700 text-white rounded-md hover:bg-emerald-800 transition-colors shadow-sm whitespace-nowrap"
             >
               Factory Enquiry
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -56,7 +56,7 @@ export default function Navbar() {
           </nav>
 
           {/* Mobile Hamburger Button (Single header only) */}
-          <div className="flex items-center md:hidden">
+          <div className="flex items-center lg:hidden">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -72,7 +72,7 @@ export default function Navbar() {
 
       {/* Mobile Menu Panel */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-neutral-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="lg:hidden border-t border-neutral-200 bg-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="px-4 pt-3 pb-6 space-y-3">
             {navLinks.map((link) => (
               <Link

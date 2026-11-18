@@ -10,6 +10,9 @@ export interface OptionGroupRow {
   sort_order: number;
   is_required: boolean;
   default_code: string | null;
+  display_style?: string | null;
+  allow_multiple?: boolean | null;
+  is_active?: boolean | null;
 }
 
 export const PRODUCT_TYPES: ProductType[] = ["TABLE", "CHAIR", "STAND", "RACK", "SS_UNIT"];
@@ -65,7 +68,13 @@ export function getTypeGroupRows(
   const source =
     rows && rows.length > 0
       ? rows
-          .filter((row) => row.product_type === productType && row.option_group && row.group_title)
+          .filter(
+            (row) =>
+              row.product_type === productType &&
+              row.option_group &&
+              row.group_title &&
+              row.is_active !== false
+          )
           .map((row) => ({
             product_type: productType,
             option_group: row.option_group!,
@@ -73,6 +82,9 @@ export function getTypeGroupRows(
             sort_order: Number(row.sort_order ?? 100),
             is_required: Boolean(row.is_required),
             default_code: row.default_code ?? null,
+            display_style: row.display_style ?? null,
+            allow_multiple: row.allow_multiple ?? false,
+            is_active: row.is_active !== false,
           }))
       : [];
 

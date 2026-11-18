@@ -91,7 +91,7 @@ export async function calculateProductPrice(input: PricingInput): Promise<Pricin
     customerType,
     topMaterialName: topRateItem?.display_name ?? "100% Seasoned Grade-A Kerala Rubberwood",
     topMaterialCode,
-    frameMaterialName: frameRateItem?.display_name ?? "Heavy Structural MS Pipe (MIG Welded)",
+    frameMaterialName: frameRateItem?.display_name ?? "Heavy Structural MS Pipe",
     isCustomQuoteRequired: false,
   };
 }

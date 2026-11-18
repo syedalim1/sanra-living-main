@@ -219,7 +219,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
     option_group: "TOP_MATERIAL",
     option_code: "SHEET_SS304_OPT",
     parent_code: "METAL",
-    label_en: "Jindal SS 304 Food-Grade Sheet Top",
+    label_en: "Stainless Steel 304 Food-Grade Sheet Top",
     group_label: "Industrial Steel Tops",
     swatch_color_hex: "#E2E8F0",
     sort_order: 304,
@@ -229,7 +229,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "GAUGE",
     option_code: "G18",
-    label_en: "18 Gauge Economy (1.2mm Tata/Apollo CR)",
+    label_en: "18 Gauge Economy (Premium CR steel pipe)",
     load_kg: 150,
     warranty_text: "7 Years Weld Warranty",
     spec_note: "Home & office use",
@@ -238,7 +238,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "GAUGE",
     option_code: "G16",
-    label_en: "16 Gauge Heavy Commercial (1.6mm Tata Structura)",
+    label_en: "16 Gauge Heavy Commercial (Premium CR steel pipe)",
     load_kg: 250,
     warranty_text: "10 Years Structural MIG Warranty",
     badge_text: "Recommended",
@@ -248,7 +248,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "GAUGE",
     option_code: "G14",
-    label_en: "14 Gauge Extra-Heavy Industrial (2.0mm)",
+    label_en: "14 Gauge Extra-Heavy Industrial",
     load_kg: 400,
     warranty_text: "15 Years Warranty",
     spec_note: "College, hostel, factory",
@@ -257,7 +257,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "GAUGE",
     option_code: "SS202",
-    label_en: "Jindal SS 202 (Indoor Luxury)",
+    label_en: "Stainless Steel 202 (Indoor)",
     load_kg: 200,
     warranty_text: "10 Years Weld Warranty",
     spec_note: "Indoor luxury styling",
@@ -266,7 +266,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "GAUGE",
     option_code: "SS304",
-    label_en: "Jindal SS 304 (100% Rust-Proof + Argon TIG)",
+    label_en: "Stainless Steel 304 (Food Grade)",
     load_kg: 300,
     warranty_text: "3-Year Free Replacement Guarantee + 15 Years Rust-Free Warranty",
     spec_note: "Food & sanitary grade",
@@ -285,7 +285,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
     option_group: "BUILD_TYPE",
     option_code: "WELDED",
     label_en: "100% Factory Welded (Coimbatore Local Delivery)",
-    spec_note: "Pre-assembled on surface plate. 0-min setup.",
+    spec_note: "Pre-assembled at the factory.",
     sort_order: 1,
   },
   {
@@ -302,10 +302,10 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   { option_group: "SIZE", option_code: "4x2", label_en: "4 x 2 ft", spec_note: "Standard 4-seater cafe or compact desk", sort_order: 3 },
   { option_group: "SIZE", option_code: "4x2.5", label_en: "4 x 2.5 ft", spec_note: "Spacious executive IT workstation", sort_order: 4 },
   { option_group: "SIZE", option_code: "6x3", label_en: "6 x 3 ft", spec_note: "Large 6-seater dining or conference table", sort_order: 5 },
-  { option_group: "SIZE", option_code: "CUSTOM", label_en: "Custom Size Request", spec_note: "Engineered to your exact site millimeter dimensions", sort_order: 6 },
+  { option_group: "SIZE", option_code: "CUSTOM", label_en: "Custom Size Request", spec_note: "Made to your exact size", sort_order: 6 },
 
   // ADDON
-  { option_group: "ADDON", option_code: "GROMMET", label_en: "+ ₹50 Laptop Wire Grommet Hole", spec_note: "Precision CNC circular cable portal with brush cap", sort_order: 1 },
+  { option_group: "ADDON", option_code: "GROMMET", label_en: "+ ₹50 Laptop Wire Grommet Hole", spec_note: "Clean circular cable portal with brush cap", sort_order: 1 },
   { option_group: "ADDON", option_code: "CPU_HOLDER", label_en: "+ ₹150 Under-Table CPU / Bag Holder", spec_note: "Heavy-gauge steel suspended cradle for tower / backpacks", sort_order: 2 },
   { option_group: "ADDON", option_code: "CHAIRS4", label_en: "+ ₹600 Add 4 Matching Chairs Combo", spec_note: "Matching structural steel frame chairs with bumper feet", sort_order: 3 },
 
@@ -313,7 +313,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "METAL_TYPE",
     option_code: "MS_COATED",
-    label_en: "MS Powder Coated (Tata/Apollo CR)",
+    label_en: "MS Powder Coated (Premium CR steel pipe)",
     swatch_color_hex: "#111111",
     warranty_text: "7 Years Weld Warranty",
     spec_note: "Durable powder-coated MS frame",
@@ -322,7 +322,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "METAL_TYPE",
     option_code: "SS202",
-    label_en: "Jindal SS 202 (Indoor Luxury)",
+    label_en: "Stainless Steel 202 (Indoor)",
     swatch_color_hex: "#D1D1D6",
     warranty_text: "10 Years Weld Warranty",
     badge_text: "Indoor Luxury",
@@ -332,7 +332,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "METAL_TYPE",
     option_code: "SS304",
-    label_en: "Jindal SS 304 (100% Rust-Proof + Argon TIG)",
+    label_en: "Stainless Steel 304 (Food Grade)",
     swatch_color_hex: "#E5E5EA",
     warranty_text: "3-Year Free Replacement + 15 Years Rust-Free Warranty",
     badge_text: "Rust-Proof",
@@ -383,7 +383,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "STAND_MATERIAL",
     option_code: "ST_SS304",
-    label_en: "Jindal SS 304",
+    label_en: "Stainless Steel 304",
     swatch_color_hex: "#E5E5EA",
     spec_note: "Rust-proof stainless steel",
     badge_text: "Rust-Proof",
@@ -407,7 +407,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "BASE",
     option_code: "BASE_BUSH",
-    label_en: "Heavy Leveling Bush",
+    label_en: "Heavy Leveling Feet",
     spec_note: "Stable leveling feet",
     sort_order: 1,
   },
@@ -422,7 +422,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   // RACK
   { option_group: "FINISH", option_code: "RF_BLACK", label_en: "Matte Black", swatch_color_hex: "#111111", spec_note: "Powder-coated matte black", sort_order: 1 },
   { option_group: "FINISH", option_code: "RF_GOLD_PAINT", label_en: "Metallic Gold Paint", swatch_color_hex: "#D4AF37", spec_note: "Metallic gold paint finish", sort_order: 2 },
-  { option_group: "FINISH", option_code: "RF_GOLD_PVD", label_en: "Rose-Gold / Gold PVD SS", swatch_color_hex: "#B76E79", spec_note: "PVD stainless finish", sort_order: 3 },
+  { option_group: "FINISH", option_code: "RF_GOLD_PVD", label_en: "Rose-Gold / Gold Stainless Steel", swatch_color_hex: "#B76E79", spec_note: "Gold stainless finish", sort_order: 3 },
   { option_group: "SHELF", option_code: "SH_NONE", label_en: "No Shelf", spec_note: "Open frame", sort_order: 1 },
   { option_group: "SHELF", option_code: "SH_RUBBER", label_en: "Rubberwood Shelf", swatch_color_hex: "#C29B38", spec_note: "Solid Kerala rubberwood", sort_order: 2 },
   { option_group: "SHELF", option_code: "SH_PRELAM_WHITE", label_en: "Pre-Lam White Shelf", swatch_color_hex: "#F8FAFC", spec_note: "White engineered board", sort_order: 3 },
@@ -435,7 +435,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "GRADE",
     option_code: "SSG_202",
-    label_en: "Jindal SS 202 (Indoor)",
+    label_en: "Stainless Steel 202 (Indoor)",
     swatch_color_hex: "#D1D1D6",
     spec_note: "Indoor stainless grade",
     sort_order: 1,
@@ -443,7 +443,7 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   {
     option_group: "GRADE",
     option_code: "SSG_304",
-    label_en: "Jindal SS 304 (Medical / Food Grade)",
+    label_en: "Stainless Steel 304 (Food Grade)",
     swatch_color_hex: "#E5E5EA",
     spec_note: "Medical and food-grade stainless",
     badge_text: "Medical / Food Grade",

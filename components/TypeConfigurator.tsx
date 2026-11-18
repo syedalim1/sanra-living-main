@@ -7,8 +7,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
-  ChevronDown,
-  ChevronUp,
   Droplets,
   FileText,
   Layers,
@@ -63,7 +61,6 @@ interface TypeConfiguratorProps {
 interface PriceState {
   unit_price?: number;
   total_price?: number;
-  discount_pct?: number;
   bumper_included?: boolean;
   requires_quote?: boolean;
 }
@@ -201,7 +198,7 @@ function featureBadges(
   if (productType === "STAND") {
     return [
       { icon: ShieldCheck, text: "Stable leveling base" },
-      { icon: Droplets, text: ss ? "Rust-proof SS 304" : "Powder-coated MS" },
+      { icon: Droplets, text: ss ? "Rust-resistant Stainless Steel 304" : "Powder-coated MS" },
       {
         icon: Truck,
         text: selections.BASE === "BASE_CASTOR" ? "Easy to move" : "Fixed leveling feet",
@@ -215,7 +212,7 @@ function featureBadges(
 
   if (productType === "RACK") {
     return [
-      { icon: ShieldCheck, text: "Strong MIG-welded frame" },
+      { icon: ShieldCheck, text: "Strong factory-welded frame" },
       { icon: Sparkles, text: "Premium finish" },
       {
         icon: Layers,
@@ -228,7 +225,10 @@ function featureBadges(
   return [
     {
       icon: ShieldCheck,
-      text: selections.GRADE === "SSG_304" ? "Food-grade SS 304" : "Indoor SS 202",
+      text:
+        selections.GRADE === "SSG_304"
+          ? "Food-grade Stainless Steel 304"
+          : "Indoor Stainless Steel 202",
     },
     { icon: Droplets, text: "Easy to clean" },
     { icon: Sparkles, text: "Rust-proof finish" },
@@ -285,13 +285,11 @@ export default function TypeConfigurator({
   const [priceData, setPriceData] = useState<PriceState>({
     unit_price: fromPrice ?? undefined,
     total_price: fromPrice ?? undefined,
-    discount_pct: 0,
     bumper_included: false,
     requires_quote: false,
   });
   const [isCalculating, setIsCalculating] = useState(false);
   const [activeThumbnailIndex, setActiveThumbnailIndex] = useState(0);
-  const [compareOpen, setCompareOpen] = useState(false);
   const [whatsappStatus, setWhatsappStatus] = useState<"idle" | "loading" | "error">("idle");
   const [pdfStatus, setPdfStatus] = useState<"idle" | "loading" | "error">("idle");
   const [whatsappError, setWhatsappError] = useState<string | null>(null);
@@ -624,33 +622,8 @@ export default function TypeConfigurator({
           </div>
         </div>
 
-        <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white">
-          <button
-            type="button"
-            onClick={() => setCompareOpen(!compareOpen)}
-            className="w-full flex items-center justify-between p-4 text-xs font-bold uppercase tracking-wider text-neutral-800 hover:bg-neutral-50 transition-colors"
-          >
-            <span>Compare With Local Market</span>
-            {compareOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-
-          {compareOpen && (
-            <div className="p-4 pt-0 border-t border-neutral-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-lg bg-red-50/70 border border-red-200 space-y-1">
-                <p className="font-bold text-red-900">Local Welding Shop</p>
-                <p className="text-[11px] text-red-700 leading-snug">
-                  Thin-wall pipe, manual fabrication and no leveling base can loosen under
-                  daily commercial use.
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-emerald-50/70 border border-emerald-200 space-y-1">
-                <p className="font-bold text-emerald-900">SANRA SIDCO Factory</p>
-                <p className="text-[11px] text-emerald-800 leading-snug">
-                  Jig-built steel frame, quality-checked finish and a structural warranty.
-                </p>
-              </div>
-            </div>
-          )}
+        <div className="p-4 rounded-xl bg-[#F5F5F7] border border-neutral-200 text-xs font-semibold text-neutral-700">
+          Built for daily commercial use
         </div>
       </div>
 
@@ -671,11 +644,15 @@ export default function TypeConfigurator({
           const groupOptions = visibleOptions(product.product_type, group.option_group, options);
           if (groupOptions.length === 0) return null;
 
-          const isSwatchGroup =
-            group.option_group === "FRAME_COLOR" ||
-            group.option_group === "SEAT_COLOR" ||
-            group.option_group === "FINISH";
-          const isPillGroup = group.option_group === "RACK_SIZE";
+          const displayStyle =
+            group.display_style ??
+            (["FRAME_COLOR", "SEAT_COLOR", "FINISH"].includes(group.option_group)
+              ? "SWATCH"
+              : ["RACK_SIZE", "THICKNESS"].includes(group.option_group)
+              ? "PILL"
+              : "CARD");
+          const isSwatchGroup = displayStyle === "SWATCH";
+          const isPillGroup = displayStyle === "PILL";
           const selectedCode = selections[group.option_group];
 
           return (
@@ -713,6 +690,16 @@ export default function TypeConfigurator({
                         <span className="text-[10px] text-neutral-800 leading-tight">
                           {option.label_en}
                         </span>
+                        {option.badge_text && (
+                          <span className="mt-1 text-[8px] font-extrabold uppercase px-1 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            {option.badge_text}
+                          </span>
+                        )}
+                        {option.spec_note && (
+                          <span className="mt-0.5 text-[8px] text-neutral-500 leading-tight">
+                            {option.spec_note}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -733,6 +720,11 @@ export default function TypeConfigurator({
                         }`}
                       >
                         <span className="block text-xs">{option.label_en}</span>
+                        {option.badge_text && (
+                          <span className="mt-1 inline-block text-[8px] font-extrabold uppercase px-1 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            {option.badge_text}
+                          </span>
+                        )}
                         <span className="block text-[10px] text-neutral-500 font-normal">
                           {option.spec_note}
                         </span>
@@ -840,11 +832,6 @@ export default function TypeConfigurator({
             <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
               {visibleGroups.length + 1}. Quantity
             </label>
-            {priceData.discount_pct && priceData.discount_pct > 0 ? (
-              <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                {priceData.discount_pct}% Volume Discount Applied
-              </span>
-            ) : null}
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -858,7 +845,6 @@ export default function TypeConfigurator({
               }`}
             >
               <span className="block text-xs">1 - 3 Units</span>
-              <span className="block text-[10px] text-neutral-500 font-normal">Retail Price</span>
             </button>
             <button
               type="button"
@@ -870,7 +856,6 @@ export default function TypeConfigurator({
               }`}
             >
               <span className="block text-xs">4 - 9 Units</span>
-              <span className="block text-[10px] text-emerald-700 font-bold">5% Discount</span>
             </button>
             <button
               type="button"
@@ -882,9 +867,14 @@ export default function TypeConfigurator({
               }`}
             >
               <span className="block text-xs">10+ Units</span>
-              <span className="block text-[10px] text-emerald-700 font-bold">12% Discount</span>
             </button>
           </div>
+
+          {quantity >= 4 && (
+            <p className="text-[11px] font-semibold text-neutral-600">
+              Bulk discount available. Confirm best price on WhatsApp.
+            </p>
+          )}
 
           <div className="flex items-center gap-3 pt-2">
             <span className="text-xs font-semibold text-neutral-600">Exact Quantity:</span>

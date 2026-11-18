@@ -28,6 +28,7 @@ import WatermarkedImage from "@/components/WatermarkedImage";
 import { company, whatsappHref, SOCIAL } from "@/lib/company";
 import { SITE_URL } from "@/lib/site";
 import { getCachedFromPrices } from "@/lib/pricing/fromPrice";
+import { calculateSetPrice } from "@/lib/pricing/setPrice";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export const instant = false;
@@ -79,41 +80,135 @@ export default async function Home() {
     }
   }
 
+  const setTypeLabel = (type: string, quantity: number) => {
+    const labels: Record<string, [string, string]> = {
+      TABLE: ["Table", "Tables"],
+      CHAIR: ["Chair", "Chairs"],
+      STAND: ["Stand", "Stands"],
+      RACK: ["Rack", "Racks"],
+      SS_UNIT: ["SS Unit", "SS Units"],
+    };
+    const pair = labels[type] ?? ["Item", "Items"];
+    return `${quantity} ${quantity === 1 ? pair[0] : pair[1]}`;
+  };
+
+  let homeSets: Array<{
+    id: string;
+    sku: string;
+    name: string;
+    description: string | null;
+    image: string | null;
+    summary: string;
+    price: number | null;
+  }> = [];
+
+  if (HAS_SUPABASE) {
+    try {
+      const { data: sets } = await supabaseServer
+        .from("product_sets")
+        .select("id, sku, name, short_description, main_image_url")
+        .eq("is_active", true)
+        .order("sort_order")
+        .limit(4);
+
+      if (sets && sets.length > 0) {
+        const { data: setItems } = await supabaseServer
+          .from("product_set_items")
+          .select("set_id, product_id, quantity")
+          .in(
+            "set_id",
+            sets.map((set) => set.id)
+          );
+
+        const productIds = [...new Set((setItems ?? []).map((item) => item.product_id))];
+        const { data: setProducts } =
+          productIds.length > 0
+            ? await supabaseServer
+                .from("products")
+                .select("id, product_type")
+                .in("id", productIds)
+            : { data: [] as Array<{ id: string; product_type: string }> };
+
+        const typeMap = new Map<string, string>(
+          ((setProducts ?? []) as Array<{ id: string; product_type: string }>).map(
+            (product) => [product.id, product.product_type]
+          )
+        );
+
+        const prices = await Promise.all(
+          sets.map(async (set) => {
+            try {
+              const result = await calculateSetPrice({ sku: set.sku, quantity: 1 });
+              return result.requires_quote ? null : result.unit_price;
+            } catch {
+              return null;
+            }
+          })
+        );
+
+        homeSets = sets.map((set, index) => {
+          const counts = new Map<string, number>();
+          for (const item of setItems ?? []) {
+            if (item.set_id !== set.id) continue;
+            const type = typeMap.get(item.product_id);
+            if (!type) continue;
+            counts.set(type, (counts.get(type) ?? 0) + Number(item.quantity));
+          }
+          const summary = [...counts.entries()]
+            .map(([type, quantity]) => setTypeLabel(type, quantity))
+            .join(" + ");
+
+          return {
+            id: set.id,
+            sku: set.sku,
+            name: set.name,
+            description: set.short_description,
+            image: set.main_image_url,
+            summary,
+            price: prices[index],
+          };
+        });
+      }
+    } catch {
+      homeSets = [];
+    }
+  }
+
   const categories = [
     {
       name: "Cafe & Dining Tables",
-      imageSrc: "/images/cat-dining-tables.svg",
+      imageSrc: "/images/cat-dining-tables.jpg",
       description: "Heavy gauge MS & SS frames paired with 100% Seasoned Grade-A Kerala Rubberwood or 18mm Export-Grade Krishnagiri Granite.",
       href: "/products?category=Cafe+%26+Dining+Tables",
     },
     {
       name: "Office & Workstation Tables",
-      imageSrc: "/images/cat-workstations.svg",
+      imageSrc: "/images/cat-workstations.jpg",
       description: "Industrial grade ergonomic steel desks designed for commercial IT workspaces, call centres, and corporate offices.",
       href: "/products?category=Office+%26+Workstation+Tables",
     },
     {
       name: "SS & MS Chairs / Bar Stools",
-      imageSrc: "/images/cat-chairs-stools.svg",
-      description: "TIG-welded structural seating built for cafes, dining chains, and high-footfall commercial spaces.",
+      imageSrc: "/images/cat-chairs-stools.jpg",
+      description: "Factory-welded seating built for cafes, dining chains, and high-footfall commercial spaces.",
       href: "/products?category=SS+%26+MS+Chairs+%2F+Bar+Stools",
     },
     {
       name: "Home Utility Stands",
-      imageSrc: "/images/cat-utility-stands.svg",
+      imageSrc: "/images/cat-utility-stands.jpg",
       description: "High-capacity washing machine, water dispenser, microwave, and heavy cylinder stands built from structural steel.",
       href: "/products?category=Home+Utility+Stands",
     },
     {
       name: "Boutique & Showroom Racks",
-      imageSrc: "/images/cat-boutique-racks.svg",
+      imageSrc: "/images/cat-boutique-racks.jpg",
       description: "Minimalist modern steel garment racks, display island shelving, and custom retail presentation units.",
       href: "/products?category=Boutique+%26+Showroom+Racks",
     },
     {
       name: "Hospital, Canteen & Lab SS",
-      imageSrc: "/images/cat-hospital-lab.svg",
-      description: "Anti-corrosion Jindal SS tables, medical trolley stands, and institutional kitchen workbenches.",
+      imageSrc: "/images/cat-hospital-lab.jpg",
+      description: "Anti-corrosion stainless steel tables, medical trolley stands, and institutional kitchen workbenches.",
       href: "/products?category=Hospital%2C+Canteen+%26+Lab+SS",
     },
   ];
@@ -129,28 +224,28 @@ export default async function Home() {
 
   const factoryBays = [
     {
-      title: "CO2 MIG & Argon TIG Welding",
-      description: "Continuous deep-penetration structural joints for permanent rigidity.",
+      title: "Welding",
+      description: "Factory welded for everyday commercial use.",
       icon: Flame,
-      imageSrc: "/images/bay-welding.svg",
+      imageSrc: "/images/bay-welding.jpg",
     },
     {
-      title: "Tata MS & Jindal SS Pipe Stock",
-      description: "High-yield structural steel tubes from Tata MS and Jindal SS stock, inspected for wall thickness integrity.",
+      title: "Material Stock",
+      description: "Steel and stainless steel stock kept ready for fast dispatch.",
       icon: Boxes,
-      imageSrc: "/images/bay-pipe-stock.svg",
+      imageSrc: "/images/bay-pipe-stock.jpg",
     },
     {
-      title: "Protective Steel Bumper Frame Fitting",
-      description: "Heavy perimeter bumper frames integrated into edges to prevent transit shock and industrial abrasion.",
+      title: "Edge Protection",
+      description: "Edges finished for safe daily handling.",
       icon: ShieldAlert,
-      imageSrc: "/images/bay-bumper-frame.svg",
+      imageSrc: "/images/bay-bumper-frame.jpg",
     },
     {
-      title: "200 Kg Surface Plate QA Inspection",
-      description: "Each production run is aligned on precision surface plates and tested to ensure true zero-wobble level.",
+      title: "Quality Check",
+      description: "Every piece is quality checked before dispatch.",
       icon: ScanLine,
-      imageSrc: "/images/bay-qa-plate.svg",
+      imageSrc: "/images/bay-qa-plate.jpg",
     },
   ];
 
@@ -206,7 +301,7 @@ export default async function Home() {
               </h1>
 
               <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-2xl font-normal">
-                Cut out showroom markups. Order heavy-duty MS and Jindal SS furniture straight from our manufacturing line. Commercial tables, ergonomic workstations, and custom frames engineered with our proprietary Zero-Shake lock.
+                Cut out showroom markups. Order heavy-duty MS and stainless steel furniture straight from our manufacturing line. Commercial tables, ergonomic workstations, and custom frames engineered with our proprietary Zero-Shake lock.
               </p>
 
               {/* Price & GST Note Badge */}
@@ -255,7 +350,7 @@ export default async function Home() {
             <div className="lg:col-span-5">
               <div className="rounded-xl overflow-hidden border border-neutral-200 shadow-sm bg-[#F5F5F7] p-2">
                 <WatermarkedImage
-                  src="/images/hero-workstation.svg"
+                  src="/images/hero-creative.jpg"
                   alt="SANRA LIVING Factory Direct Steel Workstation and Dining Frame"
                   priority={true}
                   aspectRatio="square"
@@ -264,7 +359,7 @@ export default async function Home() {
                 />
                 <div className="p-3 text-center">
                   <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">
-                    SIDCO Industrial Estate Unit • Heavy MIG Structural Assembly
+                    SIDCO Industrial Estate Unit • Factory Built
                   </span>
                 </div>
               </div>
@@ -312,6 +407,62 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {homeSets.length > 0 && (
+        <section className="bg-white py-16 md:py-24 border-b border-neutral-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-wrap items-end justify-between gap-3 mb-8">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#111111]">
+                  Sets &amp; Combos
+                </h2>
+                <p className="text-sm text-neutral-600 mt-2">
+                  Ready-made sets from the factory, priced live.
+                </p>
+              </div>
+              <Link
+                href="/sets"
+                className="text-[10px] font-bold uppercase tracking-wider text-neutral-700 underline underline-offset-2"
+              >
+                View all sets
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {homeSets.map((set) => (
+                <Link
+                  key={set.id}
+                  href={`/sets/${encodeURIComponent(set.sku)}`}
+                  className="group bg-white rounded-xl border border-neutral-200 overflow-hidden hover:border-neutral-400 transition-colors"
+                >
+                  <WatermarkedImage
+                    src={set.image}
+                    alt={set.name}
+                    aspectRatio="video"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  />
+                  <div className="p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                      {set.sku}
+                    </p>
+                    <h3 className="text-sm font-bold text-[#111111] mt-1">
+                      {set.name}
+                    </h3>
+                    {set.summary && (
+                      <p className="text-[11px] text-neutral-600 mt-1">{set.summary}</p>
+                    )}
+                    <p className="text-sm font-black text-[#111111] mt-3">
+                      {set.price != null
+                        ? `From ₹${set.price.toLocaleString("en-IN")}`
+                        : "Ask on WhatsApp"}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 3B. ABOUT SANRA LIVING & WHO WE SUPPLY */}
       <section className="bg-[#FFFFFF] py-16 md:py-24 border-b border-neutral-200">
@@ -375,7 +526,7 @@ export default async function Home() {
                 </p>
                 <div className="rounded-lg overflow-hidden border border-neutral-300 mb-6 bg-white">
                   <WatermarkedImage
-                    src="/images/joint-standard.svg"
+                    src="/images/joint-standard.jpg"
                     alt="Conventional Flat Plate Joint"
                     aspectRatio="video"
                   />
@@ -417,7 +568,7 @@ export default async function Home() {
                 </p>
                 <div className="rounded-lg overflow-hidden border border-neutral-300 mb-6 bg-neutral-50">
                   <WatermarkedImage
-                    src="/images/joint-sanra.svg"
+                    src="/images/joint-sanra.jpg"
                     alt="SANRA Zero-Shake Telescopic Lock"
                     aspectRatio="video"
                   />
@@ -469,7 +620,7 @@ export default async function Home() {
                 </p>
                 <div className="rounded-lg overflow-hidden border border-neutral-200 mb-6">
                   <WatermarkedImage
-                    src="/images/delivery-tempo.svg"
+                    src="/images/delivery-tempo.jpg"
                     alt="Fully Welded Factory Delivery Coimbatore"
                     aspectRatio="video"
                   />
@@ -498,7 +649,7 @@ export default async function Home() {
                 </p>
                 <div className="rounded-lg overflow-hidden border border-neutral-200 mb-6">
                   <WatermarkedImage
-                    src="/images/delivery-flatpack.svg"
+                    src="/images/delivery-flatpack.jpg"
                     alt="5-Min Flat-Pack Knock-Down Courier"
                     aspectRatio="video"
                   />
@@ -519,7 +670,7 @@ export default async function Home() {
           <SectionHeading
             badge="Manufacturing Excellence"
             title="Inside Our SIDCO Factory"
-            subtitle="Four specialized production bays dedicated to steel craftsmanship, high-penetration structural welding, and rigorous load testing."
+            subtitle="Four production steps that keep every order simple and reliable."
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -564,7 +715,7 @@ export default async function Home() {
               Authentic Direct Sourcing Guarantee
             </h4>
             <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
-              We manufacture on-site at SIDCO Kurichi using prime structural steel pipes. Table tops are paired exclusively with <strong>100% Seasoned Grade-A Kerala Rubberwood</strong> and genuine <strong>18mm Export-Grade Krishnagiri Granite</strong>.
+              We manufacture on-site at SIDCO Kurichi using quality structural steel pipes. Table tops are paired with <strong>100% Seasoned Grade-A Kerala Rubberwood</strong> and <strong>18mm Krishnagiri Granite</strong>.
             </p>
           </div>
         </div>

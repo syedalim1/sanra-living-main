@@ -69,8 +69,7 @@ export async function POST(req: NextRequest) {
     if (
       price.requires_quote ||
       price.unit_price == null ||
-      price.total_price == null ||
-      price.discount_pct == null
+      price.total_price == null
     ) {
       return NextResponse.json(
         { error: "This configuration cannot be generated as a PDF." },
@@ -85,7 +84,6 @@ export async function POST(req: NextRequest) {
       price: {
         unit_price: price.unit_price,
         total_price: price.total_price,
-        discount_pct: price.discount_pct,
       },
       reference,
       issueDate: new Date(),

@@ -9,7 +9,6 @@ import type { ConfigSummary } from "@/lib/configSummary";
 export interface QuotePdfPrice {
   unit_price: number;
   total_price: number;
-  discount_pct: number;
 }
 
 export interface QuotePdfInput {
@@ -260,9 +259,6 @@ export async function buildQuotePdf(input: QuotePdfInput): Promise<Uint8Array> {
 
   y -= 22;
 
-  const gross = price.unit_price * summary.quantity;
-  const discountAmount = Math.max(0, gross - price.total_price);
-
   page.drawLine({
     start: { x: labelX, y: y + 8 },
     end: { x: rightX, y: y + 8 },
@@ -273,16 +269,8 @@ export async function buildQuotePdf(input: QuotePdfInput): Promise<Uint8Array> {
   const priceRows: Array<{ label: string; value: string; strong?: boolean }> = [
     { label: "Unit price", value: `₹${formatINR(price.unit_price)}` },
     { label: "Quantity", value: String(summary.quantity) },
+    { label: "TOTAL", value: `₹${formatINR(price.total_price)}`, strong: true },
   ];
-
-  if (price.discount_pct > 0) {
-    priceRows.push({
-      label: `Quantity discount (${price.discount_pct}%)`,
-      value: `- ₹${formatINR(discountAmount)}`,
-    });
-  }
-
-  priceRows.push({ label: "TOTAL", value: `₹${formatINR(price.total_price)}`, strong: true });
 
   for (const row of priceRows) {
     const font = row.strong ? bold : regular;

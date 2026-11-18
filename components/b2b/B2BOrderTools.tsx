@@ -983,6 +983,11 @@ export default function B2BOrderTools({
                 total.
               </p>
             )}
+            {rows.some((row) => row.quantity >= 4) && (
+              <p className="text-[10px] font-semibold text-neutral-600 mt-1">
+                Bulk discount available. Confirm best price on WhatsApp.
+              </p>
+            )}
             <p className="text-[10px] text-neutral-500 mt-1">
               Quote ref: <span className="font-mono font-bold">{quoteRef || "Generated on download"}</span>
             </p>

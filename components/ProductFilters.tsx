@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { SlidersHorizontal, X, RotateCcw } from "lucide-react";
 import { PRODUCT_CATEGORY_OPTIONS } from "@/lib/catalogCategories";
 import { USE_CASE_OPTIONS } from "@/lib/useCases";
@@ -22,8 +23,8 @@ const USE_OPTIONS: FilterOption[] = USE_CASE_OPTIONS.map((option) => ({
 }));
 
 const MATERIAL_OPTIONS: FilterOption[] = [
-  { value: "MS", label: "Mild Steel (Tata MS)" },
-  { value: "SS", label: "Stainless Steel (Jindal SS)" },
+  { value: "MS", label: "Mild Steel" },
+  { value: "SS", label: "Stainless Steel" },
   { value: "WOOD", label: "100% Seasoned Grade-A Kerala Rubberwood" },
   { value: "GRANITE", label: "18mm Export-Grade Krishnagiri Granite" },
 ];
@@ -78,6 +79,14 @@ export default function ProductFilters() {
 
   const renderFilterSections = () => (
     <div className="space-y-6">
+      <Link
+        href="/sets"
+        className="flex items-center justify-between rounded-md border border-[#111111] bg-[#111111] px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-white"
+      >
+        Sets &amp; Combos
+        <span aria-hidden="true">→</span>
+      </Link>
+
       {/* 1. Sort Order */}
       <div>
         <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2.5">

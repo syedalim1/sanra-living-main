@@ -9,8 +9,6 @@ import { ConfigOption } from "@/lib/configuratorOptions";
 import {
   ShieldCheck,
   Check,
-  ChevronDown,
-  ChevronUp,
   Sparkles,
   Flame,
   Droplets,
@@ -150,17 +148,14 @@ export default function TableConfigurator({
 
   // Active image toggle (0 = main product, 1 = blueprint)
   const [activeThumbnailIndex, setActiveThumbnailIndex] = useState<number>(0);
-  const [isCompareOpen, setIsCompareOpen] = useState<boolean>(false);
 
   // Live pricing state
   const [priceData, setPriceData] = useState<{
     unit_price?: number;
     total_price?: number;
-    discount_pct?: number;
     bumper_included?: boolean;
     requires_quote?: boolean;
   }>({
-    discount_pct: 0,
     bumper_included: false,
     requires_quote: false,
   });
@@ -495,9 +490,9 @@ export default function TableConfigurator({
     }
     // FRAME_ONLY
     return [
-      { icon: Shield, text: "CO2 MIG Structural Heavy Frame" },
+      { icon: Shield, text: "Heavy Structural Frame" },
       { icon: Zap, text: "Top-Mount Hole Provisions Included" },
-      { icon: Layers, text: "Pre-Leveled Alignment Bushes" },
+      { icon: Layers, text: "Stable Leveling Feet" },
       { icon: Sparkles, text: "Use with Custom Granite / Wood" },
     ];
   };
@@ -589,14 +584,8 @@ export default function TableConfigurator({
         {/* Product Spec Summary & Zero-Shake Highlight */}
         <div className="p-4 rounded-xl bg-[#F5F5F7] border border-neutral-200 space-y-2 text-xs text-neutral-600">
           <div className="flex items-center justify-between text-[#111111] font-bold">
-            <span>SANRA Zero-Shake Telescopic Lock™</span>
-            <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px]">
-              200 Kg Tested
-            </span>
+            <span>SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested)</span>
           </div>
-          <p className="text-[11px] leading-relaxed">
-            Multi-directional structural joint containment engineered at SIDCO Kurichi. Zero wobble under dynamic load.
-          </p>
         </div>
 
         {/* Surface Durability Badges */}
@@ -617,33 +606,8 @@ export default function TableConfigurator({
           </div>
         </div>
 
-        {/* Compare with local market toggle */}
-        <div className="border border-neutral-200 rounded-xl overflow-hidden bg-white">
-          <button
-            type="button"
-            onClick={() => setIsCompareOpen(!isCompareOpen)}
-            className="w-full flex items-center justify-between p-4 text-xs font-bold uppercase tracking-wider text-neutral-800 hover:bg-neutral-50 transition-colors"
-          >
-            <span>Compare with Local Welding Shop</span>
-            {isCompareOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-
-          {isCompareOpen && (
-            <div className="p-4 pt-0 border-t border-neutral-100 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-lg bg-red-50/70 border border-red-200 space-y-1">
-                <p className="font-bold text-red-900">Local Welding Shop</p>
-                <p className="text-[11px] text-red-700 leading-snug">
-                  20G thin-wall pipe + manual stick arc weld + no leveling bush = shakes in 6 months under commercial use.
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-emerald-50/70 border border-emerald-200 space-y-1">
-                <p className="font-bold text-emerald-900">SANRA SIDCO Factory</p>
-                <p className="text-[11px] text-emerald-800 leading-snug">
-                  16G Tata Structura structural frame + leveling bushes + 10-Yr MIG Warranty.
-                </p>
-              </div>
-            </div>
-          )}
+        <div className="p-4 rounded-xl bg-[#F5F5F7] border border-neutral-200 text-xs font-semibold text-neutral-700">
+          Built for daily commercial use
         </div>
       </div>
 
@@ -810,7 +774,7 @@ export default function TableConfigurator({
             </label>
             {isSS ? (
               <p className="text-xs text-neutral-600 bg-neutral-100 p-2.5 rounded border border-neutral-200">
-                Natural Jindal Stainless Steel polished finish (No powder-coat applied on SS).
+                Natural stainless steel polished finish (No powder-coat applied on SS).
               </p>
             ) : (
               <div
@@ -1009,13 +973,8 @@ export default function TableConfigurator({
         <div className="space-y-3 pt-4 border-t border-neutral-200">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
-              6. Quantity & Wholesale Tier
+              6. Quantity
             </label>
-            {priceData.discount_pct && priceData.discount_pct > 0 ? (
-              <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                {priceData.discount_pct}% Volume Discount Applied
-              </span>
-            ) : null}
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -1029,7 +988,6 @@ export default function TableConfigurator({
               }`}
             >
               <span className="block text-xs">1 - 3 Units</span>
-              <span className="block text-[10px] text-neutral-500 font-normal">Retail Price</span>
             </button>
 
             <button
@@ -1042,7 +1000,6 @@ export default function TableConfigurator({
               }`}
             >
               <span className="block text-xs">4 - 9 Units</span>
-              <span className="block text-[10px] text-emerald-700 font-bold">5% Discount</span>
             </button>
 
             <button
@@ -1055,9 +1012,14 @@ export default function TableConfigurator({
               }`}
             >
               <span className="block text-xs">10+ Units</span>
-              <span className="block text-[10px] text-emerald-700 font-bold">12% Wholesale</span>
             </button>
           </div>
+
+          {quantity >= 4 && (
+            <p className="text-[11px] font-semibold text-neutral-600">
+              Bulk discount available. Confirm best price on WhatsApp.
+            </p>
+          )}
 
           {/* Quantity Stepper Input */}
           <div className="flex items-center gap-3 pt-2">

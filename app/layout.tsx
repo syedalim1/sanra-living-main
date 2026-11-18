@@ -16,15 +16,15 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "SANRA LIVING | Indian Make Steel Industries • SIDCO Coimbatore",
-  description:
-    "Direct steel furniture factory in SIDCO Coimbatore, India. Heavy-duty MS and Jindal SS tables, workstations, cafe furniture, and utility stands with SANRA Zero-Shake Telescopic Lock™.",
+    description:
+      "Direct steel furniture factory in SIDCO Coimbatore, India. Heavy-duty MS and stainless steel tables, workstations, cafe furniture, and utility stands with SANRA Zero-Shake Telescopic Lock™.",
   keywords: [
     "steel furniture factory",
     "SIDCO Coimbatore furniture",
     "direct factory furniture",
     "commercial cafe tables",
     "industrial steel workstation",
-    "Jindal SS tables",
+    "stainless steel tables",
     "zero-shake telescopic lock",
   ],
   openGraph: {

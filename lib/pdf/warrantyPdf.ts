@@ -277,7 +277,7 @@ export async function buildWarrantyPdf(
   y -= 18;
 
   page.drawText(
-    `Structural MIG weld warranty: ${order.warranty_years} year${order.warranty_years === 1 ? "" : "s"} from the recorded handover date.`,
+    `Structural weld warranty: ${order.warranty_years} year${order.warranty_years === 1 ? "" : "s"} from the recorded handover date.`,
     { x: MARGIN, y, size: 9, font: bold, color: BLACK }
   );
   y -= 16;

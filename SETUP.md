@@ -472,6 +472,30 @@ Migration 009 allows `CAFE`, `OFFICE`, `HOME`, `HOSPITAL`, `HOSTEL`, `CANTEEN`, 
 
 After running it, re-run `supabase/seed.sql` so the sample products carry the new use-case tags.
 
+### Step 16: Run Privacy Labels Migration (`010_privacy_labels.sql`)
+
+1. Open the Supabase **SQL Editor**.
+2. Open [supabase/migrations/010_privacy_labels.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/010_privacy_labels.sql), copy the whole file, paste it, and click **Run**.
+3. Confirm `Success. No rows returned`.
+
+Migration 010 rewrites the public gauge and option labels in `configurator_options` and `material_rates`, removing supplier brand names and process wording.
+
+### Step 17: Run Options Manager Migration (`012_options_manager.sql`)
+
+1. Open the Supabase **SQL Editor**.
+2. Open [supabase/migrations/012_options_manager.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/012_options_manager.sql), copy the whole file, paste it, and click **Run**.
+3. Confirm `Success. No rows returned`.
+
+Migration 012 adds the admin-managed option fields, per-product availability, private pricing modes and the public-read availability table. It is safe to re-run. After it succeeds, open `/admin/options` to add groups and options, and use the "Options for this product" section on each product to hide specific options.
+
+### Step 18: Run Sets & Combos Migration (`013_sets.sql`)
+
+1. Open the Supabase **SQL Editor**.
+2. Open [supabase/migrations/013_sets.sql](file:///d:/Downloads/sanra-living-i/supabase/migrations/013_sets.sql), copy the whole file, paste it, and click **Run**.
+3. Confirm `Success. No rows returned`.
+
+Migration 013 creates `product_sets`, `product_set_items` and the private `set_pricing` table with RLS. It is safe to re-run. After it succeeds, open `/admin/sets` to create sets, add products and set the private adjustment.
+
 Set `NEXT_PUBLIC_SITE_URL` in `.env.local` before the final production build. It drives canonical URLs, Open Graph, the sitemap and robots. For local testing, use `http://localhost:3000`.
 
 The final hardening also adds the security headers/CSP, `/.well-known/security.txt`, robots/sitemap rules, privacy/terms pages, branded error pages, the `GET /api/health` check and the launch/operations docs.

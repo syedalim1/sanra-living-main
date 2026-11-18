@@ -22,6 +22,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${SITE_URL}/sets`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
       url: `${SITE_URL}/b2b`,
       lastModified: now,
       changeFrequency: "monthly",
@@ -49,7 +55,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
-    return [...base, ...productEntries];
+    const { data: sets } = await supabaseServer
+      .from("product_sets")
+      .select("sku")
+      .eq("is_active", true)
+      .order("sort_order");
+
+    const setEntries = (sets ?? []).map((set) => ({
+      url: `${SITE_URL}/sets/${encodeURIComponent(set.sku)}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
+
+    return [...base, ...productEntries, ...setEntries];
   } catch {
     return base;
   }

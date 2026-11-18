@@ -44,8 +44,6 @@ export function calculateConfigPriceRaw(params: {
     bumper_rate_per_ft,
     center_support_flat,
     knockdown_price_pct,
-    qty_discount_4_9_pct,
-    qty_discount_10_plus_pct,
     ss_weight_factor,
     is_ss,
   } = params;
@@ -85,16 +83,9 @@ export function calculateConfigPriceRaw(params: {
   const unitPriceRaw = withMargin + addons_flat_total;
   const unitPrice = roundUpToClean99(unitPriceRaw);
 
-  // 7. Quantity discount
-  let discountPct = 0;
-  if (quantity >= 10) {
-    discountPct = qty_discount_10_plus_pct;
-  } else if (quantity >= 4) {
-    discountPct = qty_discount_4_9_pct;
-  }
-
-  const rawTotal = unitPrice * quantity;
-  const totalPrice = Math.round(rawTotal * (1 - discountPct / 100));
+  // 7. Public pricing uses the normal unit price. Bulk discounts are confirmed on WhatsApp.
+  const discountPct = 0;
+  const totalPrice = Math.round(unitPrice * quantity);
 
   return {
     unit_price: unitPrice,

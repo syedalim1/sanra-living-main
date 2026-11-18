@@ -75,7 +75,7 @@ const WHY_CARDS = [
   },
   {
     icon: ShieldCheck,
-    title: "Tata / Jindal pipe options",
+    title: "Steel pipe options",
     body: "Material choices with up to 10-Yr MIG warranty on qualifying frames.",
   },
   {

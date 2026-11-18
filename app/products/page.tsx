@@ -19,7 +19,7 @@ const HAS_SUPABASE = Boolean(
 export const metadata: Metadata = {
   title: "Steel Furniture Catalog | SANRA LIVING",
   description:
-    "Direct SIDCO Coimbatore factory steel furniture catalog. Heavy gauge MS and Jindal SS cafe tables, office workstations, dining sets, and custom frames with live prices.",
+    "Direct SIDCO Coimbatore factory steel furniture catalog. Heavy gauge MS and stainless steel cafe tables, office workstations, dining sets, and custom frames with live prices.",
   alternates: { canonical: "/products" },
   openGraph: {
     title: "Steel Furniture Catalog | SANRA LIVING",

@@ -223,6 +223,8 @@ interface FallbackOptionPrice {
   material_code?: string | null;
   multiplier?: number;
   flat?: number;
+  perSqft?: number;
+  appliesTo?: "FLAT" | "METAL_WEIGHT" | "TOP_AREA" | "PER_UNIT";
 }
 
 const FALLBACK_OPTION_PRICING: Record<string, FallbackOptionPrice> = {
@@ -327,11 +329,88 @@ export async function parseNonTableConfig(rawInput: unknown): Promise<NonTableCo
     throw new Error("Invalid configuration.");
   }
 
+  const sku = envelope.data.sku.trim().toUpperCase();
+  const selections = envelope.data.selections;
+
+  try {
+    const { data: product } = await supabaseServer
+      .from("products")
+      .select("id, product_type")
+      .eq("sku", sku)
+      .maybeSingle();
+
+    const [groupResult, optionResult] = await Promise.all([
+      supabaseServer
+        .from("product_type_option_groups")
+        .select("*")
+        .eq("product_type", productType)
+        .order("sort_order"),
+      supabaseServer
+        .from("configurator_options")
+        .select("option_group, option_code, is_active")
+        .eq("is_active", true),
+    ]);
+
+    const groups = (groupResult.data ?? []).filter(
+      (group) => group.is_active !== false
+    );
+    const options = optionResult.data ?? [];
+
+    if (groups.length > 0 && options.length > 0) {
+      const disabled = new Set<string>();
+      if (product?.id) {
+        const { data: availability } = await supabaseServer
+          .from("product_option_availability")
+          .select("option_code, is_enabled")
+          .eq("product_id", product.id);
+
+        for (const row of availability ?? []) {
+          if (!row.is_enabled) disabled.add(row.option_code);
+        }
+      }
+
+      const groupCodes = new Set(groups.map((group) => group.option_group));
+      const allowed = new Set<string>();
+
+      for (const option of options) {
+        if (!groupCodes.has(option.option_group)) continue;
+        if (disabled.has(option.option_code)) continue;
+        allowed.add(`${option.option_group}:${option.option_code}`);
+      }
+
+      for (const [group, code] of Object.entries(selections)) {
+        if (!groupCodes.has(group)) throw new Error("Invalid configuration.");
+        if (!allowed.has(`${group}:${code}`)) throw new Error("Invalid configuration.");
+      }
+
+      for (const group of groups) {
+        if (
+          group.is_required &&
+          group.option_group !== "QTY_TIER" &&
+          !selections[group.option_group]
+        ) {
+          throw new Error("Invalid configuration.");
+        }
+      }
+
+      return {
+        product_type: productType,
+        sku,
+        quantity: envelope.data.quantity,
+        selections,
+      } as NonTableConfigInput;
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === "Invalid configuration.") {
+      throw error;
+    }
+  }
+
   const parsed = NonTableConfigSchema.safeParse({
     product_type: productType,
-    sku: envelope.data.sku.trim().toUpperCase(),
+    sku,
     quantity: envelope.data.quantity,
-    selections: envelope.data.selections,
+    selections,
   });
 
   if (!parsed.success) {
@@ -345,6 +424,7 @@ async function loadNonTableData(input: NonTableConfigInput): Promise<NonTableDat
   const fallback = FALLBACK_RULES[input.sku];
   let rule: FallbackRule | null = fallback ?? null;
   let productTypeMismatch = false;
+  const disabledOptionCodes = new Set<string>();
 
   try {
     const { data: product } = await supabaseServer
@@ -357,6 +437,14 @@ async function loadNonTableData(input: NonTableConfigInput): Promise<NonTableDat
       if (product.product_type !== input.product_type) {
         productTypeMismatch = true;
       } else {
+        const { data: availability } = await supabaseServer
+          .from("product_option_availability")
+          .select("option_code, is_enabled")
+          .eq("product_id", product.id);
+
+        for (const row of availability ?? []) {
+          if (!row.is_enabled) disabledOptionCodes.add(row.option_code);
+        }
         const { data: ruleData } = await supabaseServer
           .from("product_pricing_rules")
           .select("*")
@@ -426,6 +514,7 @@ async function loadNonTableData(input: NonTableConfigInput): Promise<NonTableDat
 
   const optionMap = new Map<string, ConfigOption>();
   for (const option of [...FALLBACK_OPTIONS, ...dbOptions]) {
+    if (disabledOptionCodes.has(option.option_code)) continue;
     optionMap.set(`${option.option_group}:${option.option_code}`, option);
   }
 
@@ -437,7 +526,9 @@ async function loadNonTableData(input: NonTableConfigInput): Promise<NonTableDat
   try {
     const { data } = await supabaseServer
       .from("option_pricing")
-      .select("option_code, material_code, metal_cost_multiplier, flat_addon");
+      .select(
+        "option_code, material_code, metal_cost_multiplier, flat_addon, per_sqft_addon, applies_to"
+      );
 
     if (data) {
       for (const row of data) {
@@ -445,6 +536,8 @@ async function loadNonTableData(input: NonTableConfigInput): Promise<NonTableDat
           material_code: row.material_code ?? null,
           multiplier: Number(row.metal_cost_multiplier),
           flat: Number(row.flat_addon),
+          perSqft: Number(row.per_sqft_addon ?? 0),
+          appliesTo: row.applies_to ?? "FLAT",
         });
       }
     }
@@ -507,18 +600,40 @@ function materialRateFor(code: string | null, materials: Record<string, number>)
   return rate;
 }
 
-function flatFor(code: string | null | undefined, optionPrices: Map<string, FallbackOptionPrice>): number {
-  if (!code) return 0;
-  const flat = Number(optionPrices.get(code)?.flat ?? 0);
-  return Number.isFinite(flat) ? flat : 0;
-}
+function optionAdjustments(
+  selections: Record<string, string | undefined>,
+  optionPrices: Map<string, FallbackOptionPrice>,
+  areaSqft: number
+): { flat: number; metalMultiplier: number } {
+  let flat = 0;
+  let metalMultiplier = 1;
 
-function multiplierFor(
-  code: string,
-  optionPrices: Map<string, FallbackOptionPrice>
-): number {
-  const multiplier = Number(optionPrices.get(code)?.multiplier ?? 1);
-  return Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
+  for (const code of Object.values(selections)) {
+    if (!code) continue;
+    const price = optionPrices.get(code);
+    if (!price) continue;
+
+    switch (price.appliesTo ?? "FLAT") {
+      case "METAL_WEIGHT": {
+        const multiplier = Number(price.multiplier ?? 1);
+        if (Number.isFinite(multiplier) && multiplier > 0) {
+          metalMultiplier *= multiplier;
+        }
+        break;
+      }
+      case "TOP_AREA": {
+        const perSqft = Number(price.perSqft ?? 0);
+        if (Number.isFinite(perSqft)) flat += perSqft * areaSqft;
+        break;
+      }
+      default: {
+        const amount = Number(price.flat ?? 0);
+        if (Number.isFinite(amount)) flat += amount;
+      }
+    }
+  }
+
+  return { flat, metalMultiplier };
 }
 
 async function calculateNonTableConfigPrice(
@@ -583,22 +698,23 @@ async function calculateNonTableConfigPrice(
     ssWeightFactor: safeNumber(globals.SS_WEIGHT_FACTOR, 1.05),
   };
 
+  const selectionMapAll = input.selections as Record<string, string | undefined>;
+  const adjustments = optionAdjustments(selectionMapAll, optionPrices, topArea);
+
   if (input.product_type === "CHAIR") {
     const metalCode = input.selections.METAL_TYPE;
     const metalRate = materialRateFor(materialCodeFor(metalCode, optionPrices), materials);
     const seatMaterial = materialCodeFor(input.selections.SEAT, optionPrices);
     const seatRate = seatMaterial ? materialRateFor(seatMaterial, materials) : 0;
-    const flatAddons =
-      flatFor(input.selections.SEAT_COLOR, optionPrices) +
-      flatFor(input.selections.FRAME_COLOR, optionPrices);
 
     const result = calculateTypePrice({
       ...common,
       metalRate,
+      metalMultiplier: adjustments.metalMultiplier,
       isSS: metalCode !== "MS_COATED",
       seatArea: topArea,
       seatRate,
-      flatAddons,
+      flatAddons: adjustments.flat,
       isKnockdown: input.selections.BUILD_TYPE === "KNOCKDOWN",
       knockdownPct: safeNumber(globals.KNOCKDOWN_PRICE_PCT, 0),
     });
@@ -616,8 +732,9 @@ async function calculateNonTableConfigPrice(
       {
         ...common,
         metalRate,
+        metalMultiplier: adjustments.metalMultiplier,
         isSS: input.selections.STAND_MATERIAL === "ST_SS304",
-        flatAddons: flatFor(input.selections.BASE, optionPrices),
+        flatAddons: adjustments.flat,
       },
       input.selections.PACK,
       safeNumber(globals.PACK2_SAVING, 150)
@@ -633,10 +750,10 @@ async function calculateNonTableConfigPrice(
     const result = calculateTypePrice({
       ...common,
       metalRate: materialRateFor("MS_CR", materials),
-      metalMultiplier: multiplierFor(input.selections.RACK_SIZE, optionPrices),
+      metalMultiplier: adjustments.metalMultiplier,
       seatArea: topArea,
       seatRate: shelfRate,
-      flatAddons: flatFor(input.selections.FINISH, optionPrices),
+      flatAddons: adjustments.flat,
     });
 
     return { ...result, requires_quote: false };
@@ -650,9 +767,9 @@ async function calculateNonTableConfigPrice(
   const result = calculateTypePrice({
     ...common,
     metalRate,
-    metalMultiplier: multiplierFor(input.selections.THICKNESS, optionPrices),
+    metalMultiplier: adjustments.metalMultiplier,
     isSS: true,
-    flatAddons: flatFor(input.selections.SS_FINISH, optionPrices),
+    flatAddons: adjustments.flat,
   });
 
   return { ...result, requires_quote: false };

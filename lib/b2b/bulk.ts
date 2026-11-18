@@ -46,7 +46,6 @@ export type BulkQuoteRequest = z.infer<typeof BulkQuoteRequestSchema>;
 export interface BulkRowPrice {
   unit_price: number | null;
   total_price: number | null;
-  discount_pct: number;
   requires_quote: boolean;
 }
 
@@ -58,7 +57,6 @@ export interface BulkPriceResponse {
 export interface BulkPriceSource {
   unit_price?: number;
   total_price?: number;
-  discount_pct?: number;
   requires_quote?: boolean;
 }
 
@@ -84,7 +82,6 @@ export async function priceBulkRows(
     results.push({
       unit_price: requiresQuote ? null : price.unit_price ?? null,
       total_price: requiresQuote ? null : price.total_price ?? null,
-      discount_pct: requiresQuote ? 0 : price.discount_pct ?? 0,
       requires_quote: requiresQuote,
     });
 

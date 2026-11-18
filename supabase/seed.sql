@@ -10,8 +10,8 @@ VALUES
   ('MS_CR', 'Mild Steel Cold Rolled Pipe', 'METAL', 'KG', 78.50, '#2B2B2B', NULL),
   ('MS_HR', 'Mild Steel Hot Rolled Pipe', 'METAL', 'KG', 72.00, '#3A3A3C', NULL),
   ('GP', 'Galvanised Steel Pipe', 'METAL', 'KG', 84.00, '#8E8E93', NULL),
-  ('SS_202', 'Jindal Stainless Steel 202 Grade', 'METAL', 'KG', 185.00, '#D1D1D6', NULL),
-  ('SS_304', 'Jindal Stainless Steel 304 Sanitary Grade', 'METAL', 'KG', 260.00, '#E5E5EA', NULL),
+  ('SS_202', 'Stainless Steel 202', 'METAL', 'KG', 185.00, '#D1D1D6', NULL),
+  ('SS_304', 'Stainless Steel 304', 'METAL', 'KG', 260.00, '#E5E5EA', NULL),
 
   -- Woods (Cost per SQFT)
   ('WOOD_RUBBER_18', '100% Seasoned Grade-A Kerala Rubberwood (18mm)', 'WOOD', 'SQFT', 165.00, '#C29B38', NULL),
@@ -32,7 +32,7 @@ VALUES
   ('SHEET_PERFORATED', 'Perforated Industrial Steel Sheet Top', 'METAL', 'SQFT', 145.00, '#333333', NULL),
   ('SHEET_MESH', 'Expanded Diamond Steel Mesh Top', 'METAL', 'SQFT', 130.00, '#444444', NULL),
   ('SHEET_CR_16G', '16-Gauge Solid CR Steel Sheet Top', 'METAL', 'SQFT', 180.00, '#222222', NULL),
-  ('SHEET_SS304', 'Jindal SS 304 Food-Grade Stainless Sheet Top', 'METAL', 'SQFT', 380.00, '#E0E0E0', NULL)
+  ('SHEET_SS304', 'Stainless Steel 304 Sheet Top', 'METAL', 'SQFT', 380.00, '#E0E0E0', NULL)
 ON CONFLICT (material_code) DO NOTHING;
 
 -- 2. SEED PRICING GLOBALS

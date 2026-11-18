@@ -10,6 +10,8 @@ import ProductForm from "@/app/admin/(dashboard)/products/[id]/ProductForm";
 import VariantManager from "@/app/admin/(dashboard)/products/[id]/VariantManager";
 import SwatchManager from "@/app/admin/(dashboard)/products/[id]/SwatchManager";
 import ProductLifecycleActions from "@/app/admin/(dashboard)/products/[id]/ProductLifecycleActions";
+import ProductOptionsAvailability from "@/app/admin/(dashboard)/products/[id]/ProductOptionsAvailability";
+import { isProductType } from "@/lib/productTypeConfig";
 import type {
   AdminMaterialOption,
   AdminOption,
@@ -148,6 +150,34 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
           },
         ];
 
+  let availabilityGroups: Array<{ option_group: string; group_title: string }> = [];
+  let disabledOptionCodes: string[] = [];
+
+  if (product && isProductType(product.product_type)) {
+    const [typeGroupResult, availabilityResult] = await Promise.all([
+      db
+        .from("product_type_option_groups")
+        .select("option_group, group_title, is_active, sort_order")
+        .eq("product_type", product.product_type)
+        .order("sort_order"),
+      db
+        .from("product_option_availability")
+        .select("option_code, is_enabled")
+        .eq("product_id", product.id),
+    ]);
+
+    availabilityGroups = (typeGroupResult.data ?? [])
+      .filter((group) => group.is_active !== false)
+      .map((group) => ({
+        option_group: group.option_group,
+        group_title: group.group_title,
+      }));
+
+    disabledOptionCodes = (availabilityResult.data ?? [])
+      .filter((row) => !row.is_enabled)
+      .map((row) => row.option_code);
+  }
+
   const swatchGroups = new Set([
     "TOP_MATERIAL",
     "FRAME_COLOR",
@@ -236,6 +266,18 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
           />
 
           <SwatchManager options={swatchOptions} />
+
+          <ProductOptionsAvailability
+            productId={product.id}
+            productType={product.product_type}
+            groups={availabilityGroups}
+            options={allOptions.map((option) => ({
+              option_group: option.option_group,
+              option_code: option.option_code,
+              label_en: option.label_en,
+            }))}
+            disabledCodes={disabledOptionCodes}
+          />
         </>
       )}
     </div>

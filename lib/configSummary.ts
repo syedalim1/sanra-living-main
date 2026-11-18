@@ -123,6 +123,48 @@ async function loadOptionsAndName(sku: string): Promise<{
   return { options, productName };
 }
 
+async function loadActiveGroups(
+  productType: NonTableProductType
+): Promise<Array<{ option_group: string; group_title: string }>> {
+  try {
+    const { data } = await supabaseServer
+      .from("product_type_option_groups")
+      .select("option_group, group_title, is_active, sort_order")
+      .eq("product_type", productType)
+      .order("sort_order");
+
+    return (data ?? [])
+      .filter((group) => group.is_active !== false)
+      .map((group) => ({
+        option_group: group.option_group,
+        group_title: group.group_title,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function appendGenericLines(
+  lines: SelectionLine[],
+  groups: Array<{ option_group: string; group_title: string }>,
+  options: ConfigOption[],
+  selections: Record<string, string | undefined>
+): SelectionLine[] {
+  const seen = new Set(lines.map((line) => line.value));
+  const next = [...lines];
+
+  for (const group of groups) {
+    const code = selections[group.option_group];
+    if (!code) continue;
+    const value = labelFor(options, group.option_group, code);
+    if (!value || seen.has(value)) continue;
+    next.push({ label: group.group_title, value });
+    seen.add(value);
+  }
+
+  return next;
+}
+
 function buildNonTableLines(
   input: NonTableConfigInput,
   options: ConfigOption[]
@@ -230,7 +272,13 @@ export async function getConfigSummary(input: ConfigSummaryInput): Promise<Confi
   }
 
   const nonTableInput = input.nonTableInput;
-  const selectionLines = buildNonTableLines(nonTableInput, options);
+  const activeGroups = await loadActiveGroups(nonTableInput.product_type);
+  const selectionLines = appendGenericLines(
+    buildNonTableLines(nonTableInput, options),
+    activeGroups,
+    options,
+    nonTableInput.selections as Record<string, string | undefined>
+  );
 
   const base = {
     product_name: productName,

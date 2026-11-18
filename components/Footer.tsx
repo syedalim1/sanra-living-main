@@ -24,7 +24,7 @@ export default function Footer() {
               Indian Make Steel Industries
             </p>
             <p className="text-sm text-neutral-400 leading-relaxed">
-              Direct steel furniture manufacturing unit in SIDCO Industrial Estate, Coimbatore. Heavy-gauge MS & Jindal SS frames engineered for zero wobble.
+              Direct steel furniture manufacturing unit in SIDCO Industrial Estate, Coimbatore. Heavy-gauge MS and stainless steel frames built for daily use.
             </p>
             {company.gstin && (
               <div className="pt-2">
@@ -82,7 +82,7 @@ export default function Footer() {
             <ul className="space-y-2.5 text-sm text-neutral-400">
               <li className="flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-neutral-300 shrink-0 mt-0.5" />
-                <span>Tata MS & Jindal Stainless Steel Pipes</span>
+                <span>Premium CR steel pipe & stainless steel</span>
               </li>
               <li className="flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-neutral-300 shrink-0 mt-0.5" />
@@ -179,15 +179,25 @@ export default function Footer() {
                   </a>
                 )}
                 {SOCIAL.google_maps && (
-                  <a
-                    href={SOCIAL.google_maps}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="SANRA LIVING on Google Maps"
-                    className="p-2 rounded-md bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white transition-colors"
-                  >
-                    <MapPin className="w-4 h-4" />
-                  </a>
+                  <>
+                    <a
+                      href={SOCIAL.google_maps}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="SANRA LIVING on Google Maps"
+                      className="p-2 rounded-md bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white transition-colors"
+                    >
+                      <MapPin className="w-4 h-4" />
+                    </a>
+                    <a
+                      href={SOCIAL.google_maps}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] font-semibold text-neutral-300 underline underline-offset-2 hover:text-white transition-colors"
+                    >
+                      See our Google reviews
+                    </a>
+                  </>
                 )}
               </div>
             </div>

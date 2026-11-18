@@ -369,9 +369,52 @@ export default async function SkuPage({ params }: SkuPageProps) {
   }
 
   const typeGroupSet = new Set(typeGroups.map((group) => group.option_group));
-  const typeOptions = configuratorOptions.filter((option) =>
+  let typeOptions = configuratorOptions.filter((option) =>
     typeGroupSet.has(option.option_group)
   );
+
+  try {
+    const { data: availability } = await supabaseServer
+      .from("product_option_availability")
+      .select("option_code, is_enabled")
+      .eq("product_id", product.id);
+
+    const disabled = new Set(
+      (availability ?? [])
+        .filter((row) => !row.is_enabled)
+        .map((row) => row.option_code)
+    );
+
+    if (disabled.size > 0) {
+      typeOptions = typeOptions.filter((option) => !disabled.has(option.option_code));
+    }
+  } catch {
+    // Keep all active options when availability cannot be loaded.
+  }
+
+  let relatedSets: Array<{ sku: string; name: string }> = [];
+  if (product.product_type === "TABLE") {
+    try {
+      const { data: links } = await supabaseServer
+        .from("product_set_items")
+        .select("set_id")
+        .eq("product_id", product.id);
+
+      const setIds = [...new Set((links ?? []).map((link) => link.set_id))];
+      if (setIds.length > 0) {
+        const { data: setRows } = await supabaseServer
+          .from("product_sets")
+          .select("sku, name")
+          .in("id", setIds)
+          .eq("is_active", true)
+          .order("sort_order");
+
+        relatedSets = setRows ?? [];
+      }
+    } catch {
+      relatedSets = [];
+    }
+  }
 
   const canonicalUrl = productUrl(product.sku);
   const productJsonLd = {
@@ -423,6 +466,29 @@ export default async function SkuPage({ params }: SkuPageProps) {
           visualVariants={visualVariants}
           fromPrice={fromPrice}
         />
+
+        {relatedSets.length > 0 && (
+          <section className="mt-12 border-t border-neutral-200 pt-8">
+            <h2 className="text-lg font-extrabold text-[#111111] tracking-tight">
+              Complete the Set
+            </h2>
+            <p className="text-xs text-neutral-500 mt-1">
+              This table is part of these factory sets.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {relatedSets.map((set) => (
+                <Link
+                  key={set.sku}
+                  href={`/sets/${encodeURIComponent(set.sku)}`}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-neutral-300 text-xs font-semibold text-neutral-800 hover:border-neutral-500"
+                >
+                  {set.name}
+                  <span aria-hidden="true">→</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
