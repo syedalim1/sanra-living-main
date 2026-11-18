@@ -11,6 +11,7 @@
 - [ ] Fill `COMPANY_ADDRESS`.
 - [ ] Fill `COMPANY_GSTIN`.
 - [ ] Fill `COMPANY_PHONE`.
+- [ ] Fill `COMPANY_EMAIL` with a public contact address (not the admin login email).
 - [ ] Review and set `GST_NOTE` in `lib/company.ts`.
 - [ ] Review and set `WARRANTY_TERMS` in `lib/company.ts`.
 - [ ] Replace placeholder rates in `/admin/rates`.
@@ -19,6 +20,7 @@
 - [ ] Review `/privacy` and `/terms` with a legal advisor.
 - [ ] Enable MFA on the Supabase account and plan app-level admin MFA.
 - [ ] Change the admin password and confirm old sessions are revoked.
+- [ ] Test the real phone number and `tel:` link on an actual mobile phone.
 - [ ] Run a real mobile test at 360, 390, 768 and 1024 px.
 - [ ] Confirm one navigation bar on mobile and no horizontal scrolling.
 - [ ] Run Lighthouse on production with the real database.

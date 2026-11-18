@@ -78,8 +78,9 @@ export default function TermsPage() {
             <h2 className="text-base font-bold text-[#111111] mb-2">
               Contact
             </h2>
-            <p>{company.address}</p>
-            <p className="mt-1">Phone: {company.phone}</p>
+            {company.address && <p>{company.address}</p>}
+            {company.phone && <p className="mt-1">Phone: {company.phone}</p>}
+            {company.email && <p className="mt-1">Email: {company.email}</p>}
           </section>
         </div>
       </div>

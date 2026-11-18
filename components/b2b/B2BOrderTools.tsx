@@ -787,6 +787,13 @@ export default function B2BOrderTools({
           </p>
         )}
 
+        {products.length === 0 && (
+          <p className="text-[11px] font-semibold text-neutral-700 bg-neutral-50 border border-neutral-200 rounded-md p-2.5">
+            Bulk pricing is not available for this catalog yet. Send your list on WhatsApp
+            and the factory desk will quote it manually.
+          </p>
+        )}
+
         <div className="space-y-4">
           {rows.map((row, index) => {
             const product = productMap.get(row.sku);

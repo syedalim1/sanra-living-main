@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import WatermarkedImage from "./WatermarkedImage";
 import { MessageSquare } from "lucide-react";
+import { whatsappHref } from "@/lib/company";
 
 interface CategoryCardProps {
   name: string;
@@ -18,9 +19,9 @@ export default function CategoryCard({
   description,
   href = "/products",
 }: CategoryCardProps) {
-  const whatsappEnquiryUrl = `https://wa.me/91XXXXXXXXXX?text=${encodeURIComponent(
+  const whatsappEnquiryUrl = whatsappHref(
     `Hello SANRA LIVING, I am interested in factory pricing for: ${name}.`
-  )}`;
+  );
 
   return (
     <div className="group bg-white rounded-lg border border-neutral-200 overflow-hidden flex flex-col hover:border-neutral-400 hover:shadow-md transition-all duration-200">

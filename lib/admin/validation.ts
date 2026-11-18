@@ -70,7 +70,7 @@ export const SKU_PATTERN = /^[A-Z0-9]+(?:-[A-Z0-9]+)+$/;
 
 const DimensionSchema = z
   .number()
-  .positive()
+  .min(1, { message: "Enter at least 1 ft." })
   .max(200)
   .refine(hasAtMostTwoDecimals, { message: "Use at most 2 decimal places." });
 

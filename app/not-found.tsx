@@ -42,7 +42,9 @@ export default function NotFound() {
             WhatsApp
           </a>
         </div>
-        <p className="text-[10px] text-neutral-500">{company.phone}</p>
+        {company.phone && (
+          <p className="text-[10px] text-neutral-500">{company.phone}</p>
+        )}
       </div>
     </div>
   );

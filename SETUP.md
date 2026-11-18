@@ -30,11 +30,12 @@ Add these to `.env.local`:
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | WhatsApp number, digits only with country code (for example `919876543210`) |
 | `COMPANY_ADDRESS` | Factory address printed on the PDF quote and Contact page |
 | `COMPANY_GSTIN` | GSTIN printed on the PDF quote and Contact page |
-| `COMPANY_PHONE` | Factory phone printed on the PDF quote and Contact page |
+| `COMPANY_PHONE` | Factory phone. Digits are formatted as `+91 95857 45303` with a working `tel:` link |
+| `COMPANY_EMAIL` | Public contact email used in the footer, Contact page, PDFs and `security.txt` |
 | `NEXT_PUBLIC_SITE_URL` | Final public HTTPS origin used for canonical URLs, sitemap, Open Graph and robots |
 | `ADMIN_EMAIL` | Exact email of the single Supabase Auth user allowed into `/admin` |
 
-If a company value is missing, the UI shows a visible `UPDATE ME` placeholder instead of crashing. The GST wording on the PDF comes from `GST_NOTE` in `lib/company.ts` and can be edited directly.
+If a company value is missing, that line is hidden instead of showing placeholder text. `COMPANY_EMAIL` must be a public address; never use the `ADMIN_EMAIL` login address. The GST wording on the PDF comes from `GST_NOTE` in `lib/company.ts` and can be edited directly.
 
 `ADMIN_EMAIL` is server-only. It must exactly match the Supabase Auth user email (case-insensitive). If it is missing, every admin sign-in is rejected.
 

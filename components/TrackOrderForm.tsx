@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import PlaceholderImage from "@/components/PlaceholderImage";
 import {
   Check,
   ChevronRight,
   Download,
-  ImageIcon,
   Loader2,
   LockKeyhole,
   MessageCircle,
@@ -65,14 +65,10 @@ function TrackPhotoCard({
 
   if (failed) {
     return (
-      <div
-        className={`rounded-lg bg-neutral-100 border border-neutral-200 flex flex-col items-center justify-center text-neutral-400 ${
-          large ? "aspect-video" : "aspect-square"
-        }`}
-      >
-        <ImageIcon className="w-6 h-6 mb-1" />
-        <span className="text-[10px]">Photo unavailable</span>
-      </div>
+      <PlaceholderImage
+        aspectRatio={large ? "video" : "square"}
+        label="Order photo unavailable"
+      />
     );
   }
 
@@ -356,10 +352,7 @@ export default function TrackOrderForm({
                 onClick={() => setGalleryOpen(true)}
               />
             ) : (
-              <div className="aspect-video rounded-lg bg-neutral-100 border border-neutral-200 flex flex-col items-center justify-center text-neutral-400">
-                <ImageIcon className="w-7 h-7 mb-2" />
-                <span className="text-[11px]">No customer-visible photo yet.</span>
-              </div>
+              <PlaceholderImage aspectRatio="video" label="No customer-visible photo yet" />
             )}
 
             {result.photos.length > 1 && (

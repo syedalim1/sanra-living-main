@@ -18,8 +18,8 @@ import TrustBar from "@/components/TrustBar";
 import SectionHeading from "@/components/SectionHeading";
 import CategoryCard from "@/components/CategoryCard";
 import WatermarkedImage from "@/components/WatermarkedImage";
-import { company } from "@/lib/company";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { company, whatsappHref } from "@/lib/company";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "SANRA LIVING | Direct Steel Furniture Factory, SIDCO Coimbatore",
@@ -116,14 +116,19 @@ export default function Home() {
   const localBusinessJsonLd = {
     "@context": "https://schema.org",
     "@type": ["Organization", "LocalBusiness"],
-    name: SITE_NAME,
+    name: company.name,
     url: SITE_URL,
-    telephone: company.phone,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: company.address,
-      addressCountry: "IN",
-    },
+    ...(company.phone ? { telephone: company.phone } : {}),
+    ...(company.email ? { email: company.email } : {}),
+    ...(company.address
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: company.address,
+            addressCountry: "IN",
+          },
+        }
+      : {}),
     areaServed: "India",
   };
 
@@ -469,7 +474,7 @@ export default function Home() {
               Authentic Direct Sourcing Guarantee
             </h4>
             <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
-              We manufacture on-site at SIDCO Kurichi using prime structural steel pipes. Table tops are paired exclusively with certified <strong>100% Seasoned Grade-A Kerala Rubberwood</strong> and genuine <strong>18mm Export-Grade Krishnagiri Granite</strong>.
+              We manufacture on-site at SIDCO Kurichi using prime structural steel pipes. Table tops are paired exclusively with <strong>100% Seasoned Grade-A Kerala Rubberwood</strong> and genuine <strong>18mm Export-Grade Krishnagiri Granite</strong>.
             </p>
           </div>
         </div>
@@ -489,7 +494,9 @@ export default function Home() {
           </p>
           <div className="pt-2">
             <a
-              href="https://wa.me/91XXXXXXXXXX?text=Hello%20SANRA%20LIVING,%20I%20would%20like%20to%20request%20live%20factory%20pricing."
+              href={whatsappHref(
+                "Hello SANRA LIVING, I would like to request live factory pricing."
+              )}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm uppercase tracking-wider transition-colors shadow-md"

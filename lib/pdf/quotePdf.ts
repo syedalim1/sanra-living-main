@@ -155,13 +155,23 @@ export async function buildQuotePdf(input: QuotePdfInput): Promise<Uint8Array> {
   });
   y -= 4;
 
-  page.drawText(`${company.phone}  |  GSTIN: ${company.gstin}`, {
-    x: MARGIN,
-    y,
-    size: 8.5,
-    font: regular,
-    color: GREY,
-  });
+  const contactLine = [
+    company.phone,
+    company.email,
+    company.gstin ? `GSTIN: ${company.gstin}` : "",
+  ]
+    .filter(Boolean)
+    .join("  |  ");
+
+  if (contactLine) {
+    page.drawText(contactLine, {
+      x: MARGIN,
+      y,
+      size: 8.5,
+      font: regular,
+      color: GREY,
+    });
+  }
   y -= 12;
 
   page.drawLine({

@@ -151,10 +151,23 @@ export async function buildWarrantyPdf(
   );
   y -= 4;
 
-  page.drawText(
-    `${company.phone}  |  GSTIN: ${company.gstin}`,
-    { x: MARGIN, y, size: 8.5, font: regular, color: GREY }
-  );
+  const contactLine = [
+    company.phone,
+    company.email,
+    company.gstin ? `GSTIN: ${company.gstin}` : "",
+  ]
+    .filter(Boolean)
+    .join("  |  ");
+
+  if (contactLine) {
+    page.drawText(contactLine, {
+      x: MARGIN,
+      y,
+      size: 8.5,
+      font: regular,
+      color: GREY,
+    });
+  }
   y -= 12;
 
   page.drawLine({
@@ -319,15 +332,6 @@ export async function buildWarrantyPdf(
     );
     y = Math.min(nextY - 3, y - 12);
   }
-
-  y -= 12;
-  page.drawText("Warranty text may be edited in /lib/company.ts", {
-    x: MARGIN,
-    y,
-    size: 7.5,
-    font: regular,
-    color: GREY,
-  });
 
   page.drawLine({
     start: { x: MARGIN, y: 64 },

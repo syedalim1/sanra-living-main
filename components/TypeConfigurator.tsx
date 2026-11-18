@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState, useTransition } from "react";
 import Image from "next/image";
+import PlaceholderImage from "@/components/PlaceholderImage";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -141,6 +142,13 @@ function SafeImage({
 }) {
   const [current, setCurrent] = useState(src);
   const [attempt, setAttempt] = useState(0);
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <PlaceholderImage fill className="h-full w-full border-0" label={alt} />
+    );
+  }
 
   return (
     <Image
@@ -151,12 +159,11 @@ function SafeImage({
       priority={priority}
       className={className}
       onError={() => {
-        if (attempt === 0) {
+        if (attempt === 0 && fallback) {
           setCurrent(fallback);
           setAttempt(1);
         } else {
-          setCurrent("/images/product-placeholder.svg");
-          setAttempt(2);
+          setFailed(true);
         }
       }}
     />
@@ -948,8 +955,7 @@ export default function TypeConfigurator({
                 )}
               </div>
               <p className="text-xs text-neutral-600 mt-1">
-                GST invoice available for business input tax credit. Direct SIDCO Coimbatore
-                ex-factory quote.
+                GST Invoice Available • Direct SIDCO Coimbatore ex-factory quote.
               </p>
             </div>
           ) : (

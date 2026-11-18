@@ -10,6 +10,7 @@ import {
   TOP_CATEGORIES,
   USE_CASES,
 } from "@/lib/admin/validation";
+import { PRODUCT_CATEGORY_OPTIONS } from "@/lib/catalogCategories";
 import type {
   AdminPricingRule,
   AdminProduct,
@@ -289,13 +290,22 @@ export default function ProductForm({
             <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
               Category
             </span>
-            <input
+            <select
               name="category"
-              defaultValue={product?.category ?? ""}
+              defaultValue={product?.category ?? PRODUCT_CATEGORY_OPTIONS[0].value}
               required
-              placeholder="Cafe & Dining Tables"
               className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            />
+            >
+              {product?.category &&
+                !PRODUCT_CATEGORY_OPTIONS.some(
+                  (option) => option.value === product.category
+                ) && <option value={product.category}>{product.category}</option>}
+              {PRODUCT_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="space-y-1.5">
@@ -325,7 +335,7 @@ export default function ProductForm({
             <input
               name="base_length_ft"
               type="number"
-              min="0.01"
+              min="1"
               step="0.01"
               defaultValue={valueOrEmpty(product?.base_length_ft)}
               required
@@ -340,7 +350,7 @@ export default function ProductForm({
             <input
               name="base_width_ft"
               type="number"
-              min="0.01"
+              min="1"
               step="0.01"
               defaultValue={valueOrEmpty(product?.base_width_ft)}
               required

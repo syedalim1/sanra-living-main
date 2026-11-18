@@ -1125,7 +1125,7 @@ export default function TableConfigurator({
                 )}
               </div>
               <p className="text-xs text-neutral-600 mt-1">
-                +18% GST invoice provided for business input tax credit. Direct SIDCO Coimbatore ex-factory quote.
+                GST Invoice Available • Direct SIDCO Coimbatore ex-factory quote.
               </p>
             </div>
           )}

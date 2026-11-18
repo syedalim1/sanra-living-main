@@ -3,6 +3,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Menu, X, ArrowUpRight } from "lucide-react";
+import { whatsappHref } from "@/lib/company";
+
+const ENQUIRY_LINK = whatsappHref(
+  "Hello SANRA LIVING, I would like to enquire about factory steel furniture."
+);
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -40,7 +45,7 @@ export default function Navbar() {
               </Link>
             ))}
             <a
-              href="https://wa.me/91XXXXXXXXXX?text=Hello%20SANRA%20LIVING,%20I%20would%20like%20to%20enquire%20about%20factory%20steel%20furniture."
+              href={ENQUIRY_LINK}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold uppercase tracking-wider bg-emerald-700 text-white rounded-md hover:bg-emerald-800 transition-colors shadow-sm"
@@ -81,7 +86,7 @@ export default function Navbar() {
             ))}
             <div className="pt-2">
               <a
-                href="https://wa.me/91XXXXXXXXXX?text=Hello%20SANRA%20LIVING,%20I%20would%20like%20to%20enquire%20about%20factory%20steel%20furniture."
+                href={ENQUIRY_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMobileMenuOpen(false)}

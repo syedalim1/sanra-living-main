@@ -71,7 +71,7 @@ const WHY_CARDS = [
   {
     icon: FileCheck2,
     title: "GST Invoice Available",
-    body: "Commercial invoicing for business procurement and input credit records.",
+    body: "Commercial GST invoicing for business procurement.",
   },
   {
     icon: ShieldCheck,
@@ -88,7 +88,7 @@ const WHY_CARDS = [
 export default async function B2BPage() {
   await connection();
 
-  const [productResult, groupResult, optionResult, cadResult] = await Promise.all([
+  const [productResult, groupResult, optionResult, cadResult, pricingResult] = await Promise.all([
     supabaseServer
       .from("products")
       .select("id, sku, name, product_type, allowed_top_categories")
@@ -110,6 +110,7 @@ export default async function B2BPage() {
       .select("id, title, description, file_type, product_sku")
       .eq("is_active", true)
       .order("created_at", { ascending: false }),
+    supabaseServer.from("product_pricing_rules").select("product_id"),
   ]);
 
   const products: B2BProduct[] =
@@ -126,6 +127,14 @@ export default async function B2BPage() {
               : [],
           }))
       : FALLBACK_PRODUCTS;
+
+  const pricedProductIds = new Set(
+    (pricingResult.data ?? []).map((row) => row.product_id as string)
+  );
+  const bulkProducts =
+    !pricingResult.error && productResult.data && productResult.data.length > 0
+      ? products.filter((product) => pricedProductIds.has(product.id))
+      : products;
 
   const groups: OptionGroupRow[] =
     groupResult.data && groupResult.data.length > 0
@@ -248,7 +257,7 @@ export default async function B2BPage() {
 
         <div className="space-y-8 pb-10 md:pb-12">
           <B2BOrderToolsLoader
-            products={products}
+            products={bulkProducts}
             groups={groups}
             options={options}
             whatsappNumber={company.whatsappNumber}

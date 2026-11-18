@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { productPath } from "@/lib/site";
 import WatermarkedImage from "./WatermarkedImage";
-import { ArrowRight, Eye, RefreshCw } from "lucide-react";
+import { ArrowRight, RefreshCw } from "lucide-react";
 
 export interface CatalogProduct {
   id: string;
@@ -14,7 +14,7 @@ export interface CatalogProduct {
   product_type: string;
   base_length_ft: number;
   base_width_ft: number;
-  main_image_url: string;
+  main_image_url: string | null;
   hover_blueprint_img?: string | null;
   from_price: number | null;
   use_cases?: string[];
@@ -33,9 +33,10 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   // Active image depending on hover (desktop) or touch toggle (mobile)
   const showBlueprint = hasBlueprint && (isHovered || touchBlueprintActive);
-  const currentImage = showBlueprint && product.hover_blueprint_img
-    ? product.hover_blueprint_img
-    : product.main_image_url;
+  const currentImage =
+    showBlueprint && product.hover_blueprint_img
+      ? product.hover_blueprint_img
+      : product.main_image_url;
 
   return (
     <div

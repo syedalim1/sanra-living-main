@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Check the bulk sheet rows and try again." },
+        { error: "Check the product and options in each row, or send the list on WhatsApp." },
         { status: 400, headers: NO_STORE }
       );
     }
@@ -31,7 +31,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(priced, { status: 200, headers: NO_STORE });
   } catch {
     return NextResponse.json(
-      { error: "Unable to price this bulk list. Please check the rows." },
+      {
+        error:
+          "Some rows could not be priced. Choose matching options or send the list on WhatsApp.",
+      },
       { status: 400, headers: NO_STORE }
     );
   }

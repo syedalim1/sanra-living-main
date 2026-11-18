@@ -466,10 +466,35 @@ export default function RateMaster({
               </tr>
             </thead>
             <tbody>
-              {(["METAL", "WOOD", "STONE"] as const).map((category) => {
-                const rows = materialRates.filter((row) => row.category === category);
+              {(
+                [
+                  {
+                    key: "METAL",
+                    label: "Metal (per kg)",
+                    match: (row: MaterialRateRow) =>
+                      row.category === "METAL" && row.unit.toUpperCase() !== "SQFT",
+                  },
+                  {
+                    key: "SHEET",
+                    label: "Sheet Tops (per sq.ft)",
+                    match: (row: MaterialRateRow) =>
+                      row.category === "METAL" && row.unit.toUpperCase() === "SQFT",
+                  },
+                  {
+                    key: "WOOD",
+                    label: "Wood (per sq.ft)",
+                    match: (row: MaterialRateRow) => row.category === "WOOD",
+                  },
+                  {
+                    key: "STONE",
+                    label: "Stone (per sq.ft)",
+                    match: (row: MaterialRateRow) => row.category === "STONE",
+                  },
+                ] as const
+              ).map((category) => {
+                const rows = materialRates.filter(category.match);
                 return (
-                  <GroupRows key={category} category={category} colSpan={6}>
+                  <GroupRows key={category.key} category={category.label} colSpan={6}>
                     {rows.map((row) => {
                       const changed = rateChanged(row.material_code);
                       const raw = rateValues[row.material_code] ?? "";
@@ -619,6 +644,12 @@ export default function RateMaster({
         description="Gauge, rack and SS multipliers plus flat finish/add-on prices. Linked material options are shown read-only."
       >
         <div className="divide-y divide-neutral-100">
+          {options.length === 0 && (
+            <p className="px-5 py-4 text-xs text-neutral-500">
+              No option pricing rows found. Run migrations 003 and 005, then reload this
+              page.
+            </p>
+          )}
           {options.map((row) => {
             if (!row.field) {
               return (
@@ -735,6 +766,12 @@ export default function RateMaster({
             <p className="text-xs text-neutral-500">No active products available.</p>
           ) : (
             <>
+              {(previewSizes.length === 0 || previewGauges.length === 0) && (
+                <p className="text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2.5">
+                  Configurator options are not loaded. Run migrations 003 and 005 so Size,
+                  Top and Gauge can be selected.
+                </p>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <label className="space-y-1">
                   <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">

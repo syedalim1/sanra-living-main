@@ -1,7 +1,6 @@
-import React from "react";
 import Link from "next/link";
-import { MessageSquare, MapPin, Phone, ShieldCheck, FileCheck } from "lucide-react";
-import { company, whatsappHref } from "@/lib/company";
+import { MessageSquare, MapPin, Phone, ShieldCheck, FileCheck, Mail } from "lucide-react";
+import { company, whatsappHref, GST_NOTE } from "@/lib/company";
 
 export default function Footer() {
   return (
@@ -19,11 +18,14 @@ export default function Footer() {
             <p className="text-sm text-neutral-400 leading-relaxed">
               Direct steel furniture manufacturing unit in SIDCO Industrial Estate, Coimbatore. Heavy-gauge MS & Jindal SS frames engineered for zero wobble.
             </p>
-            <div className="pt-2">
-              <span className="inline-block bg-neutral-900 border border-neutral-700 text-neutral-300 text-xs px-2.5 py-1 rounded">
-                GSTIN: {company.gstin} (GST Invoice Provided)
-              </span>
-            </div>
+            {company.gstin && (
+              <div className="pt-2 space-y-1.5">
+                <span className="inline-block bg-neutral-900 border border-neutral-700 text-neutral-300 text-xs px-2.5 py-1 rounded">
+                  GST Invoice Available • GSTIN: {company.gstin}
+                </span>
+                <p className="text-[10px] text-neutral-500">{GST_NOTE}</p>
+              </div>
+            )}
           </div>
 
           {/* Quick Navigation */}
@@ -68,7 +70,7 @@ export default function Footer() {
           {/* Sourcing & Specs */}
           <div>
             <h4 className="text-white text-sm font-semibold tracking-wider uppercase mb-4">
-              Certified Materials
+              Factory Materials
             </h4>
             <ul className="space-y-2.5 text-sm text-neutral-400">
               <li className="flex items-start gap-2">
@@ -96,25 +98,55 @@ export default function Footer() {
               Factory Unit
             </h4>
             <div className="text-sm text-neutral-400 space-y-2.5">
-              <p className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-neutral-300 shrink-0 mt-0.5" />
-                <span>{company.address}</span>
-              </p>
-              <p className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-neutral-300 shrink-0" />
-                <span>{company.phone}</span>
-              </p>
-              <div className="pt-2">
-                <a
-                  href={whatsappHref("Hello SANRA LIVING Factory, I have an enquiry.")}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded bg-emerald-700 hover:bg-emerald-800 text-white transition-colors"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  Chat on WhatsApp
-                </a>
-              </div>
+              {company.address && (
+                <p className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-neutral-300 shrink-0 mt-0.5" />
+                  {company.mapsUrl ? (
+                    <a
+                      href={company.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-white transition-colors"
+                    >
+                      {company.address}
+                    </a>
+                  ) : (
+                    <span>{company.address}</span>
+                  )}
+                </p>
+              )}
+              {company.phone && (
+                <p className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-neutral-300 shrink-0" />
+                  <a href={company.phoneHref} className="hover:text-white transition-colors">
+                    {company.phone}
+                  </a>
+                </p>
+              )}
+              {company.email && (
+                <p className="flex items-center gap-2 break-all">
+                  <Mail className="w-4 h-4 text-neutral-300 shrink-0" />
+                  <a
+                    href={`mailto:${company.email}`}
+                    className="hover:text-white transition-colors"
+                  >
+                    {company.email}
+                  </a>
+                </p>
+              )}
+              {company.whatsappNumber && (
+                <div className="pt-2">
+                  <a
+                    href={whatsappHref("Hello SANRA LIVING Factory, I have an enquiry.")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded bg-emerald-700 hover:bg-emerald-800 text-white transition-colors"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    Chat on WhatsApp
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,9 +1,9 @@
 import React from "react";
 import SectionHeading from "@/components/SectionHeading";
 import Link from "next/link";
-import { ArrowLeft, MessageSquare, MapPin, Phone, Clock, FileText } from "lucide-react";
+import { ArrowLeft, MessageSquare, MapPin, Phone, Clock, FileText, Mail } from "lucide-react";
 import type { Metadata } from "next";
-import { company, whatsappHref, WORKING_HOURS } from "@/lib/company";
+import { company, whatsappHref, WORKING_HOURS, GST_NOTE } from "@/lib/company";
 
 export const metadata: Metadata = {
   title: "Contact & Factory Location | SANRA LIVING",
@@ -57,29 +57,52 @@ export default function ContactPage() {
               </p>
 
               <div className="space-y-4 text-sm text-neutral-700 pt-2">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="block text-[#111111]">Factory Address</strong>
-                    <span>{company.address}</span>
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(company.address)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-block mt-2 text-xs font-bold uppercase tracking-wider text-emerald-700 underline underline-offset-2"
-                    >
-                      Open in Maps
-                    </a>
+                {company.address && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block text-[#111111]">Factory Address</strong>
+                      <span>{company.address}</span>
+                      {company.mapsUrl && (
+                        <a
+                          href={company.mapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-2 text-xs font-bold uppercase tracking-wider text-emerald-700 underline underline-offset-2"
+                        >
+                          Open in Maps
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex items-start gap-3">
-                  <Phone className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="block text-[#111111]">Factory Desk</strong>
-                    <span>{company.phone}</span>
+                {company.phone && (
+                  <div className="flex items-start gap-3">
+                    <Phone className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block text-[#111111]">Factory Desk</strong>
+                      <a href={company.phoneHref} className="underline underline-offset-2">
+                        {company.phone}
+                      </a>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {company.email && (
+                  <div className="flex items-start gap-3">
+                    <Mail className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block text-[#111111]">Email</strong>
+                      <a
+                        href={`mailto:${company.email}`}
+                        className="break-all underline underline-offset-2"
+                      >
+                        {company.email}
+                      </a>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-start gap-3">
                   <Clock className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
@@ -89,13 +112,16 @@ export default function ContactPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <FileText className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="block text-[#111111]">Commercial Invoicing</strong>
-                    <span>GSTIN: {company.gstin} (Input Tax Credit Eligible)</span>
+                {company.gstin && (
+                  <div className="flex items-start gap-3">
+                    <FileText className="w-5 h-5 text-neutral-800 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block text-[#111111]">Commercial Invoicing</strong>
+                      <span>GSTIN: {company.gstin}</span>
+                      <span className="block text-xs text-neutral-500 mt-0.5">{GST_NOTE}</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -112,27 +138,24 @@ export default function ContactPage() {
               </p>
             </div>
 
-            <div className="pt-8 space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                WhatsApp: {company.whatsappDisplayNumber}
-              </p>
-              <a
-                href={whatsappHref(
-                  "Hi SANRA LIVING, I'd like to know more about your steel furniture."
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs uppercase tracking-wider transition-colors shadow"
-              >
-                <MessageSquare className="w-4 h-4" />
-                Chat with SIDCO Coimbatore Desk
-              </a>
-              {!company.whatsappNumber && (
-                <p className="text-[11px] font-semibold text-amber-300">
-                  UPDATE ME: add NEXT_PUBLIC_WHATSAPP_NUMBER to .env.local
+            {company.whatsappNumber && (
+              <div className="pt-8 space-y-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+                  WhatsApp: {company.whatsappDisplayNumber}
                 </p>
-              )}
-            </div>
+                <a
+                  href={whatsappHref(
+                    "Hi SANRA LIVING, I'd like to know more about your steel furniture."
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs uppercase tracking-wider transition-colors shadow"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Chat with SIDCO Coimbatore Desk
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </div>

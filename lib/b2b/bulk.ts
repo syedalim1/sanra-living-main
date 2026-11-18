@@ -70,7 +70,12 @@ export async function priceBulkRows(
   let grandTotal = 0;
 
   for (const row of rows) {
-    const price = await priceRow(row);
+    let price: BulkPriceSource;
+    try {
+      price = await priceRow(row);
+    } catch {
+      price = { requires_quote: true };
+    }
     const requiresQuote =
       Boolean(price.requires_quote) ||
       price.unit_price == null ||

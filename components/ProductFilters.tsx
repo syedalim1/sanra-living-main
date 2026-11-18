@@ -3,20 +3,17 @@
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X, RotateCcw } from "lucide-react";
+import { PRODUCT_CATEGORY_OPTIONS } from "@/lib/catalogCategories";
 
 interface FilterOption {
   value: string;
   label: string;
 }
 
-const CATEGORY_OPTIONS: FilterOption[] = [
-  { value: "Cafe & Dining Tables", label: "Cafe & Dining Tables" },
-  { value: "Office & Workstation Tables", label: "Office & Workstations" },
-  { value: "SS & MS Chairs / Bar Stools", label: "Chairs & Bar Stools" },
-  { value: "Home Utility Stands", label: "Home Utility Stands" },
-  { value: "Boutique & Showroom Racks", label: "Showroom Racks" },
-  { value: "Hospital, Canteen & Lab SS", label: "Hospital & Lab SS" },
-];
+const CATEGORY_OPTIONS: FilterOption[] = PRODUCT_CATEGORY_OPTIONS.map((option) => ({
+  value: option.value,
+  label: option.label,
+}));
 
 const USE_OPTIONS: FilterOption[] = [
   { value: "CAFE", label: "Cafe & Dining" },
@@ -81,7 +78,7 @@ export default function ProductFilters() {
     (currentBudget ? 1 : 0) +
     (currentSort !== "recommended" ? 1 : 0);
 
-  const FilterSections = () => (
+  const renderFilterSections = () => (
     <div className="space-y-6">
       {/* 1. Sort Order */}
       <div>
@@ -243,7 +240,7 @@ export default function ProductFilters() {
               </span>
             )}
           </div>
-          <FilterSections />
+          {renderFilterSections()}
         </div>
       </aside>
 
@@ -294,7 +291,7 @@ export default function ProductFilters() {
               </button>
             </div>
 
-            <FilterSections />
+            {renderFilterSections()}
 
             <div className="mt-8 pt-4 border-t border-neutral-200 grid grid-cols-2 gap-3">
               <button

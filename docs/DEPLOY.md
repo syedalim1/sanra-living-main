@@ -24,9 +24,10 @@ NEXT_PUBLIC_SITE_URL
 COMPANY_ADDRESS
 COMPANY_GSTIN
 COMPANY_PHONE
+COMPANY_EMAIL
 ```
 
-`NEXT_PUBLIC_SITE_URL` must be the final HTTPS origin, for example `https://sanraliving.com`. `ADMIN_EMAIL` must exactly match the Supabase Auth user email. `NEXT_PUBLIC_WHATSAPP_NUMBER` is digits only with country code.
+`NEXT_PUBLIC_SITE_URL` must be the final HTTPS origin, for example `https://sanraliving.com`. `ADMIN_EMAIL` must exactly match the Supabase Auth user email. `COMPANY_EMAIL` is the public contact email and must not be the admin login address. `NEXT_PUBLIC_WHATSAPP_NUMBER` is digits only with country code.
 
 ## 4. Database
 
