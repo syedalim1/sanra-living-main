@@ -31,7 +31,7 @@ describe("PDF quote", () => {
   it("renders a one-page A4 PDF with the embedded rupee font", async () => {
     const bytes = await buildQuotePdf({
       summary,
-      price: { unit_price: 7199, total_price: 13678, discount_pct: 5 },
+      price: { unit_price: 7199, total_price: 14398 },
       reference: "Q-7K9P2X",
       issueDate: new Date("2026-11-17T00:00:00Z"),
       websiteName: "sanraliving.example",
