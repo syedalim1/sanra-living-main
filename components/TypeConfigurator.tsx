@@ -306,7 +306,7 @@ export default function TypeConfigurator({
         for (const [group, code] of Object.entries(next)) {
           params.set(selectionParam(group), code);
         }
-        router.replace(`?${params.toString()}`, { scroll: false });
+        router.replace(`₹${params.toString()}`, { scroll: false });
       });
     },
     [groups, router, searchParams]
@@ -343,7 +343,7 @@ export default function TypeConfigurator({
       const params = new URLSearchParams(searchParams.toString());
       if (clamped > 1) params.set("quantity", String(clamped));
       else params.delete("quantity");
-      router.replace(`?${params.toString()}`, { scroll: false });
+      router.replace(`₹${params.toString()}`, { scroll: false });
     });
   };
 
@@ -833,14 +833,16 @@ export default function TypeConfigurator({
           );
         })}
 
-        <PincodeEstimator
-          selectedBuildType={selectedPincode}
-          onSelectFlatPack={
-            product.product_type === "CHAIR"
-              ? () => handleSelect("BUILD_TYPE", "KNOCKDOWN")
-              : undefined
-          }
-        />
+        {visibleOptions(product.product_type, "BUILD_TYPE", options).length > 0 && (
+          <PincodeEstimator
+            selectedBuildType={selectedPincode}
+            onSelectFlatPack={
+              product.product_type === "CHAIR"
+                ? () => handleSelect("BUILD_TYPE", "KNOCKDOWN")
+                : undefined
+            }
+          />
+        )}
 
                 <div className="border-t border-neutral-200 pt-4 flex items-center justify-between">
           <span className="text-xs uppercase tracking-wider text-neutral-500">Quantity</span>
@@ -930,7 +932,7 @@ export default function TypeConfigurator({
               <MessageSquare className="w-4 h-4" />
               {whatsappStatus === "loading"
                 ? "Opening WhatsApp..."
-                : "📲 Book This Configuration on WhatsApp"}
+                : "ðŸ“² Book This Configuration on WhatsApp"}
             </button>
 
             <button
@@ -946,7 +948,7 @@ export default function TypeConfigurator({
               <FileText className="w-4 h-4" />
               {pdfStatus === "loading"
                 ? "Generating PDF..."
-                : "📄 Download Instant Factory Quote (PDF)"}
+                : "ðŸ“„ Download Instant Factory Quote (PDF)"}
             </button>
 
             {whatsappStatus === "error" && whatsappError && (

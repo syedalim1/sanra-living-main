@@ -154,7 +154,17 @@ export default function TableConfigurator({
 
   // Active image toggle (0 = main product, 1 = blueprint)
   const [activeThumbnailIndex, setActiveThumbnailIndex] = useState<number>(0);
-  const [openSection, setOpenSection] = useState<string>("Top");
+  const [openSection, setOpenSection] = useState<string>(
+    topTabs.length > 0
+      ? "Top"
+      : gauges.length > 0 || frameColors.length > 0
+      ? "Frame"
+      : sizes.length > 0
+      ? "Size"
+      : buildTypes.length > 0
+      ? "Delivery"
+      : "Extras"
+  );
   const [pincodeOpen, setPincodeOpen] = useState(false);
   const [pincode, setPincode] = useState("");
 
@@ -184,7 +194,7 @@ export default function TableConfigurator({
             params.set(key, value);
           }
         }
-        router.replace(`?${params.toString()}`, { scroll: false });
+        router.replace(`â‚¹${params.toString()}`, { scroll: false });
       });
     },
     [router, searchParams]
@@ -681,13 +691,13 @@ export default function TableConfigurator({
               {product.name}
             </h1>
             <p className="mt-1 text-xs uppercase tracking-wider text-neutral-500">
-              {product.sku} · Direct SIDCO Coimbatore production
+              {product.sku} Â· Direct SIDCO Coimbatore production
             </p>
           </div>
 
           <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
             <p className="text-xs uppercase tracking-wider text-neutral-500">
-              Direct Factory Price • GST Invoice Available
+              Direct Factory Price â€¢ GST Invoice Available
             </p>
 
             <div>
@@ -695,17 +705,17 @@ export default function TableConfigurator({
                 <p className="text-2xl font-black text-[#111111]">Ask on WhatsApp</p>
               ) : priceData.total_price != null ? (
                 <p className="text-3xl font-black tracking-tight text-[#111111]">
-                  ?{priceData.total_price.toLocaleString("en-IN")}
+                  â‚¹{priceData.total_price.toLocaleString("en-IN")}
                 </p>
               ) : (
                 <p className="text-sm font-semibold text-neutral-600">
-                  {isCalculating ? "Calculating price…" : "Ask on WhatsApp"}
+                  {isCalculating ? "Calculating priceâ€¦" : "Ask on WhatsApp"}
                 </p>
               )}
 
               {quantity > 1 && priceData.unit_price != null && (
                 <p className="mt-1 text-xs text-neutral-500">
-                  ?{priceData.unit_price.toLocaleString("en-IN")} per unit
+                  â‚¹{priceData.unit_price.toLocaleString("en-IN")} per unit
                 </p>
               )}
 
@@ -728,7 +738,7 @@ export default function TableConfigurator({
                 className="min-h-[44px] inline-flex items-center justify-center gap-2 rounded-md bg-emerald-700 text-white text-sm font-semibold disabled:opacity-60"
               >
                 <MessageSquare className="w-4 h-4" />
-                {whatsappStatus === "loading" ? "Opening…" : "Book on WhatsApp"}
+                {whatsappStatus === "loading" ? "Openingâ€¦" : "Book on WhatsApp"}
               </button>
               <button
                 type="button"
@@ -741,7 +751,7 @@ export default function TableConfigurator({
                 className="min-h-[44px] inline-flex items-center justify-center gap-2 rounded-md bg-[#111111] text-white text-sm font-semibold disabled:opacity-60"
               >
                 <FileText className="w-4 h-4" />
-                {pdfStatus === "loading" ? "Preparing…" : "Download Quote PDF"}
+                {pdfStatus === "loading" ? "Preparingâ€¦" : "Download Quote PDF"}
               </button>
             </div>
 
@@ -843,7 +853,7 @@ export default function TableConfigurator({
             {section(
               "Frame",
               "Frame",
-              `${currentGaugeOption ? gaugeLabel(currentGaugeOption) : "Select gauge"} · ${
+              `${currentGaugeOption ? gaugeLabel(currentGaugeOption) : "Select gauge"} Â· ${
                 currentFrameOption?.label_en ?? ""
               }`,
               <div className="space-y-3">
@@ -867,9 +877,9 @@ export default function TableConfigurator({
                 </div>
                 <p className="text-xs text-neutral-500">
                   {currentGaugeOption?.load_kg
-                    ? `${currentGaugeOption.load_kg} Kg tested · `
+                    ? `${currentGaugeOption.load_kg} Kg tested Â· `
                     : ""}
-                  {currentGaugeOption?.warranty_text || product.warranty_text} · Cafe,
+                  {currentGaugeOption?.warranty_text || product.warranty_text} Â· Cafe,
                   hotel, IT office
                 </p>
 
@@ -1032,7 +1042,7 @@ export default function TableConfigurator({
                   {addons.map((addon) => {
                     const isChair = addon.option_code === "CHAIRS4";
                     const label = isChair
-                      ? `+ ?${(chairAddonPrice ?? 4600).toLocaleString("en-IN")} for 4 matching chairs`
+                      ? `+ â‚¹${(chairAddonPrice ?? 4600).toLocaleString("en-IN")} for 4 matching chairs`
                       : addon.label_en;
                     return (
                       <label
@@ -1102,7 +1112,7 @@ export default function TableConfigurator({
           </div>
 
           <p className="text-xs text-neutral-500">
-            SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested)
+            SANRA Zero-Shake Telescopic Lockâ„¢ (200 Kg Tested)
           </p>
         </div>
       </div>
@@ -1113,8 +1123,8 @@ export default function TableConfigurator({
             {priceData.requires_quote
               ? "Ask on WhatsApp"
               : priceData.total_price != null
-              ? `?${priceData.total_price.toLocaleString("en-IN")}`
-              : "Calculating…"}
+              ? `â‚¹${priceData.total_price.toLocaleString("en-IN")}`
+              : "Calculatingâ€¦"}
           </p>
         </div>
         <button

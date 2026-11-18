@@ -527,18 +527,16 @@ export async function saveAvailabilityAction(formData: FormData): Promise<void> 
     .select("option_code, option_group")
     .in("option_group", groupCodes);
 
-  const disabled = (options ?? []).filter(
-    (option) => !enabledCodes.has(option.option_code)
-  );
+  const allOptions = options ?? [];
 
   await db.from("product_option_availability").delete().eq("product_id", productId);
 
-  if (disabled.length > 0) {
+  if (allOptions.length > 0) {
     await db.from("product_option_availability").insert(
-      disabled.map((option) => ({
+      allOptions.map((option) => ({
         product_id: productId,
         option_code: option.option_code,
-        is_enabled: false,
+        is_enabled: enabledCodes.has(option.option_code),
       }))
     );
   }
@@ -547,7 +545,7 @@ export async function saveAvailabilityAction(formData: FormData): Promise<void> 
     action: "UPDATE",
     target_table: "product_option_availability",
     target_id: productId,
-    summary: `Updated product option availability (${disabled.length} disabled).`,
+    summary: `Saved exact product option availability (${enabledCodes.size} enabled).`,
   });
 
   revalidatePath(`/admin/products/${productId}`);

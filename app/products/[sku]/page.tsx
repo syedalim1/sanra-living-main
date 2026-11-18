@@ -421,14 +421,20 @@ export default async function SkuPage({ params }: SkuPageProps) {
       .select("option_code, is_enabled")
       .eq("product_id", product.id);
 
-    const disabled = new Set(
-      (availability ?? [])
-        .filter((row) => !row.is_enabled)
-        .map((row) => row.option_code)
-    );
+    if (availability && availability.length > 0) {
+      const enabledRows = availability.filter((row) => row.is_enabled);
 
-    if (disabled.size > 0) {
-      typeOptions = typeOptions.filter((option) => !disabled.has(option.option_code));
+      if (enabledRows.length > 0) {
+        const enabled = new Set(enabledRows.map((row) => row.option_code));
+        typeOptions = typeOptions.filter((option) => enabled.has(option.option_code));
+      } else {
+        const disabled = new Set(
+          availability.filter((row) => !row.is_enabled).map((row) => row.option_code)
+        );
+        typeOptions = typeOptions.filter((option) => !disabled.has(option.option_code));
+      }
+    } else if (availability && availability.length === 0) {
+      typeOptions = [];
     }
   } catch {
     // Keep all active options when availability cannot be loaded.
@@ -502,7 +508,6 @@ export default async function SkuPage({ params }: SkuPageProps) {
 
         <ProductConfiguratorLoader
           product={product}
-          options={configuratorOptions}
           typeOptions={typeOptions}
           groups={typeGroups}
           visualVariants={visualVariants}

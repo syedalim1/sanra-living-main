@@ -31,7 +31,6 @@ interface ProductConfiguratorLoaderProps {
     product_type: string;
     [key: string]: unknown;
   };
-  options: ConfigOption[];
   typeOptions: ConfigOption[];
   groups: OptionGroupRow[];
   visualVariants: Array<Record<string, unknown>>;
@@ -44,7 +43,6 @@ interface ProductConfiguratorLoaderProps {
 
 export default function ProductConfiguratorLoader({
   product,
-  options,
   typeOptions,
   groups,
   visualVariants,
@@ -58,7 +56,7 @@ export default function ProductConfiguratorLoader({
     return (
       <TableConfigurator
         product={product as never}
-        options={options}
+        options={typeOptions}
         visualVariants={visualVariants as never}
         topCategoryImages={topCategoryImages ?? null}
         pipeSpec={pipeSpec ?? null}
