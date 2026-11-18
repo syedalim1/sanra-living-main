@@ -428,9 +428,36 @@ export default function TableConfigurator({
       (isSS ? true : v.frame_color === selectedFrameColor)
   );
 
+  const topCategoryKey =
+    selectedTopTab === "STONE"
+      ? "STONE"
+      : selectedTopTab === "WOOD"
+      ? "WOOD"
+      : selectedTopTab === "METAL"
+      ? "METAL"
+      : selectedTopTab === "FRAME_ONLY"
+      ? "FRAME_ONLY"
+      : selectedTopTab === "GRANITE"
+      ? "STONE"
+      : selectedTopTab;
+
+  const readTopCategoryImage = (
+    map: Record<string, string> | null | undefined,
+    key: string
+  ): string | null => {
+    if (!map) return null;
+    const direct = map[key];
+    if (direct) return direct;
+    const match = Object.entries(map).find(
+      ([entryKey]) => entryKey.toUpperCase() === key.toUpperCase()
+    );
+    return match?.[1] ?? null;
+  };
+
   const topVariantImage =
-    topCategoryImages?.[selectedTopTab] ??
-    (product.top_category_images?.[selectedTopTab] ?? null);
+    readTopCategoryImage(topCategoryImages, topCategoryKey) ??
+    readTopCategoryImage(product.top_category_images ?? null, topCategoryKey);
+
   const mainImageUrl =
     (activeThumbnailIndex === 0 ? topVariantImage : null) ||
     matchedVariant?.preview_image_url ||
@@ -470,7 +497,7 @@ export default function TableConfigurator({
         { icon: Flame, text: "100% Heat Proof (Hot Sambar/Tea Safe)" },
         { icon: Droplets, text: "100% Waterproof" },
         { icon: Layers, text: "Scratch & Stain Proof" },
-        { icon: Shield, text: '+1" Steel Bumper Included' },
+        { icon: Shield, text: "Reinforced Edge Protection" },
       ];
     }
     if (selectedTopTab === "WOOD") {
@@ -772,9 +799,8 @@ export default function TableConfigurator({
           {selectedTopTab === "STONE" && (
             <div className="p-3.5 rounded-lg bg-emerald-50/80 border border-emerald-300 flex items-start gap-2.5 text-emerald-900">
               <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-              <div className="text-xs">
-                <span className="font-bold">Safety upgrade included (Non-removable): </span>
-                <span className="text-[11px] leading-snug">
+              <div className="text-xs leading-snug">
+                <span className="text-[11px] font-semibold">
                   Factory Safety Upgrade Included: Heavy-duty perimeter edge protection &amp; reinforced load support engineered for stone tops.
                 </span>
               </div>
