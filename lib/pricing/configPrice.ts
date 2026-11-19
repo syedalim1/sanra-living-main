@@ -66,7 +66,7 @@ const FALLBACK_RULES: Record<string, FallbackRule> = {
     labor_cost: 550.0,
     overhead_pct: 12.0,
     retail_margin_pct: 30.0,
-    allowed_top_categories: ["FRAME_ONLY", "WOOD", "METAL"],
+    allowed_top_categories: ["FRAME_ONLY", "WOOD", "STONE"],
   },
   "IMS-DN-63": {
     product_type: "TABLE",
@@ -180,11 +180,7 @@ const FALLBACK_MATERIAL_RATES: Record<string, number> = {
   GRANITE_KWHITE: 190.0,
   GRANITE_RED: 180.0,
   GRANITE_TAN_BROWN: 195.0,
-  MARBLE_QUARTZ: 320.0,
-  SHEET_PERFORATED: 145.0,
-  SHEET_MESH: 130.0,
-  SHEET_CR_16G: 180.0,
-  SHEET_SS304: 380.0,
+
 };
 
 const FALLBACK_GLOBALS: Record<string, number> = {
@@ -195,6 +191,8 @@ const FALLBACK_GLOBALS: Record<string, number> = {
   QTY_DISCOUNT_10_PLUS_PCT: 12.0,
   SS_WEIGHT_FACTOR: 1.05,
   PACK2_SAVING: 150.0,
+  POWDER_COATING_COST: 350.0,
+  SS_POLISHING_COST: 500.0,
 };
 
 const GAUGE_MULTIPLIERS: Record<string, number> = {
@@ -205,11 +203,7 @@ const GAUGE_MULTIPLIERS: Record<string, number> = {
   SS304: 1.0,
 };
 
-const ADDON_PRICES: Record<string, number> = {
-  GROMMET: 50,
-  CPU_HOLDER: 150,
-  CHAIRS4: 600,
-};
+const ADDON_PRICES: Record<string, number> = {};
 
 const SIZE_DIMENSIONS: Record<string, [number, number]> = {
   "2x2": [2.0, 2.0],
@@ -238,9 +232,7 @@ const FALLBACK_OPTION_PRICING: Record<string, FallbackOptionPrice> = {
   REXINE_TAN: { flat: 0 },
   REXINE_CHERRY: { flat: 0 },
   MATTE_BLACK: { flat: 0 },
-  WHITE: { flat: 0 },
   GREY: { flat: 0 },
-  GOLD: { flat: 150 },
   WELDED: { flat: 0 },
   KNOCKDOWN: { flat: 0 },
   ST_MS: { material_code: "MS_CR" },
@@ -707,13 +699,17 @@ async function calculateNonTableConfigPrice(
     const seatMaterial = materialCodeFor(input.selections.SEAT, optionPrices);
     const seatRate = seatMaterial ? materialRateFor(seatMaterial, materials) : 0;
 
+    const chairIsSS = metalCode !== "MS_COATED";
     const result = calculateTypePrice({
       ...common,
       metalRate,
       metalMultiplier: adjustments.metalMultiplier,
-      isSS: metalCode !== "MS_COATED",
+      isSS: chairIsSS,
       seatArea: topArea,
       seatRate,
+      frameFinishingCost: chairIsSS
+        ? safeNumber(globals.SS_POLISHING_COST, 500)
+        : safeNumber(globals.POWDER_COATING_COST, 350),
       flatAddons: adjustments.flat,
       isKnockdown: input.selections.BUILD_TYPE === "KNOCKDOWN",
       knockdownPct: safeNumber(globals.KNOCKDOWN_PRICE_PCT, 0),
@@ -728,12 +724,16 @@ async function calculateNonTableConfigPrice(
       materials
     );
 
+    const standIsSS = input.selections.STAND_MATERIAL === "ST_SS304";
     const result = calculatePackPrice(
       {
         ...common,
         metalRate,
         metalMultiplier: adjustments.metalMultiplier,
-        isSS: input.selections.STAND_MATERIAL === "ST_SS304",
+        isSS: standIsSS,
+        frameFinishingCost: standIsSS
+          ? safeNumber(globals.SS_POLISHING_COST, 500)
+          : safeNumber(globals.POWDER_COATING_COST, 350),
         flatAddons: adjustments.flat,
       },
       input.selections.PACK,
@@ -753,6 +753,7 @@ async function calculateNonTableConfigPrice(
       metalMultiplier: adjustments.metalMultiplier,
       seatArea: topArea,
       seatRate: shelfRate,
+      frameFinishingCost: safeNumber(globals.POWDER_COATING_COST, 350),
       flatAddons: adjustments.flat,
     });
 
@@ -769,6 +770,7 @@ async function calculateNonTableConfigPrice(
     metalRate,
     metalMultiplier: adjustments.metalMultiplier,
     isSS: true,
+    frameFinishingCost: safeNumber(globals.SS_POLISHING_COST, 500),
     flatAddons: adjustments.flat,
   });
 
@@ -808,6 +810,7 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
   let productPricing = FALLBACK_RULES[input.sku];
   let allowedTopCategories = productPricing?.allowed_top_categories || ["FRAME_ONLY", "WOOD", "STONE"];
   let comboConfig: Record<string, unknown> = {};
+  let availabilityRows: Array<{ option_code: string; is_enabled: boolean }> = [];
 
   try {
     const { data: prodData } = await supabaseServer
@@ -820,6 +823,12 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
       if (Array.isArray(prodData.allowed_top_categories)) {
         allowedTopCategories = prodData.allowed_top_categories as string[];
       }
+
+      const { data: availability } = await supabaseServer
+        .from("product_option_availability")
+        .select("option_code, is_enabled")
+        .eq("product_id", prodData.id);
+      availabilityRows = availability ?? [];
 
       const { data: ruleData } = await supabaseServer
         .from("product_pricing_rules")
@@ -855,27 +864,71 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
     throw new Error("Pricing data unavailable.");
   }
 
+  allowedTopCategories = allowedTopCategories
+    .map((code) => (code === "GRANITE" ? "STONE" : code))
+    .filter((code) => code !== "METAL");
+  if (allowedTopCategories.length === 0) {
+    allowedTopCategories = ["FRAME_ONLY", "WOOD", "STONE"];
+  }
+
   // Validity rule: reject combinations not allowed for product
   if (!allowedTopCategories.includes(input.top_tab)) {
     throw new Error("Invalid top category for this model.");
   }
 
+  if (availabilityRows.length > 0) {
+    const tracked = new Set(availabilityRows.map((row) => row.option_code));
+    const enabled = new Set(
+      availabilityRows.filter((row) => row.is_enabled).map((row) => row.option_code)
+    );
+    const ensureAvailable = (code: string | null | undefined) => {
+      if (code && tracked.has(code) && !enabled.has(code)) {
+        throw new Error("Invalid configuration.");
+      }
+    };
+
+    ensureAvailable(input.frame_material ?? "MS");
+    ensureAvailable(input.gauge);
+    ensureAvailable(input.frame_color);
+    if (input.top_tab !== "FRAME_ONLY") {
+      ensureAvailable(input.top_material);
+    }
+  }
+
   // 2. Fetch Material Rates and Globals
   const globals = { ...FALLBACK_GLOBALS };
+  const materialRates: Record<string, number> = { ...FALLBACK_MATERIAL_RATES };
+
   try {
-    const { data: gData } = await supabaseServer.from("pricing_globals").select("key, numeric_value");
-    if (gData) {
-      for (const row of gData) {
-        globals[row.key] = Number(row.numeric_value);
+    const [{ data: gData }, { data: mData }] = await Promise.all([
+      supabaseServer.from("pricing_globals").select("key, numeric_value"),
+      supabaseServer.from("material_rates").select("material_code, cost_per_unit"),
+    ]);
+
+    for (const row of gData ?? []) {
+      globals[row.key] = Number(row.numeric_value);
+    }
+
+    for (const row of mData ?? []) {
+      const rate = Number(row.cost_per_unit);
+      if (Number.isFinite(rate) && rate > 0) {
+        materialRates[row.material_code] = rate;
       }
     }
   } catch {
     // Fail silently to fallbacks
   }
 
-  const isSS = input.gauge === "SS202" || input.gauge === "SS304";
-  const metalCode = input.gauge === "SS304" ? "SS_304" : input.gauge === "SS202" ? "SS_202" : "MS_CR";
-  const metalRate = FALLBACK_MATERIAL_RATES[metalCode] || 78.5;
+  const isSS =
+    input.frame_material === "SS" ||
+    input.gauge === "SS202" ||
+    input.gauge === "SS304";
+  const metalCode = isSS
+    ? input.gauge === "SS304"
+      ? "SS_304"
+      : "SS_202"
+    : "MS_CR";
+  const metalRate = materialRates[metalCode] ?? (isSS ? 185.0 : 78.5);
 
   let topRate = 0;
   if (input.top_tab !== "FRAME_ONLY" && input.top_material) {
@@ -895,19 +948,10 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
 
     if (!targetMatCode) {
       if (input.top_material.startsWith("RUBBER_")) targetMatCode = "WOOD_RUBBER_18";
-      else if (input.top_material.startsWith("PRELAM_")) targetMatCode = "PRELAM_25";
       else if (input.top_material.startsWith("BWR_")) targetMatCode = "BWR_PLY_MICA";
-      else if (input.top_material.startsWith("WPC_")) targetMatCode = "WPC_OUTDOOR";
       else if (input.top_material === "GRANITE_JET_BLACK_OPT") targetMatCode = "GRANITE_JET_BLACK";
       else if (input.top_material === "GRANITE_GALAXY_OPT") targetMatCode = "GRANITE_GALAXY";
-      else if (input.top_material === "GRANITE_KWHITE_OPT") targetMatCode = "GRANITE_KWHITE";
-      else if (input.top_material === "GRANITE_RED_OPT") targetMatCode = "GRANITE_RED";
       else if (input.top_material === "GRANITE_TAN_BROWN_OPT") targetMatCode = "GRANITE_TAN_BROWN";
-      else if (input.top_material.startsWith("QUARTZ_")) targetMatCode = "MARBLE_QUARTZ";
-      else if (input.top_material === "SHEET_PERFORATED_OPT") targetMatCode = "SHEET_PERFORATED";
-      else if (input.top_material === "SHEET_MESH_OPT") targetMatCode = "SHEET_MESH";
-      else if (input.top_material === "SHEET_CR_16G_OPT") targetMatCode = "SHEET_CR_16G";
-      else if (input.top_material === "SHEET_SS304_OPT") targetMatCode = "SHEET_SS304";
     }
 
     if (targetMatCode) {
@@ -942,11 +986,6 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
       addon === "CHAIRS4" ? chairAddonPrice : ADDON_PRICES[addon] || 0;
   }
 
-  // Frame gold powder coat add-on
-  if (input.frame_color === "GOLD" && !isSS) {
-    addonsTotal += 150.0;
-  }
-
   const result = calculateConfigPriceRaw({
     base_pipe_weight_18g_kg: productPricing.base_pipe_weight_18g_kg,
     base_length_ft: productPricing.base_length_ft,
@@ -971,6 +1010,8 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
     qty_discount_10_plus_pct: globals.QTY_DISCOUNT_10_PLUS_PCT,
     ss_weight_factor: globals.SS_WEIGHT_FACTOR,
     is_ss: isSS,
+    powder_coating_cost: globals.POWDER_COATING_COST ?? 350.0,
+    ss_polishing_cost: globals.SS_POLISHING_COST ?? 500.0,
   });
 
   return {

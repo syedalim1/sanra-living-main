@@ -4,7 +4,14 @@ import React, { useState, useEffect, useTransition, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import WatermarkedImage from "@/components/WatermarkedImage";
-import { ConfigOption } from "@/lib/configuratorOptions";
+import {
+  FRAME_MATERIAL_OPTIONS,
+  MS_FRAME_COLOR_CODES,
+  MS_GAUGE_CODES,
+  SS_FRAME_COLOR_CODES,
+  isFrameMaterial,
+  type ConfigOption,
+} from "@/lib/configuratorOptions";
 import {
   ChevronDown,
   Sparkles,
@@ -18,6 +25,16 @@ import {
   MessageSquare,
   FileText,
 } from "lucide-react";
+
+const CORE_TOP_TAB_CODES = new Set(["FRAME_ONLY", "WOOD", "STONE"]);
+const CORE_TOP_MATERIAL_CODES = new Set([
+  "RUBBER_HONEY_TEAK",
+  "BWR_WARM_TEAK",
+  "GRANITE_JET_BLACK_OPT",
+  "GRANITE_GALAXY_OPT",
+  "GRANITE_TAN_BROWN_OPT",
+]);
+const HIDDEN_ADDON_CODES = new Set(["GROMMET", "CPU_HOLDER", "CHAIRS4"]);
 
 interface VisualVariant {
   top_material_code: string;
@@ -74,18 +91,37 @@ export default function TableConfigurator({
   const [, startTransition] = useTransition();
 
   // Group options by option_group
-  const topTabs = options.filter(
+  const allowedTopCodes = product.allowed_top_categories
+    .map((code) => (code === "GRANITE" ? "STONE" : code))
+    .filter((code) => code !== "METAL");
+  const allTopTabs = options.filter(
     (o) =>
-      o.option_group === "TOP_TAB" &&
-      product.allowed_top_categories.includes(o.option_code)
+      o.option_group === "TOP_TAB" && CORE_TOP_TAB_CODES.has(o.option_code)
   );
+  const matchedTopTabs = allTopTabs.filter(
+    (o) => allowedTopCodes.length === 0 || allowedTopCodes.includes(o.option_code)
+  );
+  const topTabs = matchedTopTabs.length > 0 ? matchedTopTabs : allTopTabs;
 
-  const topMaterials = options.filter((o) => o.option_group === "TOP_MATERIAL");
-  const gauges = options.filter((o) => o.option_group === "GAUGE");
-  const frameColors = options.filter((o) => o.option_group === "FRAME_COLOR");
+  const topMaterials = options.filter(
+    (o) =>
+      o.option_group === "TOP_MATERIAL" && CORE_TOP_MATERIAL_CODES.has(o.option_code)
+  );
+  const frameMaterials =
+    options.filter((o) => o.option_group === "FRAME_MATERIAL").length > 0
+      ? options.filter((o) => o.option_group === "FRAME_MATERIAL")
+      : FRAME_MATERIAL_OPTIONS;
+  const allGauges = options.filter((o) => o.option_group === "GAUGE");
+  const msGauges = allGauges.filter((o) =>
+    (MS_GAUGE_CODES as readonly string[]).includes(o.option_code)
+  );
+  const allFrameColors = options.filter((o) => o.option_group === "FRAME_COLOR");
   const buildTypes = options.filter((o) => o.option_group === "BUILD_TYPE");
   const sizes = options.filter((o) => o.option_group === "SIZE");
-  const addons = options.filter((o) => o.option_group === "ADDON");
+  const addons = options.filter(
+    (o) =>
+      o.option_group === "ADDON" && !HIDDEN_ADDON_CODES.has(o.option_code)
+  );
 
   // Read initial values from URL search params with strict fallbacks
   const urlTopTab = searchParams.get("top_tab");
@@ -101,12 +137,30 @@ export default function TableConfigurator({
       ? urlTopMaterial
       : availableMaterialsForTab[0]?.option_code || null;
 
+  const urlFrameMaterial = searchParams.get("frame_material");
+  const initialFrameMaterial: "MS" | "SS" = isFrameMaterial(urlFrameMaterial)
+    ? urlFrameMaterial
+    : "MS";
+
   const urlGauge = searchParams.get("gauge");
-  const initialGauge = gauges.some((g) => g.option_code === urlGauge) ? urlGauge! : "G16";
+  const initialGauge =
+    initialFrameMaterial === "SS"
+      ? "SS202"
+      : msGauges.some((g) => g.option_code === urlGauge)
+      ? urlGauge!
+      : "G16";
 
   const urlFrameColor = searchParams.get("frame_color");
-  const initialFrameColor = frameColors.some((c) => c.option_code === urlFrameColor)
+  const frameColorCodes =
+    initialFrameMaterial === "SS" ? SS_FRAME_COLOR_CODES : MS_FRAME_COLOR_CODES;
+  const initialFrameColor = allFrameColors.some(
+    (c) =>
+      c.option_code === urlFrameColor &&
+      (frameColorCodes as readonly string[]).includes(c.option_code)
+  )
     ? urlFrameColor!
+    : initialFrameMaterial === "SS"
+    ? "SS_FINISH"
     : "MATTE_BLACK";
 
   const urlBuildType = searchParams.get("build_type");
@@ -131,12 +185,23 @@ export default function TableConfigurator({
   // Active state
   const [selectedTopTab, setSelectedTopTab] = useState<string>(initialTopTab);
   const [selectedTopMaterial, setSelectedTopMaterial] = useState<string | null>(initialTopMaterial);
+  const [selectedFrameMaterial, setSelectedFrameMaterial] = useState<"MS" | "SS">(
+    initialFrameMaterial
+  );
   const [selectedGauge, setSelectedGauge] = useState<string>(initialGauge);
   const [selectedFrameColor, setSelectedFrameColor] = useState<string>(initialFrameColor);
   const [selectedBuildType, setSelectedBuildType] = useState<string>(initialBuildType);
   const [selectedSize, setSelectedSize] = useState<string>(initialSize);
   const [selectedAddons, setSelectedAddons] = useState<string[]>(initialAddons);
   const [quantity, setQuantity] = useState<number>(initialQuantity);
+
+  const visibleFrameColorCodes =
+    selectedFrameMaterial === "SS" ? SS_FRAME_COLOR_CODES : MS_FRAME_COLOR_CODES;
+  const frameColors = allFrameColors.filter((option) =>
+    (visibleFrameColorCodes as readonly string[]).includes(option.option_code)
+  );
+  const gauges = selectedFrameMaterial === "MS" ? msGauges : [];
+  const isSS = selectedFrameMaterial === "SS";
 
   const [customLength, setCustomLength] = useState<string>(() => {
     const parsed = parseCustomDimension(searchParams.get("custom_length_ft"));
@@ -214,6 +279,7 @@ export default function TableConfigurator({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             sku: product.sku,
+            frame_material: selectedFrameMaterial,
             top_tab: selectedTopTab,
             top_material: selectedTopTab === "FRAME_ONLY" ? null : selectedTopMaterial,
             gauge: selectedGauge,
@@ -246,6 +312,7 @@ export default function TableConfigurator({
     };
   }, [
     product.sku,
+    selectedFrameMaterial,
     selectedTopTab,
     selectedTopMaterial,
     selectedGauge,
@@ -273,6 +340,19 @@ export default function TableConfigurator({
   const handleTopMaterialChange = (matCode: string) => {
     setSelectedTopMaterial(matCode);
     updateUrlState({ top_material: matCode });
+  };
+
+  const handleFrameMaterialChange = (material: "MS" | "SS") => {
+    const nextColor = material === "SS" ? "SS_FINISH" : "MATTE_BLACK";
+    const nextGauge = material === "SS" ? "SS202" : "G16";
+    setSelectedFrameMaterial(material);
+    setSelectedFrameColor(nextColor);
+    setSelectedGauge(nextGauge);
+    updateUrlState({
+      frame_material: material,
+      frame_color: nextColor,
+      gauge: nextGauge,
+    });
   };
 
   const handleGaugeChange = (gCode: string) => {
@@ -336,6 +416,7 @@ export default function TableConfigurator({
   const buildConfigPayload = (): Record<string, unknown> => {
     const payload: Record<string, unknown> = {
       sku: product.sku,
+      frame_material: selectedFrameMaterial,
       top_tab: selectedTopTab,
       top_material: selectedTopTab === "FRAME_ONLY" ? null : selectedTopMaterial,
       gauge: selectedGauge,
@@ -434,7 +515,6 @@ export default function TableConfigurator({
   };
 
   // Resolve active image from visualVariants or product fallback
-  const isSS = selectedGauge === "SS202" || selectedGauge === "SS304";
   const matchedVariant = visualVariants.find(
     (v) =>
       v.top_material_code === selectedTopMaterial &&
@@ -446,12 +526,8 @@ export default function TableConfigurator({
       ? "STONE"
       : selectedTopTab === "WOOD"
       ? "WOOD"
-      : selectedTopTab === "METAL"
-      ? "METAL"
       : selectedTopTab === "FRAME_ONLY"
       ? "FRAME_ONLY"
-      : selectedTopTab === "GRANITE"
-      ? "STONE"
       : selectedTopTab;
 
   const readTopCategoryImage = (
@@ -546,14 +622,6 @@ export default function TableConfigurator({
         { icon: Sparkles, text: "Natural Grain Architecture" },
       ];
     }
-    if (selectedTopTab === "METAL") {
-      return [
-        { icon: Shield, text: "Indestructible Heavy Steel Top" },
-        { icon: Flame, text: "Direct Spark & Heat Proof" },
-        { icon: Droplets, text: isSS ? "100% Rust-Proof Sanitary" : "Industrial Powder-Coated" },
-        { icon: Layers, text: "200 Kg Heavy Surface Load" },
-      ];
-    }
     // FRAME_ONLY
     return [
       { icon: Shield, text: "Heavy Structural Frame" },
@@ -569,6 +637,9 @@ export default function TableConfigurator({
     .map((badge) => badge.text)
     .join(" · ");
 
+  const currentFrameMaterialOption = frameMaterials.find(
+    (material) => material.option_code === selectedFrameMaterial
+  );
   const currentGaugeOption = gauges.find((g) => g.option_code === selectedGauge);
   const currentFrameOption = frameColors.find(
     (c) => c.option_code === selectedFrameColor
@@ -775,15 +846,13 @@ export default function TableConfigurator({
                 ? "Frame Only"
                 : currentTopOption?.label_en ?? currentTopLabel,
               <div className="space-y-3">
-                <div className="grid grid-cols-4 gap-1.5" role="tablist" aria-label="Top type">
+                <div className="grid grid-cols-3 gap-1.5" role="tablist" aria-label="Top type">
                   {topTabs.map((tab) => {
                     const shortLabel =
                       tab.option_code === "WOOD"
                         ? "Wood"
                         : tab.option_code === "STONE"
-                        ? "Granite & Marble"
-                        : tab.option_code === "METAL"
-                        ? "Metal"
+                        ? "Granite"
                         : "Frame Only";
                     return (
                       <button
@@ -853,35 +922,70 @@ export default function TableConfigurator({
             {section(
               "Frame",
               "Frame",
-              `${currentGaugeOption ? gaugeLabel(currentGaugeOption) : "Select gauge"} · ${
+              `${currentFrameMaterialOption?.label_en ?? selectedFrameMaterial} · ${
                 currentFrameOption?.label_en ?? ""
               }`,
               <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Pipe gauge">
-                  {gauges.map((gauge) => (
-                    <button
-                      key={gauge.option_code}
-                      type="button"
-                      role="radio"
-                      aria-checked={selectedGauge === gauge.option_code}
-                      onClick={() => handleGaugeChange(gauge.option_code)}
-                      className={`min-h-[44px] rounded-md border text-xs font-semibold px-1 ${
-                        selectedGauge === gauge.option_code
-                          ? "border-neutral-900 text-neutral-900"
-                          : "border-neutral-200 text-neutral-600"
-                      }`}
-                    >
-                      {gaugeLabel(gauge)}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Frame material">
+                  {frameMaterials.map((material) => {
+                    const selected = selectedFrameMaterial === material.option_code;
+                    return (
+                      <button
+                        key={material.option_code}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() =>
+                          handleFrameMaterialChange(
+                            material.option_code === "SS" ? "SS" : "MS"
+                          )
+                        }
+                        className={`min-h-[44px] rounded-md border text-xs font-semibold px-2 py-2 ${
+                          selected
+                            ? "border-neutral-900 text-neutral-900 ring-1 ring-neutral-900"
+                            : "border-neutral-200 text-neutral-600"
+                        }`}
+                      >
+                        <span className="block">{material.label_en}</span>
+                        {material.badge_text && (
+                          <span className="mt-1 inline-block text-[8px] font-extrabold uppercase px-1 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            {material.badge_text}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-                <p className="text-xs text-neutral-500">
-                  {currentGaugeOption?.load_kg
-                    ? `${currentGaugeOption.load_kg} Kg tested · `
-                    : ""}
-                  {currentGaugeOption?.warranty_text || product.warranty_text} · Cafe,
-                  hotel, IT office
-                </p>
+
+                {selectedFrameMaterial === "MS" && (
+                  <>
+                    <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Pipe gauge">
+                      {gauges.map((gauge) => (
+                        <button
+                          key={gauge.option_code}
+                          type="button"
+                          role="radio"
+                          aria-checked={selectedGauge === gauge.option_code}
+                          onClick={() => handleGaugeChange(gauge.option_code)}
+                          className={`min-h-[44px] rounded-md border text-xs font-semibold px-1 ${
+                            selectedGauge === gauge.option_code
+                              ? "border-neutral-900 text-neutral-900"
+                              : "border-neutral-200 text-neutral-600"
+                          }`}
+                        >
+                          {gaugeLabel(gauge)}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-neutral-500">
+                      {currentGaugeOption?.load_kg
+                        ? `${currentGaugeOption.load_kg} Kg tested · `
+                        : ""}
+                      {currentGaugeOption?.warranty_text || product.warranty_text} · Cafe,
+                      hotel, IT office
+                    </p>
+                  </>
+                )}
 
                 <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Frame colour">
                   {frameColors.map((colour) => (
@@ -892,21 +996,27 @@ export default function TableConfigurator({
                       aria-checked={selectedFrameColor === colour.option_code}
                       aria-label={colour.label_en}
                       onClick={() => handleFrameColorChange(colour.option_code)}
-                      className="w-11 h-11 flex items-center justify-center"
+                      className="min-h-[44px] px-2 flex items-center gap-1.5 rounded-md border border-neutral-200"
                     >
                       <span
-                        className={`w-8 h-8 rounded-full border ${
+                        className={`w-6 h-6 rounded-full border ${
                           selectedFrameColor === colour.option_code
                             ? "border-neutral-900 ring-2 ring-neutral-900"
                             : "border-neutral-300"
                         }`}
                         style={{ backgroundColor: colour.swatch_color_hex || "#E5E5EA" }}
                       />
+                      <span className="text-[10px] font-semibold text-neutral-800">
+                        {colour.label_en}
+                      </span>
                     </button>
                   ))}
                 </div>
-                <p className="text-sm text-neutral-900">
-                  {currentFrameOption?.label_en ?? ""}
+                <p className="text-xs text-neutral-500">
+                  {currentFrameMaterialOption?.warranty_text ||
+                    (selectedFrameMaterial === "SS"
+                      ? "3-Yr SS Replacement Guarantee"
+                      : "10-Yr MIG Structural Warranty")}
                 </p>
               </div>
             )}
@@ -1033,11 +1143,11 @@ export default function TableConfigurator({
               </div>
             )}
 
-            {section(
-              "Extras",
-              "Extras",
-              quantity > 1 ? `${quantity} units` : "Optional",
-              <div className="space-y-3">
+            {addons.length > 0 &&
+              section(
+                "Extras",
+                "Optional add-ons",
+                quantity > 1 ? `${quantity} units` : "Optional",
                 <div className="space-y-1.5">
                   {addons.map((addon) => {
                     const isChair = addon.option_code === "CHAIRS4";
@@ -1062,33 +1172,34 @@ export default function TableConfigurator({
                     );
                   })}
                 </div>
+              )}
 
-                <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wider text-neutral-500">
-                    Quantity
-                  </span>
-                  <div className="flex items-center rounded-md border border-neutral-300">
-                    <button
-                      type="button"
-                      onClick={() => handleQuantityChange(quantity - 1)}
-                      aria-label="Decrease quantity"
-                      className="w-11 h-11 text-lg"
-                    >
-                      -
-                    </button>
-                    <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleQuantityChange(quantity + 1)}
-                      aria-label="Increase quantity"
-                      className="w-11 h-11 text-lg"
-                    >
-                      +
-                    </button>
-                  </div>
+            <div className="border-b border-neutral-200 last:border-b-0">
+              <div className="min-h-[44px] flex items-center justify-between gap-4 py-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  Quantity
+                </span>
+                <div className="flex items-center rounded-md border border-neutral-300">
+                  <button
+                    type="button"
+                    onClick={() => handleQuantityChange(quantity - 1)}
+                    aria-label="Decrease quantity"
+                    className="w-11 h-11 text-lg"
+                  >
+                    -
+                  </button>
+                  <span className="w-10 text-center text-sm font-semibold">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleQuantityChange(quantity + 1)}
+                    aria-label="Increase quantity"
+                    className="w-11 h-11 text-lg"
+                  >
+                    +
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -1097,7 +1208,7 @@ export default function TableConfigurator({
             </p>
             <div className="flex gap-2 overflow-x-auto">
               <Link
-                href="/products?category=SS+%26+MS+Chairs+%2F+Bar+Stools"
+                href="/products?category=SS+%26+MS+Chairs"
                 className="min-w-[140px] min-h-[64px] rounded-md border border-neutral-200 px-3 py-2 text-sm font-semibold text-neutral-800 flex items-center"
               >
                 Matching chairs

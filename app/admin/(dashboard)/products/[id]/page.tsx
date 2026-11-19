@@ -132,13 +132,32 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
       .order("display_name"),
   ]);
 
-  const allOptions: AdminOption[] = (optionResult.data ?? []).map((option) => ({
+  const dbOptions: AdminOption[] = (optionResult.data ?? []).map((option) => ({
     option_group: option.option_group,
     option_code: option.option_code,
     parent_code: option.parent_code ?? null,
     label_en: option.label_en,
     swatch_texture_img: option.swatch_texture_img ?? null,
   }));
+  const allOptions: AdminOption[] = [...dbOptions];
+  if (!allOptions.some((o) => o.option_group === "FRAME_MATERIAL")) {
+    allOptions.unshift(
+      {
+        option_group: "FRAME_MATERIAL",
+        option_code: "MS",
+        parent_code: null,
+        label_en: "Mild Steel (Powder Coated)",
+        swatch_texture_img: null,
+      },
+      {
+        option_group: "FRAME_MATERIAL",
+        option_code: "SS",
+        parent_code: null,
+        label_en: "Stainless Steel (SS 202 / 304)",
+        swatch_texture_img: null,
+      }
+    );
+  }
 
   const materialOptions: AdminMaterialOption[] = (materialResult.data ?? []).map((material) => ({
     material_code: material.material_code,
@@ -156,10 +175,12 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
     ms: rateMap.get("MS_CR") ?? 0,
     wood: rateMap.get("WOOD_RUBBER_18") ?? 0,
     stone: rateMap.get("GRANITE_JET_BLACK") ?? 0,
-    metal: rateMap.get("SHEET_CR_16G") ?? 0,
   };
 
-  const topOptions = allOptions;
+  const topOptions = allOptions.filter(
+    (option) =>
+      option.option_group === "TOP_TAB" || option.option_group === "TOP_MATERIAL"
+  );
   const sizeOptions =
     product?.product_type === "TABLE"
       ? allOptions.filter(
@@ -200,6 +221,13 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
         group_title: group.group_title,
       }));
 
+    if (product.product_type === "TABLE" && !availabilityGroups.some((g) => g.option_group === "FRAME_MATERIAL")) {
+      availabilityGroups.unshift({
+        option_group: "FRAME_MATERIAL",
+        group_title: "Frame material",
+      });
+    }
+
     disabledOptionCodes = (availabilityResult.data ?? [])
       .filter((row) => !row.is_enabled)
       .map((row) => row.option_code);
@@ -217,16 +245,21 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
     swatchGroups.has(option.option_group)
   );
 
+  const coreFrameCodes = new Set(["MATTE_BLACK", "GREY", "SS_FINISH", "SS"]);
   const frameOptions = allOptions
-    .filter((option) => option.option_group === "FRAME_COLOR")
+    .filter(
+      (option) =>
+        option.option_group === "FRAME_COLOR" &&
+        coreFrameCodes.has(option.option_code)
+    )
     .map((option) => ({ ...option }));
 
-  if (!frameOptions.some((option) => option.option_code === "SS")) {
+  if (!frameOptions.some((option) => option.option_code === "SS_FINISH")) {
     frameOptions.push({
       option_group: "FRAME_COLOR",
-      option_code: "SS",
+      option_code: "SS_FINISH",
       parent_code: null,
-      label_en: "Natural Stainless Steel",
+      label_en: "SS Mirror / Matte Finish",
       swatch_texture_img: null,
     });
   }

@@ -65,7 +65,7 @@ interface PriceState {
   requires_quote?: boolean;
 }
 
-const CHAIR_FRAME_COLORS = new Set(["MATTE_BLACK", "WHITE", "GREY", "GOLD"]);
+const CHAIR_FRAME_COLORS = new Set(["MATTE_BLACK", "GREY", "SS_FINISH", "SS"]);
 
 function visibleOptions(
   productType: NonTableProductType,
@@ -239,25 +239,13 @@ function featureBadges(
 function completeSetLink(productType: NonTableProductType) {
   if (productType === "CHAIR") {
     return {
-      href: "/products?category=Cafe+%26+Dining+Tables",
+      href: "/products?category=SS+%26+MS+Tables",
       label: "Complete the Set with Matching Tables",
     };
   }
-  if (productType === "STAND") {
-    return {
-      href: "/products?category=Home+Utility+Stands",
-      label: "Explore Matching Utility Stands",
-    };
-  }
-  if (productType === "RACK") {
-    return {
-      href: "/products?category=Boutique+%26+Showroom+Racks",
-      label: "Explore Matching Showroom Racks",
-    };
-  }
   return {
-    href: "/products?category=Hospital%2C+Canteen+%26+Lab+SS",
-    label: "Explore Matching Stainless Units",
+    href: "/products",
+    label: "Explore the Factory Catalog",
   };
 }
 

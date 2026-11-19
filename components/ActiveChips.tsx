@@ -16,6 +16,7 @@ export default function ActiveChips({ totalCount }: ActiveChipsProps) {
   const category = searchParams.get("category");
   const use = searchParams.get("use");
   const material = searchParams.get("material");
+  const top = searchParams.get("top");
   const budget = searchParams.get("budget");
   const sort = searchParams.get("sort");
 
@@ -29,7 +30,23 @@ export default function ActiveChips({ totalCount }: ActiveChipsProps) {
 
   if (category) chips.push({ key: "category", label: `Category: ${category}` });
   if (use) chips.push({ key: "use", label: `Use: ${labelForUseCase(use)}` });
-  if (material) chips.push({ key: "material", label: `Material: ${material}` });
+  if (material) {
+    const matLabel =
+      material === "MS"
+        ? "Mild Steel (MS)"
+        : material === "SS"
+        ? "Stainless Steel (SS)"
+        : material;
+    chips.push({ key: "material", label: `Frame: ${matLabel}` });
+  }
+  if (top) {
+    const topMap: Record<string, string> = {
+      FRAME_ONLY: "Frame Only",
+      GRANITE: "Granite",
+      WOOD: "Rubberwood & Plywood",
+    };
+    chips.push({ key: "top", label: `Top: ${topMap[top] || top}` });
+  }
   if (budget) {
     const budgetMap: Record<string, string> = {
       "under-2000": "Under ₹2,000",

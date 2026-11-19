@@ -20,6 +20,7 @@ export const NON_TABLE_TYPES: NonTableProductType[] = ["CHAIR", "STAND", "RACK",
 
 export const FALLBACK_GROUPS: Record<ProductType, OptionGroupRow[]> = {
   TABLE: [
+    { product_type: "TABLE", option_group: "FRAME_MATERIAL", group_title: "Frame material", sort_order: 5, is_required: true, default_code: "MS" },
     { product_type: "TABLE", option_group: "TOP_TAB", group_title: "Top surface", sort_order: 10, is_required: true, default_code: "WOOD" },
     { product_type: "TABLE", option_group: "TOP_MATERIAL", group_title: "Top material", sort_order: 20, is_required: false, default_code: "RUBBER_HONEY_TEAK" },
     { product_type: "TABLE", option_group: "GAUGE", group_title: "Structural steel gauge", sort_order: 30, is_required: true, default_code: "G16" },

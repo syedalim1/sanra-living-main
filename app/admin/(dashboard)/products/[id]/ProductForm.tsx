@@ -41,6 +41,11 @@ const PRODUCT_TYPE_LABELS: Record<string, string> = {
   TROLLEY: "Utility / Medical / Industrial Trolley",
   CUSTOM: "Custom Product Type",
 };
+const TOP_CATEGORY_LABELS: Record<string, string> = {
+  FRAME_ONLY: "Frame Only",
+  STONE: "Granite Top",
+  WOOD: "Rubberwood & Plywood",
+};
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const PRODUCT_PLACEHOLDER = "/images/product-placeholder.svg";
@@ -296,10 +301,10 @@ function CostingPreview({
     b2bMoq: number;
   };
   topCategories: string[];
-  rates?: { ms: number; wood: number; stone: number; metal: number };
+  rates?: { ms: number; wood: number; stone: number };
   combo: { chairQty: number; chairCost: number; discountPct: number } | null;
 }) {
-  const priceRates = rates ?? { ms: 0, wood: 0, stone: 0, metal: 0 };
+  const priceRates = rates ?? { ms: 0, wood: 0, stone: 0 };
   const shown = topCategories.length > 0 ? topCategories : ["FRAME_ONLY"];
 
   const rows = shown.map((key) => {
@@ -308,8 +313,6 @@ function CostingPreview({
         ? priceRates.wood
         : key === "STONE"
         ? priceRates.stone
-        : key === "METAL"
-        ? priceRates.metal
         : 0;
     const factory =
       costing.metalWeight * priceRates.ms +
@@ -358,9 +361,7 @@ function CostingPreview({
                 ? "Without top / frame only"
                 : row.key === "WOOD"
                 ? "With wood top"
-                : row.key === "STONE"
-                ? "With stone/granite top"
-                : "With metal top"}
+                : "With stone/granite top"}
             </p>
             <p className="text-[11px] text-neutral-600 mt-1">
               Factory cost: ₹{row.factory.toLocaleString("en-IN")}
@@ -400,7 +401,7 @@ export default function ProductForm({
 }: {
   product: AdminProduct | null;
   pricing: AdminPricingRule | null;
-  materialRates?: { ms: number; wood: number; stone: number; metal: number };
+  materialRates?: { ms: number; wood: number; stone: number };
 }) {
   const [state, formAction, pending] = useActionState(saveProductAction, initialState);
   const [productType, setProductType] = useState(product?.product_type ?? "TABLE");
@@ -415,7 +416,11 @@ export default function ProductForm({
     product?.warranty_text ?? "10-Yr MIG Structural Warranty"
   );
   const [topCategories, setTopCategories] = useState<string[]>(
-    product?.allowed_top_categories ?? []
+    (product?.allowed_top_categories ?? [])
+      .map((category) => (category === "GRANITE" ? "STONE" : category))
+      .filter((category) =>
+        (TOP_CATEGORIES as readonly string[]).includes(category)
+      )
   );
   const [closedError, setClosedError] = useState<string | null>(null);
 
@@ -851,24 +856,6 @@ export default function ProductForm({
             currentUrl={product?.hover_blueprint_img ?? null}
           />
 
-          {topCategories.includes("WOOD") && (
-            <ImageDropField
-              name="top_wood_image"
-              removeName="remove_top_wood_image"
-              label="Wood top image"
-              helper="Shown when the customer picks Wood Top."
-              currentUrl={product?.top_category_images?.WOOD ?? null}
-            />
-          )}
-          {topCategories.includes("STONE") && (
-            <ImageDropField
-              name="top_stone_image"
-              removeName="remove_top_stone_image"
-              label="Stone / granite top image"
-              helper="Shown when the customer picks Stone Top."
-              currentUrl={product?.top_category_images?.STONE ?? null}
-            />
-          )}
           {topCategories.includes("FRAME_ONLY") && (
             <ImageDropField
               name="top_frame_image"
@@ -878,15 +865,25 @@ export default function ProductForm({
               currentUrl={product?.top_category_images?.FRAME_ONLY ?? null}
             />
           )}
-          {topCategories.includes("METAL") && (
+          {topCategories.includes("STONE") && (
             <ImageDropField
-              name="top_metal_image"
-              removeName="remove_top_metal_image"
-              label="Metal top image"
-              helper="Shown when the customer picks Metal Top."
-              currentUrl={product?.top_category_images?.METAL ?? null}
+              name="top_stone_image"
+              removeName="remove_top_stone_image"
+              label="Granite / stone top image"
+              helper="Shown when the customer picks Granite Top."
+              currentUrl={product?.top_category_images?.STONE ?? null}
             />
           )}
+          {topCategories.includes("WOOD") && (
+            <ImageDropField
+              name="top_wood_image"
+              removeName="remove_top_wood_image"
+              label="Wood top image"
+              helper="Shown when the customer picks Rubberwood or Plywood."
+              currentUrl={product?.top_category_images?.WOOD ?? null}
+            />
+          )}
+
         </div>
 
         <div className="px-5 pb-5">
@@ -992,7 +989,7 @@ export default function ProductForm({
                     onChange={() => toggleTopCategory(category)}
                     className="w-3.5 h-3.5 accent-black"
                   />
-                  {category}
+                  {TOP_CATEGORY_LABELS[category] ?? category}
                 </label>
               ))}
             </div>

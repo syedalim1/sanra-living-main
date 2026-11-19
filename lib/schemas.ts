@@ -3,15 +3,20 @@ import { z } from "zod";
 export const ProductTypeSchema = z.enum(["TABLE", "CHAIR", "STAND", "RACK", "SS_UNIT"]);
 export type ProductTypeValue = z.infer<typeof ProductTypeSchema>;
 
+const TopTabSchema = z
+  .enum(["FRAME_ONLY", "WOOD", "STONE", "GRANITE"])
+  .transform((value) => (value === "GRANITE" ? "STONE" : value));
+
 export const ConfigPriceInputSchema = z.object({
   sku: z.string().min(1).max(50),
-  top_tab: z.enum(["FRAME_ONLY", "WOOD", "STONE", "METAL"]),
+  frame_material: z.enum(["MS", "SS"]).optional(),
+  top_tab: TopTabSchema,
   top_material: z.string().nullable().optional(),
   gauge: z.enum(["G18", "G16", "G14", "SS202", "SS304"]),
-  frame_color: z.enum(["MATTE_BLACK", "WHITE", "GREY", "RAW", "GOLD"]),
+  frame_color: z.enum(["MATTE_BLACK", "GREY", "SS_FINISH", "SS"]),
   build_type: z.enum(["WELDED", "KNOCKDOWN"]),
   size: z.enum(["2x2", "3x2", "4x2", "4x2.5", "6x3", "CUSTOM"]),
-  addons: z.array(z.enum(["GROMMET", "CPU_HOLDER", "CHAIRS4"])).default([]),
+  addons: z.array(z.string()).default([]),
   quantity: z.number().int().min(1).max(500).default(1),
 });
 
@@ -24,7 +29,7 @@ export const ChairSelectionsSchema = z
     METAL_TYPE: z.enum(["MS_COATED", "SS202", "SS304"]),
     SEAT: z.enum(["SEAT_RUBBER", "SEAT_REXINE", "SEAT_PERFORATED"]),
     SEAT_COLOR: z.enum(["REXINE_BLACK", "REXINE_TAN", "REXINE_CHERRY"]).optional(),
-    FRAME_COLOR: z.enum(["MATTE_BLACK", "WHITE", "GREY", "GOLD"]).optional(),
+    FRAME_COLOR: z.enum(["MATTE_BLACK", "GREY", "SS_FINISH", "SS"]).optional(),
     BUILD_TYPE: z.enum(["WELDED", "KNOCKDOWN"]),
   })
   .strict()

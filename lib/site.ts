@@ -1,5 +1,5 @@
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://sanraliving.com"
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.sanraliving.com"
 ).replace(/\/+$/, "");
 
 export const SITE_NAME = "SANRA LIVING";

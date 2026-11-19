@@ -58,7 +58,9 @@ export default async function RatesPage() {
     throw new Error("Unable to load rate master data.");
   }
 
-  const materialRates: MaterialRateRow[] = (materialResult.data ?? []).map((row) => ({
+  const materialRates: MaterialRateRow[] = (materialResult.data ?? [])
+    .filter((row) => !row.material_code.startsWith("SHEET_"))
+    .map((row) => ({
     id: row.id,
     material_code: row.material_code,
     display_name: row.display_name,
@@ -91,6 +93,7 @@ export default async function RatesPage() {
   };
 
   const linkedOptionGroups = new Set([
+    "FRAME_MATERIAL",
     "METAL_TYPE",
     "STAND_MATERIAL",
     "GRADE",
@@ -123,7 +126,7 @@ export default async function RatesPage() {
     if (linkedOptionGroups.has(definition.option_group)) {
       let note = "No direct option price.";
 
-      if (["METAL_TYPE", "STAND_MATERIAL", "GRADE", "SEAT", "SHELF"].includes(definition.option_group)) {
+      if (["FRAME_MATERIAL", "METAL_TYPE", "STAND_MATERIAL", "GRADE", "SEAT", "SHELF"].includes(definition.option_group)) {
         note = `Linked to material rate: ${row.material_code ?? "—"}`;
       } else if (definition.option_group === "PACK") {
         note = "Pack saving is managed in Global Pricing Values";

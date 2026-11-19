@@ -175,7 +175,6 @@ export async function saveProductAction(
       { field: "top_wood_image", key: "WOOD", prefix: "top-wood" },
       { field: "top_stone_image", key: "STONE", prefix: "top-stone" },
       { field: "top_frame_image", key: "FRAME_ONLY", prefix: "top-frame" },
-      { field: "top_metal_image", key: "METAL", prefix: "top-metal" },
     ];
 
     try {

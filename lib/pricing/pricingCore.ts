@@ -23,6 +23,8 @@ export function calculateConfigPriceRaw(params: {
   qty_discount_10_plus_pct: number;
   ss_weight_factor: number;
   is_ss: boolean;
+  powder_coating_cost?: number;
+  ss_polishing_cost?: number;
 }): { unit_price: number; total_price: number; discount_pct: number; bumper_included: boolean } {
   const {
     base_pipe_weight_18g_kg,
@@ -57,8 +59,12 @@ export function calculateConfigPriceRaw(params: {
 
   // Metal weight factor for SS if applicable
   const metalWeightFactor = is_ss ? ss_weight_factor : 1.0;
-  const metalCost =
-    base_pipe_weight_18g_kg * metalScale * gauge_multiplier * metalWeightFactor * metal_rate_per_kg;
+  const frameFinishingCost = is_ss
+    ? (params.ss_polishing_cost ?? 0)
+    : (params.powder_coating_cost ?? 0);
+  const metalWeight =
+    base_pipe_weight_18g_kg * metalScale * gauge_multiplier * metalWeightFactor;
+  const metalCost = metalWeight * metal_rate_per_kg + frameFinishingCost;
 
   // 2. Top cost: top_area x cost_per_unit
   const topArea = length_ft * width_ft;

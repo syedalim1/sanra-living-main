@@ -702,3 +702,71 @@ on conflict (product_type, option_group) do nothing;
 -- Done! Your SANRA LIVING database is ready.
 -- ============================================================
 
+
+-- ============================================================
+-- 23. CORE LINEUP CLEANUP (MS / SS + core top surfaces)
+-- ============================================================
+-- Primary frame material selector for tables.
+insert into product_type_option_groups (product_type, option_group, group_title, sort_order, is_required, default_code) values
+  ('TABLE', 'FRAME_MATERIAL', 'Frame material', 5, true, 'MS')
+on conflict (product_type, option_group) do update set
+  group_title = excluded.group_title,
+  sort_order = excluded.sort_order,
+  is_required = excluded.is_required,
+  default_code = excluded.default_code;
+
+insert into configurator_options
+  (option_group, option_code, parent_code, label_en, group_label, swatch_color_hex, spec_note, badge_text, sort_order, is_active)
+values
+  ('FRAME_MATERIAL', 'MS', null, 'Mild Steel (Powder Coated)', null, '#111111',
+   'Heavy-gauge CR steel pipe with industrial powder coating',
+   '10-Yr MIG Structural Warranty', 1, true),
+  ('FRAME_MATERIAL', 'SS', null, 'Stainless Steel (SS 202 / 304)', null, '#E5E5EA',
+   'Food-grade stainless steel with mirror or matte finish',
+   '3-Yr SS Replacement Guarantee', 2, true),
+  ('FRAME_COLOR', 'SS_FINISH', null, 'SS Mirror / Matte Finish', null, '#E5E5EA',
+   null, null, 3, true)
+on conflict (option_code) do update set
+  option_group = excluded.option_group,
+  label_en = excluded.label_en,
+  is_active = true;
+
+insert into option_pricing (option_code, material_code, metal_cost_multiplier, flat_addon, per_sqft_addon) values
+  ('MS', 'MS_CR', 1.000, 0.00, 0.00),
+  ('SS', 'SS_202', 1.000, 0.00, 0.00),
+  ('SS_FINISH', null, 1.000, 0.00, 0.00)
+on conflict (option_code) do nothing;
+
+update configurator_options set label_en = 'Rubberwood & Plywood', is_active = true
+where option_group = 'TOP_TAB' and option_code = 'WOOD';
+update configurator_options set label_en = 'Granite Top', is_active = true
+where option_group = 'TOP_TAB' and option_code = 'STONE';
+update configurator_options set is_active = false
+where option_group = 'TOP_TAB' and option_code = 'METAL';
+
+update configurator_options
+set label_en = 'Rubberwood', group_label = '100% Seasoned Grade-A Rubberwood', is_active = true
+where option_group = 'TOP_MATERIAL' and option_code = 'RUBBER_HONEY_TEAK';
+update configurator_options
+set label_en = 'Plywood', group_label = 'BWR Waterproof Plywood', is_active = true
+where option_group = 'TOP_MATERIAL' and option_code = 'BWR_WARM_TEAK';
+update configurator_options
+set group_label = '18mm Export-Grade Natural Granite', is_active = true
+where option_group = 'TOP_MATERIAL'
+  and option_code in ('GRANITE_JET_BLACK_OPT','GRANITE_GALAXY_OPT','GRANITE_TAN_BROWN_OPT');
+update configurator_options set is_active = false
+where option_group = 'TOP_MATERIAL'
+  and option_code not in (
+    'RUBBER_HONEY_TEAK','BWR_WARM_TEAK',
+    'GRANITE_JET_BLACK_OPT','GRANITE_GALAXY_OPT','GRANITE_TAN_BROWN_OPT'
+  );
+
+update configurator_options set is_active = false
+where option_group = 'FRAME_COLOR' and option_code in ('WHITE','RAW','GOLD');
+update configurator_options set is_active = false
+where option_group = 'ADDON' and option_code in ('GROMMET','CPU_HOLDER','CHAIRS4');
+
+insert into pricing_globals (key, numeric_value, description) values
+  ('POWDER_COATING_COST', 350.00, 'MS powder-coating finishing cost per frame'),
+  ('SS_POLISHING_COST', 500.00, 'SS polishing/mirror finishing cost per frame')
+on conflict (key) do nothing;

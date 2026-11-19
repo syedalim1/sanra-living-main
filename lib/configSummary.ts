@@ -1,6 +1,10 @@
 import "server-only";
 import { supabaseServer } from "@/lib/supabase/server";
-import { FALLBACK_OPTIONS, type ConfigOption } from "@/lib/configuratorOptions";
+import {
+  FALLBACK_OPTIONS,
+  mergeConfigOptions,
+  type ConfigOption,
+} from "@/lib/configuratorOptions";
 import type { ConfigPriceInput, NonTableConfigInput } from "@/lib/schemas";
 import type { NonTableProductType, ProductType } from "@/lib/productTypeConfig";
 import { stripCostFragments } from "@/lib/sanitize";
@@ -100,7 +104,7 @@ async function loadOptionsAndName(sku: string): Promise<{
       .eq("is_active", true);
 
     if (optionRows && optionRows.length > 0) {
-      options = optionRows as ConfigOption[];
+      options = mergeConfigOptions(FALLBACK_OPTIONS, optionRows as ConfigOption[]);
     }
   } catch {
     options = FALLBACK_OPTIONS;
@@ -245,7 +249,15 @@ export async function getConfigSummary(input: ConfigSummaryInput): Promise<Confi
         ? null
         : labelFor(options, "TOP_MATERIAL", tableInput.top_material);
     const gaugeOption = findOption(options, "GAUGE", tableInput.gauge);
-    const isStainless = tableInput.gauge === "SS202" || tableInput.gauge === "SS304";
+    const frameMaterialOption = findOption(
+      options,
+      "FRAME_MATERIAL",
+      tableInput.frame_material ?? "MS"
+    );
+    const isStainless =
+      tableInput.frame_material === "SS" ||
+      tableInput.gauge === "SS202" ||
+      tableInput.gauge === "SS304";
 
     return {
       product_type: "TABLE",
@@ -258,9 +270,10 @@ export async function getConfigSummary(input: ConfigSummaryInput): Promise<Confi
       gauge_code: tableInput.gauge,
       gauge_label: labelFor(options, "GAUGE", tableInput.gauge),
       gauge_load_kg: gaugeOption?.load_kg ?? null,
-      gauge_warranty: gaugeOption?.warranty_text ?? null,
+      gauge_warranty:
+        frameMaterialOption?.warranty_text ?? gaugeOption?.warranty_text ?? null,
       frame_color_label: isStainless
-        ? "Natural Stainless Steel Finish"
+        ? "SS Mirror / Matte Finish"
         : labelFor(options, "FRAME_COLOR", tableInput.frame_color),
       build_label: labelFor(options, "BUILD_TYPE", tableInput.build_type),
       addons_labels: tableInput.addons.map((addon) => labelFor(options, "ADDON", addon)),

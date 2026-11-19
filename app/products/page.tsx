@@ -50,7 +50,7 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     id: "fb-1",
     sku: "IMS-CF-42",
     name: "Commercial Heavy-Gauge Cafe Table (4x2 ft)",
-    category: "Cafe & Dining Tables",
+    category: "SS & MS Tables",
     product_type: "TABLE",
     base_length_ft: 4.0,
     base_width_ft: 2.0,
@@ -64,7 +64,7 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     id: "fb-2",
     sku: "IMS-WS-425",
     name: "Zero-Shake Modular Office Workstation (4x2.5 ft)",
-    category: "Office & Workstation Tables",
+    category: "SS & MS Tables",
     product_type: "TABLE",
     base_length_ft: 4.0,
     base_width_ft: 2.5,
@@ -78,7 +78,7 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
     id: "fb-3",
     sku: "IMS-DN-63",
     name: "Industrial Grade 6-Seater Dining Table (6x3 ft)",
-    category: "Cafe & Dining Tables",
+    category: "SS & MS Tables",
     product_type: "TABLE",
     base_length_ft: 6.0,
     base_width_ft: 3.0,
@@ -95,6 +95,7 @@ interface ProductsPageProps {
     category?: string;
     use?: string;
     material?: string;
+    top?: string;
     budget?: string;
     sort?: string;
   }>;
@@ -102,7 +103,7 @@ interface ProductsPageProps {
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const resolvedParams = await searchParams;
-  const { category, use, material, budget, sort = "recommended" } = resolvedParams;
+  const { category, use, material, top, budget, sort = "recommended" } = resolvedParams;
 
   // 1. Fetch products from Supabase
   let rawProducts: any[] = [];
@@ -159,6 +160,26 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   if (material) {
     catalog = catalog.filter((p) => p.material_tags?.includes(material.toUpperCase()));
+  }
+
+  if (top) {
+    catalog = catalog.filter((p) => {
+      const tags = p.material_tags || [];
+      const topUpper = top.toUpperCase();
+      if (topUpper === "FRAME_ONLY") {
+        return (
+          tags.includes("FRAME_ONLY") ||
+          (!tags.includes("GRANITE") && !tags.includes("WOOD") && !tags.includes("PLYWOOD"))
+        );
+      }
+      if (topUpper === "GRANITE") {
+        return tags.includes("GRANITE");
+      }
+      if (topUpper === "WOOD") {
+        return tags.includes("WOOD") || tags.includes("PLYWOOD");
+      }
+      return true;
+    });
   }
 
   // Budget Filter

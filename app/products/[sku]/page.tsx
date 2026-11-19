@@ -6,13 +6,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import ProductConfiguratorLoader from "@/components/ProductConfiguratorLoader";
 import { supabaseServer } from "@/lib/supabase/server";
-import { FALLBACK_OPTIONS, ConfigOption } from "@/lib/configuratorOptions";
+import {
+  FALLBACK_OPTIONS,
+  FRAME_MATERIAL_OPTIONS,
+  mergeConfigOptions,
+  type ConfigOption,
+} from "@/lib/configuratorOptions";
 import {
   getTypeGroupRows,
   isProductType,
   type OptionGroupRow,
 } from "@/lib/productTypeConfig";
 import { getFromPriceForProduct } from "@/lib/pricing/fromPrice";
+import { getPublicProductSpec } from "@/lib/pricing/publicSpec";
 import {
   SITE_NAME,
   absoluteUrl,
@@ -47,7 +53,7 @@ const KNOWN_PRODUCTS: Record<
     id: "fb-cafe-42",
     sku: "IMS-CF-42",
     name: "Commercial Heavy-Gauge Cafe Table (4x2 ft)",
-    category: "Cafe & Dining Tables",
+    category: "SS & MS Tables",
     product_type: "TABLE",
     base_length_ft: 4.0,
     base_width_ft: 2.0,
@@ -62,7 +68,7 @@ const KNOWN_PRODUCTS: Record<
     id: "fb-ws-425",
     sku: "IMS-WS-425",
     name: "Zero-Shake Modular Office Workstation (4x2.5 ft)",
-    category: "Office & Workstation Tables",
+    category: "SS & MS Tables",
     product_type: "TABLE",
     base_length_ft: 4.0,
     base_width_ft: 2.5,
@@ -70,14 +76,14 @@ const KNOWN_PRODUCTS: Record<
     hover_blueprint_img: "/images/hero-workstation.svg",
     warranty_text: "10-Yr MIG Structural Warranty",
     is_knockdown_available: true,
-    allowed_top_categories: ["FRAME_ONLY", "WOOD", "METAL"],
+    allowed_top_categories: ["FRAME_ONLY", "WOOD", "STONE"],
     top_overlay_note: "Engineered for dual-monitor setups with cable management channel",
   },
   "IMS-DN-63": {
     id: "fb-dn-63",
     sku: "IMS-DN-63",
     name: "Industrial Grade 6-Seater Dining Table (6x3 ft)",
-    category: "Cafe & Dining Tables",
+    category: "SS & MS Tables",
     product_type: "TABLE",
     base_length_ft: 6.0,
     base_width_ft: 3.0,
@@ -92,7 +98,7 @@ const KNOWN_PRODUCTS: Record<
     id: "fb-chair-01",
     sku: "IMS-CH-01",
     name: "Cafe Chair",
-    category: "SS & MS Chairs / Bar Stools",
+    category: "SS & MS Chairs",
     product_type: "CHAIR",
     base_length_ft: 1.5,
     base_width_ft: 1.5,
@@ -107,7 +113,7 @@ const KNOWN_PRODUCTS: Record<
     id: "fb-chair-bs",
     sku: "IMS-CH-BS",
     name: "Bar Stool",
-    category: "SS & MS Chairs / Bar Stools",
+    category: "SS & MS Chairs",
     product_type: "CHAIR",
     base_length_ft: 1.4,
     base_width_ft: 1.4,
@@ -122,7 +128,7 @@ const KNOWN_PRODUCTS: Record<
     id: "fb-stand-12",
     sku: "IMS-ST-12",
     name: "12-inch Stool",
-    category: "Home Utility Stands",
+    category: "SS & MS Tables",
     product_type: "STAND",
     base_length_ft: 1.0,
     base_width_ft: 1.0,
@@ -137,7 +143,7 @@ const KNOWN_PRODUCTS: Record<
     id: "fb-stand-inv",
     sku: "IMS-ST-INV",
     name: "Inverter Stand",
-    category: "Home Utility Stands",
+    category: "SS & MS Tables",
     product_type: "STAND",
     base_length_ft: 1.5,
     base_width_ft: 1.0,
@@ -152,7 +158,7 @@ const KNOWN_PRODUCTS: Record<
     id: "fb-stand-kd",
     sku: "IMS-ST-KD",
     name: "Kadai Stand",
-    category: "Home Utility Stands",
+    category: "SS & MS Tables",
     product_type: "STAND",
     base_length_ft: 1.2,
     base_width_ft: 1.2,
@@ -167,7 +173,7 @@ const KNOWN_PRODUCTS: Record<
     id: "fb-rack-01",
     sku: "IMS-RK-01",
     name: "Boutique Garment Rack",
-    category: "Boutique & Showroom Racks",
+    category: "SS & MS Tables",
     product_type: "RACK",
     base_length_ft: 4.0,
     base_width_ft: 1.5,
@@ -182,7 +188,7 @@ const KNOWN_PRODUCTS: Record<
     id: "fb-ss-ct",
     sku: "IMS-SS-CT",
     name: "SS Canteen Table",
-    category: "Hospital, Canteen & Lab SS",
+    category: "SS & MS Tables",
     product_type: "SS_UNIT",
     base_length_ft: 4.0,
     base_width_ft: 2.0,
@@ -282,7 +288,6 @@ export default async function SkuPage({ params }: SkuPageProps) {
   let configuratorOptions: ConfigOption[] = FALLBACK_OPTIONS;
   let typeGroups: OptionGroupRow[] = [];
   let pipeSpec: string | null = null;
-  let chairAddonPrice: number | null = null;
 
   try {
     const { data: prodData } = await supabaseServer
@@ -322,26 +327,8 @@ export default async function SkuPage({ params }: SkuPageProps) {
         top_overlay_note: safeOverlayNote(prodData.top_overlay_note),
       };
 
-      const { data: pricingRule } = await supabaseServer
-        .from("product_pricing_rules")
-        .select("pipe_spec, combo_config, overhead_pct, retail_margin_pct")
-        .eq("product_id", prodData.id)
-        .maybeSingle();
-
-      if (pricingRule) {
-        pipeSpec = pricingRule.pipe_spec ?? null;
-        const combo =
-          pricingRule.combo_config && typeof pricingRule.combo_config === "object"
-            ? (pricingRule.combo_config as Record<string, unknown>)
-            : {};
-        const chairUnitCost = Number(combo.single_chair_cost) || 1150;
-        chairAddonPrice = Math.round(
-          chairUnitCost *
-            4 *
-            (1 + Number(pricingRule.overhead_pct ?? 0) / 100) *
-            (1 + Number(pricingRule.retail_margin_pct ?? 0) / 100)
-        );
-      }
+      const spec = await getPublicProductSpec(prodData.id);
+      pipeSpec = spec.pipe_spec;
 
       const { data: vData } = await supabaseServer
         .from("product_visual_variants")
@@ -361,7 +348,7 @@ export default async function SkuPage({ params }: SkuPageProps) {
         .order("sort_order", { ascending: true });
 
       if (oData && oData.length > 0) {
-        configuratorOptions = oData;
+        configuratorOptions = mergeConfigOptions(FALLBACK_OPTIONS, oData as ConfigOption[]);
       }
     }
   } catch {
@@ -422,17 +409,24 @@ export default async function SkuPage({ params }: SkuPageProps) {
       .eq("product_id", product.id);
 
     if (availability && availability.length > 0) {
-      const enabledRows = availability.filter((row) => row.is_enabled);
+      const enabled = new Set(
+        availability.filter((row) => row.is_enabled).map((row) => row.option_code)
+      );
+      const disabled = new Set(
+        availability.filter((row) => !row.is_enabled).map((row) => row.option_code)
+      );
+      const frameMaterialTracked = FRAME_MATERIAL_OPTIONS.some((option) =>
+        enabled.has(option.option_code) || disabled.has(option.option_code)
+      );
 
-      if (enabledRows.length > 0) {
-        const enabled = new Set(enabledRows.map((row) => row.option_code));
-        typeOptions = typeOptions.filter((option) => enabled.has(option.option_code));
-      } else {
-        const disabled = new Set(
-          availability.filter((row) => !row.is_enabled).map((row) => row.option_code)
-        );
-        typeOptions = typeOptions.filter((option) => !disabled.has(option.option_code));
-      }
+      typeOptions = typeOptions.filter((option) => {
+        if (option.option_group === "FRAME_MATERIAL" && !frameMaterialTracked) {
+          return true;
+        }
+        return enabled.size > 0
+          ? enabled.has(option.option_code)
+          : !disabled.has(option.option_code);
+      });
     } else if (availability && availability.length === 0) {
       typeOptions = [];
     }
@@ -517,7 +511,6 @@ export default async function SkuPage({ params }: SkuPageProps) {
             (product.top_category_images as Record<string, string> | undefined) ?? null
           }
           pipeSpec={pipeSpec}
-          chairAddonPrice={chairAddonPrice}
         />
 
         {relatedSets.length > 0 && (

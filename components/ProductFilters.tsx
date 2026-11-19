@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SlidersHorizontal, X, RotateCcw } from "lucide-react";
 import { PRODUCT_CATEGORY_OPTIONS } from "@/lib/catalogCategories";
-import { USE_CASE_OPTIONS } from "@/lib/useCases";
 
 interface FilterOption {
   value: string;
@@ -17,18 +16,15 @@ const CATEGORY_OPTIONS: FilterOption[] = PRODUCT_CATEGORY_OPTIONS.map((option) =
   label: option.label,
 }));
 
-const USE_OPTIONS: FilterOption[] = USE_CASE_OPTIONS.map((option) => ({
-  value: option.value,
-  label: option.label,
-}));
+const FRAME_MATERIAL_OPTIONS: FilterOption[] = [
+  { value: "MS", label: "Mild Steel (MS)" },
+  { value: "SS", label: "Stainless Steel (SS)" },
+];
 
-const MATERIAL_OPTIONS: FilterOption[] = [
-  { value: "MS", label: "Mild Steel" },
-  { value: "SS", label: "Stainless Steel" },
-  { value: "WOOD", label: "100% Seasoned Grade-A Hardwood" },
-  { value: "GRANITE", label: "18mm Export-Grade Natural Granite" },
-  { value: "MOLDED_PP", label: "Molded PP" },
-  { value: "PLYWOOD", label: "Plywood" },
+const TABLE_TOP_OPTIONS: FilterOption[] = [
+  { value: "FRAME_ONLY", label: "Frame Only" },
+  { value: "GRANITE", label: "Granite" },
+  { value: "WOOD", label: "Rubberwood & Plywood" },
 ];
 
 const BUDGET_OPTIONS: FilterOption[] = [
@@ -48,13 +44,11 @@ export default function ProductFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [customUse, setCustomUse] = useState("");
-  const [customMaterial, setCustomMaterial] = useState("");
 
   // Current filter state from URL
   const currentCategory = searchParams.get("category") || "";
-  const currentUse = searchParams.get("use") || "";
   const currentMaterial = searchParams.get("material") || "";
+  const currentTop = searchParams.get("top") || "";
   const currentBudget = searchParams.get("budget") || "";
   const currentSort = searchParams.get("sort") || "recommended";
 
@@ -76,8 +70,8 @@ export default function ProductFilters() {
 
   const activeFilterCount =
     (currentCategory ? 1 : 0) +
-    (currentUse ? 1 : 0) +
     (currentMaterial ? 1 : 0) +
+    (currentTop ? 1 : 0) +
     (currentBudget ? 1 : 0) +
     (currentSort !== "recommended" ? 1 : 0);
 
@@ -136,60 +130,13 @@ export default function ProductFilters() {
         </div>
       </div>
 
-      {/* 3. Use Case */}
+      {/* 3. Frame Material */}
       <div className="pt-4 border-t border-neutral-200">
         <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2.5">
-          Use Case
+          Frame Material
         </label>
         <div className="space-y-1.5">
-          {USE_OPTIONS.map((use) => {
-            const isSelected = currentUse === use.value;
-            return (
-              <button
-                key={use.value}
-                type="button"
-                onClick={() => updateFilter("use", isSelected ? null : use.value)}
-                className={`w-full text-left text-xs py-1.5 px-2.5 rounded transition-colors flex items-center justify-between ${
-                  isSelected
-                    ? "bg-[#111111] text-white font-bold"
-                    : "text-neutral-700 hover:bg-neutral-100 font-medium"
-                }`}
-              >
-                <span>{use.label}</span>
-                {isSelected && <X className="w-3.5 h-3.5" />}
-              </button>
-            );
-          })}
-          <div className="flex gap-1.5 pt-1">
-            <input
-              value={customUse}
-              onChange={(event) => setCustomUse(event.target.value)}
-              placeholder="+ Add Custom Use Case"
-              className="min-w-0 flex-1 text-[11px] px-2 py-1.5 rounded border border-neutral-300"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const value = customUse.trim().toUpperCase().replace(/[^A-Z0-9_]/g, "_");
-                if (!value) return;
-                updateFilter("use", value);
-                setCustomUse("");
-              }}
-              className="px-2 py-1.5 rounded bg-[#111111] text-white text-[10px] font-bold"
-            >
-              Add
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 4. Materials */}
-      <div className="pt-4 border-t border-neutral-200">
-        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2.5">
-          Structural Material
-        </label>
-        <div className="space-y-1.5">
-          {MATERIAL_OPTIONS.map((mat) => {
+          {FRAME_MATERIAL_OPTIONS.map((mat) => {
             const isSelected = currentMaterial === mat.value;
             return (
               <button
@@ -207,29 +154,33 @@ export default function ProductFilters() {
               </button>
             );
           })}
-          <div className="flex gap-1.5 pt-1">
-            <input
-              value={customMaterial}
-              onChange={(event) => setCustomMaterial(event.target.value)}
-              placeholder="+ Add Custom Material"
-              className="min-w-0 flex-1 text-[11px] px-2 py-1.5 rounded border border-neutral-300"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                const value = customMaterial
-                  .trim()
-                  .toUpperCase()
-                  .replace(/[^A-Z0-9_]/g, "_");
-                if (!value) return;
-                updateFilter("material", value);
-                setCustomMaterial("");
-              }}
-              className="px-2 py-1.5 rounded bg-[#111111] text-white text-[10px] font-bold"
-            >
-              Add
-            </button>
-          </div>
+        </div>
+      </div>
+
+      {/* 4. Table Top */}
+      <div className="pt-4 border-t border-neutral-200">
+        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2.5">
+          Table Top
+        </label>
+        <div className="space-y-1.5">
+          {TABLE_TOP_OPTIONS.map((top) => {
+            const isSelected = currentTop === top.value;
+            return (
+              <button
+                key={top.value}
+                type="button"
+                onClick={() => updateFilter("top", isSelected ? null : top.value)}
+                className={`w-full text-left text-xs py-1.5 px-2.5 rounded transition-colors flex items-center justify-between ${
+                  isSelected
+                    ? "bg-[#111111] text-white font-bold"
+                    : "text-neutral-700 hover:bg-neutral-100 font-medium"
+                }`}
+              >
+                <span>{top.label}</span>
+                {isSelected && <X className="w-3.5 h-3.5" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 

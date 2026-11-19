@@ -66,7 +66,7 @@ function visibleGroupOptions(
 
   if (productType === "CHAIR" && optionGroup === "FRAME_COLOR") {
     groupOptions = groupOptions.filter((option) =>
-      ["MATTE_BLACK", "WHITE", "GREY", "GOLD"].includes(option.option_code)
+      ["MATTE_BLACK", "GREY", "SS_FINISH", "SS"].includes(option.option_code)
     );
   }
 
@@ -206,7 +206,11 @@ export default function B2BOrderTools({
     [products]
   );
   const addonOptions = useMemo(
-    () => getGroupOptions(options, ADDON_GROUP),
+    () =>
+      getGroupOptions(options, ADDON_GROUP).filter(
+        (option) =>
+          !["GROMMET", "CPU_HOLDER", "CHAIRS4"].includes(option.option_code)
+      ),
     [options]
   );
   const optionLabels = useMemo(() => {

@@ -63,8 +63,8 @@ export function formatRateNumber(value: number): string {
   return Number(value.toFixed(2)).toString();
 }
 
-export const MATERIAL_TAGS = ["MS", "SS", "WOOD", "GRANITE", "MOLDED_PP", "PLYWOOD"] as const;
-export const TOP_CATEGORIES = ["FRAME_ONLY", "WOOD", "STONE", "METAL"] as const;
+export const MATERIAL_TAGS = ["MS", "SS", "WOOD", "GRANITE", "PLYWOOD"] as const;
+export const TOP_CATEGORIES = ["FRAME_ONLY", "WOOD", "STONE"] as const;
 export const PRODUCT_TYPES = [
   "TABLE",
   "CHAIR",
@@ -77,7 +77,12 @@ export const PRODUCT_TYPES = [
   "TROLLEY",
   "CUSTOM",
 ] as const;
-export const VARIANT_FRAME_COLORS = ["MATTE_BLACK", "WHITE", "GREY", "GOLD", "RAW", "SS"] as const;
+export const VARIANT_FRAME_COLORS = [
+  "MATTE_BLACK",
+  "GREY",
+  "SS_FINISH",
+  "SS",
+] as const;
 
 export const SKU_PATTERN = /^[A-Z0-9]+(?:-[A-Z0-9]+)+$/;
 

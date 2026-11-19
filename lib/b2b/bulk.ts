@@ -7,14 +7,14 @@ import {
 import type { ProductType } from "@/lib/productTypeConfig";
 import { stripCostFragments } from "@/lib/sanitize";
 
-export const BULK_ADDON_CODES = ["GROMMET", "CPU_HOLDER", "CHAIRS4"] as const;
+export const BULK_ADDON_CODES: readonly string[] = [];
 
 export const BulkRowSchema = z
   .object({
     sku: z.string().trim().min(1).max(50),
     quantity: z.number().int().min(1).max(500),
     selections: z.record(z.string(), z.string()),
-    addons: z.array(z.enum(BULK_ADDON_CODES)).max(3).default([]),
+    addons: z.array(z.string().trim().min(1).max(40)).max(3).default([]),
   })
   .strict();
 
@@ -46,6 +46,7 @@ export type BulkQuoteRequest = z.infer<typeof BulkQuoteRequestSchema>;
 export interface BulkRowPrice {
   unit_price: number | null;
   total_price: number | null;
+  discount_pct: number;
   requires_quote: boolean;
 }
 
@@ -57,6 +58,7 @@ export interface BulkPriceResponse {
 export interface BulkPriceSource {
   unit_price?: number;
   total_price?: number;
+  discount_pct?: number;
   requires_quote?: boolean;
 }
 
@@ -82,6 +84,7 @@ export async function priceBulkRows(
     results.push({
       unit_price: requiresQuote ? null : price.unit_price ?? null,
       total_price: requiresQuote ? null : price.total_price ?? null,
+      discount_pct: requiresQuote ? 0 : price.discount_pct ?? 0,
       requires_quote: requiresQuote,
     });
 
@@ -109,6 +112,7 @@ export function tableInputFromBulkRow(row: BulkRowInput): ConfigPriceInput {
 
   return ConfigPriceInputSchema.parse({
     sku: row.sku,
+    frame_material: row.selections.FRAME_MATERIAL === "SS" ? "SS" : "MS",
     top_tab: topTab,
     top_material: topTab === "FRAME_ONLY" ? null : row.selections.TOP_MATERIAL,
     gauge: row.selections.GAUGE,

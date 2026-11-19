@@ -140,12 +140,17 @@ async function buildEnvelope(
       ? defaults.addons.filter((value): value is string => typeof value === "string")
       : [];
 
+    const frameMaterial = selections.FRAME_MATERIAL === "SS" ? "SS" : "MS";
     return {
       sku: product.sku,
+      frame_material: frameMaterial,
       top_tab: topTab,
       top_material: topTab === "FRAME_ONLY" ? null : selections.TOP_MATERIAL ?? null,
-      gauge: selections.GAUGE || "G16",
-      frame_color: selections.FRAME_COLOR || "MATTE_BLACK",
+      gauge:
+        selections.GAUGE || (frameMaterial === "SS" ? "SS202" : "G16"),
+      frame_color:
+        selections.FRAME_COLOR ||
+        (frameMaterial === "SS" ? "SS_FINISH" : "MATTE_BLACK"),
       build_type: selections.BUILD_TYPE || "WELDED",
       size: selections.SIZE || "4x2",
       addons,

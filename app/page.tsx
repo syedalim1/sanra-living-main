@@ -176,40 +176,22 @@ export default async function Home() {
 
   const categories = [
     {
-      name: "Cafe & Dining Tables",
-      imageSrc: "/images/cat-dining-tables.jpg",
-      description: "Heavy gauge MS & SS frames paired with 100% Seasoned Grade-A Hardwood or 18mm Export-Grade Natural Granite.",
-      href: "/products?category=Cafe+%26+Dining+Tables",
-    },
-    {
-      name: "Office & Workstation Tables",
-      imageSrc: "/images/cat-workstations.jpg",
-      description: "Industrial grade ergonomic steel desks designed for commercial IT workspaces, call centres, and corporate offices.",
-      href: "/products?category=Office+%26+Workstation+Tables",
-    },
-    {
-      name: "SS & MS Chairs / Bar Stools",
+      name: "SS & MS Chairs",
       imageSrc: "/images/cat-chairs-stools.jpg",
-      description: "Factory-welded seating built for cafes, dining chains, and high-footfall commercial spaces.",
-      href: "/products?category=SS+%26+MS+Chairs+%2F+Bar+Stools",
+      description: "Factory-welded MS and stainless steel seating built for cafes, dining chains, and high-footfall commercial spaces.",
+      href: "/products?category=SS+%26+MS+Chairs",
     },
     {
-      name: "Home Utility Stands",
-      imageSrc: "/images/cat-utility-stands.jpg",
-      description: "High-capacity washing machine, water dispenser, microwave, and heavy cylinder stands built from structural steel.",
-      href: "/products?category=Home+Utility+Stands",
+      name: "SS & MS Tables",
+      imageSrc: "/images/cat-dining-tables.jpg",
+      description: "Heavy gauge MS & SS frames paired with Seasoned Rubberwood, Plywood, or Natural Granite.",
+      href: "/products?category=SS+%26+MS+Tables",
     },
     {
-      name: "Boutique & Showroom Racks",
-      imageSrc: "/images/cat-boutique-racks.jpg",
-      description: "Minimalist modern steel garment racks, display island shelving, and custom retail presentation units.",
-      href: "/products?category=Boutique+%26+Showroom+Racks",
-    },
-    {
-      name: "Hospital, Canteen & Lab SS",
-      imageSrc: "/images/cat-hospital-lab.jpg",
-      description: "Anti-corrosion stainless steel tables, medical trolley stands, and institutional kitchen workbenches.",
-      href: "/products?category=Hospital%2C+Canteen+%26+Lab+SS",
+      name: "SS & MS Chair & Table Sets",
+      imageSrc: "/images/cat-workstations.jpg",
+      description: "Matching chair and table combos engineered for dining spaces, commercial cafes, and institutions.",
+      href: "/products?category=SS+%26+MS+Chair+%26+Table+Sets",
     },
   ];
 
@@ -368,12 +350,12 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 3. SIX CORE CATEGORIES GRID */}
+      {/* 3. THREE CORE CATEGORIES GRID */}
       <section className="bg-[#F5F5F7] py-16 md:py-24 border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionHeading
             badge="Factory Catalog"
-            title="Six Core Structural Categories"
+            title="Three Core Categories"
             subtitle="Engineered for institutional durability and modern minimalism. Each item comes with our direct factory price badge and GST invoice."
           />
 

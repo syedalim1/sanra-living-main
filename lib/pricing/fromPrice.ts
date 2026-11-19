@@ -25,6 +25,14 @@ interface RawMaterialRate {
   cost_per_unit: number | string | null;
 }
 
+const CORE_TOP_MATERIALS = new Set([
+  "WOOD_RUBBER_18",
+  "BWR_PLY_MICA",
+  "GRANITE_JET_BLACK",
+  "GRANITE_GALAXY",
+  "GRANITE_TAN_BROWN",
+]);
+
 /**
  * Helper to round final price UP to clean retail price ending in 99.
  * Example: 3142 becomes 3199; 3199 remains 3199; 3200 becomes 3299.
@@ -124,6 +132,8 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
     const qtyDiscount4 = globals.get("QTY_DISCOUNT_4_9_PCT") ?? 5;
     const qtyDiscount10 = globals.get("QTY_DISCOUNT_10_PLUS_PCT") ?? 12;
     const ssWeightFactor = globals.get("SS_WEIGHT_FACTOR") ?? 1.05;
+    const powderCoatingCost = globals.get("POWDER_COATING_COST") ?? 350;
+    const ssPolishingCost = globals.get("SS_POLISHING_COST") ?? 500;
 
     const results: Record<string, number | null> = {};
 
@@ -162,12 +172,8 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
           ]
         );
         const cheapestFrameFlat = Math.min(
-          ...[ 
-            optionFlat("MATTE_BLACK"),
-            optionFlat("WHITE"),
-            optionFlat("GREY"),
-            optionFlat("GOLD"),
-          ]
+          optionFlat("MATTE_BLACK"),
+          optionFlat("GREY")
         );
 
         const price = calculateTypePrice({
@@ -175,6 +181,7 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
           metalRate: msCrRate,
           seatArea: topArea,
           seatRate: 0,
+          frameFinishingCost: powderCoatingCost,
           flatAddons: cheapestRexineFlat + cheapestFrameFlat,
           consumables,
           labor,
@@ -193,6 +200,7 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
         const price = calculateTypePrice({
           baseWeight,
           metalRate: msCrRate,
+          frameFinishingCost: powderCoatingCost,
           flatAddons: Math.min(optionFlat("BASE_BUSH"), optionFlat("BASE_CASTOR")),
           consumables,
           labor,
@@ -214,6 +222,7 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
           metalMultiplier: optionMultiplier("R4"),
           seatArea: topArea,
           seatRate: 0,
+          frameFinishingCost: powderCoatingCost,
           flatAddons: Math.min(
             optionFlat("RF_BLACK"),
             optionFlat("RF_GOLD_PAINT"),
@@ -244,6 +253,7 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
           metalRate: ssRate,
           isSS: true,
           metalMultiplier: optionMultiplier("TH_18G"),
+          frameFinishingCost: ssPolishingCost,
           flatAddons: Math.min(
             optionFlat("SSF_HAIRLINE"),
             optionFlat("SSF_MIRROR")
@@ -261,13 +271,15 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
         continue;
       }
 
-      // metal_cost = base_pipe_weight_18g_kg x MS_CR cost_per_unit
-      const metalCost = baseWeight * msCrRate;
+      // Frame cost = metal weight x MS rate + powder-coating finishing cost
+      const metalCost = baseWeight * msCrRate + powderCoatingCost;
 
       // Determine cheapest allowed top material rate
       let allowedCats: string[] = [];
       if (Array.isArray(p.allowed_top_categories)) {
-        allowedCats = p.allowed_top_categories as string[];
+        allowedCats = (p.allowed_top_categories as string[])
+          .map((code) => (code === "GRANITE" ? "STONE" : code))
+          .filter((code) => code !== "METAL");
       }
 
       let cheapestTopRate = 0;
@@ -282,6 +294,7 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
         const matchingTops = (materials as RawMaterialRate[]).filter(
           (m) =>
             allowedCats.includes(m.category) &&
+            CORE_TOP_MATERIALS.has(m.material_code) &&
             m.cost_per_unit !== null &&
             Number(m.cost_per_unit) > 0
         );

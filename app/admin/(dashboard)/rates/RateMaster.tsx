@@ -45,13 +45,6 @@ interface OptionChange {
   newValue: number;
 }
 
-const SHEET_TOP_CODES = [
-  "SHEET_CR_16G",
-  "SHEET_MESH",
-  "SHEET_PERFORATED",
-  "SHEET_SS304",
-];
-
 const GLOBAL_LABELS: Record<string, string> = {
   BUMPER_RATE_PER_FT: "Protective steel bumper rate per ft",
   CENTER_SUPPORT_FLAT: "Center cross-support flat",
@@ -60,9 +53,12 @@ const GLOBAL_LABELS: Record<string, string> = {
   QTY_DISCOUNT_10_PLUS_PCT: "Quantity discount 10+ units %",
   SS_WEIGHT_FACTOR: "Stainless steel weight factor",
   PACK2_SAVING: "Pack-of-2 nesting saving (₹)",
+  POWDER_COATING_COST: "MS powder-coating cost (₹)",
+  SS_POLISHING_COST: "SS polishing cost (₹)",
 };
 
 const OPTION_GROUP_LABELS: Record<string, string> = {
+  FRAME_MATERIAL: "Frame material",
   GAUGE: "Gauge multipliers",
   RACK_SIZE: "Rack size multipliers",
   THICKNESS: "SS top thickness multipliers",
@@ -481,13 +477,7 @@ export default function RateMaster({
                     match: (row: MaterialRateRow) =>
                       row.category === "METAL" &&
                       row.unit.toUpperCase() !== "SQFT" &&
-                      !SHEET_TOP_CODES.includes(row.material_code),
-                  },
-                  {
-                    key: "SHEET",
-                    label: "Sheet Tops (per sq.ft)",
-                    match: (row: MaterialRateRow) =>
-                      SHEET_TOP_CODES.includes(row.material_code),
+                      !row.material_code.startsWith("SHEET_"),
                   },
                   {
                     key: "WOOD",

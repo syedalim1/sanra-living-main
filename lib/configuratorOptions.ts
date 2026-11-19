@@ -15,114 +15,50 @@ export interface ConfigOption {
 }
 
 export const FALLBACK_OPTIONS: ConfigOption[] = [
-  // TOP_TAB
-  { option_group: "TOP_TAB", option_code: "FRAME_ONLY", label_en: "Frame Only", sort_order: 10 },
-  { option_group: "TOP_TAB", option_code: "WOOD", label_en: "Wood Tops", sort_order: 20 },
-  { option_group: "TOP_TAB", option_code: "STONE", label_en: "Granite & Marble Tops", sort_order: 30 },
-  { option_group: "TOP_TAB", option_code: "METAL", label_en: "Industrial Metal Top", sort_order: 40 },
+  // FRAME_MATERIAL (primary MS vs SS selector)
+  {
+    option_group: "FRAME_MATERIAL",
+    option_code: "MS",
+    label_en: "Mild Steel (Powder Coated)",
+    badge_text: "10-Yr MIG Structural Warranty",
+    spec_note: "Heavy-gauge CR steel pipe with industrial powder coating",
+    sort_order: 1,
+  },
+  {
+    option_group: "FRAME_MATERIAL",
+    option_code: "SS",
+    label_en: "Stainless Steel (SS 202 / 304)",
+    badge_text: "3-Yr SS Replacement Guarantee",
+    spec_note: "Food-grade stainless steel with mirror or matte finish",
+    sort_order: 2,
+  },
 
-  // TOP_MATERIAL - WOOD
+  // TOP_TAB (3 categories only — METAL removed)
+  { option_group: "TOP_TAB", option_code: "FRAME_ONLY", label_en: "Frame Only", sort_order: 10 },
+  { option_group: "TOP_TAB", option_code: "WOOD", label_en: "Rubberwood & Plywood", sort_order: 20 },
+  { option_group: "TOP_TAB", option_code: "STONE", label_en: "Granite Top", sort_order: 30 },
+
+  // TOP_MATERIAL - WOOD (core fast-moving options only: Rubberwood + Plywood)
   {
     option_group: "TOP_MATERIAL",
     option_code: "RUBBER_HONEY_TEAK",
     parent_code: "WOOD",
-    label_en: "Natural Honey Teak Polish",
-    group_label: "100% Seasoned Grade-A Hardwood",
+    label_en: "Rubberwood",
+    group_label: "100% Seasoned Grade-A Rubberwood",
     swatch_color_hex: "#C28B38",
     sort_order: 101,
   },
   {
     option_group: "TOP_MATERIAL",
-    option_code: "RUBBER_DARK_WALNUT",
-    parent_code: "WOOD",
-    label_en: "Dark Walnut Luxury Polish",
-    group_label: "100% Seasoned Grade-A Hardwood",
-    swatch_color_hex: "#4A2A18",
-    sort_order: 102,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "RUBBER_CLEAR_MATTE",
-    parent_code: "WOOD",
-    label_en: "Clear Matte Natural Wood",
-    group_label: "100% Seasoned Grade-A Hardwood",
-    swatch_color_hex: "#D8BA84",
-    sort_order: 103,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "PRELAM_WHITE",
-    parent_code: "WOOD",
-    label_en: "Frosty Corporate White",
-    group_label: "IT Office Pre-Lam Board (25mm + 2mm PVC Edge)",
-    swatch_color_hex: "#F8FAFC",
-    sort_order: 104,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "PRELAM_CARBON_BLACK",
-    parent_code: "WOOD",
-    label_en: "Matte Carbon Black",
-    group_label: "IT Office Pre-Lam Board (25mm + 2mm PVC Edge)",
-    swatch_color_hex: "#1E293B",
-    sort_order: 105,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "PRELAM_LIGHT_OAK",
-    parent_code: "WOOD",
-    label_en: "Light Oak Woodgrain",
-    group_label: "IT Office Pre-Lam Board (25mm + 2mm PVC Edge)",
-    swatch_color_hex: "#D4B996",
-    sort_order: 106,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "PRELAM_COLUMBIA_WALNUT",
-    parent_code: "WOOD",
-    label_en: "Columbia Dark Walnut",
-    group_label: "IT Office Pre-Lam Board (25mm + 2mm PVC Edge)",
-    swatch_color_hex: "#5D4037",
-    sort_order: 107,
-  },
-  {
-    option_group: "TOP_MATERIAL",
     option_code: "BWR_WARM_TEAK",
     parent_code: "WOOD",
-    label_en: "Cafe Warm Teak Mica",
-    group_label: "BWR Waterproof Plywood (18mm + 1mm Scratch-Proof Mica)",
+    label_en: "Plywood",
+    group_label: "BWR Waterproof Plywood",
     swatch_color_hex: "#9E6B40",
     sort_order: 108,
   },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "BWR_CONCRETE_GREY",
-    parent_code: "WOOD",
-    label_en: "Concrete Loft Grey Mica",
-    group_label: "BWR Waterproof Plywood (18mm + 1mm Scratch-Proof Mica)",
-    swatch_color_hex: "#78909C",
-    sort_order: 109,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "WPC_TEAK_BROWN",
-    parent_code: "WOOD",
-    label_en: "Weatherproof Teak Brown",
-    group_label: "Outdoor WPC Solid Planks (100% Waterproof)",
-    swatch_color_hex: "#5C4033",
-    sort_order: 110,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "WPC_CHARCOAL_GREY",
-    parent_code: "WOOD",
-    label_en: "Charcoal Grey",
-    group_label: "Outdoor WPC Solid Planks (100% Waterproof)",
-    swatch_color_hex: "#2F3538",
-    sort_order: 111,
-  },
 
-  // TOP_MATERIAL - STONE
+  // TOP_MATERIAL - STONE (core 3 granite options only — faux marble removed)
   {
     option_group: "TOP_MATERIAL",
     option_code: "GRANITE_JET_BLACK_OPT",
@@ -143,24 +79,6 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   },
   {
     option_group: "TOP_MATERIAL",
-    option_code: "GRANITE_KWHITE_OPT",
-    parent_code: "STONE",
-    label_en: "Classic Pearl White Granite",
-    group_label: "18mm Export-Grade Natural Granite",
-    swatch_color_hex: "#F1F5F9",
-    sort_order: 203,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "GRANITE_RED_OPT",
-    parent_code: "STONE",
-    label_en: "Ruby Red",
-    group_label: "18mm Export-Grade Natural Granite",
-    swatch_color_hex: "#7F1D1D",
-    sort_order: 204,
-  },
-  {
-    option_group: "TOP_MATERIAL",
     option_code: "GRANITE_TAN_BROWN_OPT",
     parent_code: "STONE",
     label_en: "Tan Brown",
@@ -168,62 +86,11 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
     swatch_color_hex: "#451A03",
     sort_order: 205,
   },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "QUARTZ_CARRARA",
-    parent_code: "STONE",
-    label_en: "Italian Carrara White Marble Look",
-    group_label: "Luxury Marble / Quartz Finish (18mm)",
-    swatch_color_hex: "#F8FAFC",
-    sort_order: 206,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "QUARTZ_NERO_MARQUINA",
-    parent_code: "STONE",
-    label_en: "Nero Marquina Black Marble Look",
-    group_label: "Luxury Marble / Quartz Finish (18mm)",
-    swatch_color_hex: "#0F172A",
-    sort_order: 207,
-  },
+  // Removed: GRANITE_KWHITE_OPT (Classic Pearl White), GRANITE_RED_OPT (Ruby Red),
+  //          QUARTZ_CARRARA (Italian Carrara), QUARTZ_NERO_MARQUINA (Nero Marquina)
 
-  // TOP_MATERIAL - METAL
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "SHEET_PERFORATED_OPT",
-    parent_code: "METAL",
-    label_en: "Perforated Sheet Top",
-    group_label: "Industrial Steel Tops",
-    swatch_color_hex: "#334155",
-    sort_order: 301,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "SHEET_MESH_OPT",
-    parent_code: "METAL",
-    label_en: "Expanded Diamond Mesh Top",
-    group_label: "Industrial Steel Tops",
-    swatch_color_hex: "#475569",
-    sort_order: 302,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "SHEET_CR_16G_OPT",
-    parent_code: "METAL",
-    label_en: "16G Solid CR Sheet Top",
-    group_label: "Industrial Steel Tops",
-    swatch_color_hex: "#1E293B",
-    sort_order: 303,
-  },
-  {
-    option_group: "TOP_MATERIAL",
-    option_code: "SHEET_SS304_OPT",
-    parent_code: "METAL",
-    label_en: "Stainless Steel 304 Food-Grade Sheet Top",
-    group_label: "Industrial Steel Tops",
-    swatch_color_hex: "#E2E8F0",
-    sort_order: 304,
-  },
+  // TOP_MATERIAL - METAL — removed entirely
+  // Removed: SHEET_PERFORATED_OPT, SHEET_MESH_OPT, SHEET_CR_16G_OPT, SHEET_SS304_OPT
 
   // GAUGE
   {
@@ -273,12 +140,11 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
     sort_order: 5,
   },
 
-  // FRAME_COLOR
+  // FRAME_COLOR (kept: Matte Black, Industrial Grey, SS Finish — removed: White, Raw, Gold)
   { option_group: "FRAME_COLOR", option_code: "MATTE_BLACK", label_en: "Matte Black Powder Coated", swatch_color_hex: "#111111", sort_order: 1 },
-  { option_group: "FRAME_COLOR", option_code: "WHITE", label_en: "Pure White Coated", swatch_color_hex: "#FFFFFF", sort_order: 2 },
-  { option_group: "FRAME_COLOR", option_code: "GREY", label_en: "Industrial Grey", swatch_color_hex: "#4B5563", sort_order: 3 },
-  { option_group: "FRAME_COLOR", option_code: "RAW", label_en: "Raw Primed", swatch_color_hex: "#9CA3AF", sort_order: 4 },
-  { option_group: "FRAME_COLOR", option_code: "GOLD", label_en: "Gold", swatch_color_hex: "#D4AF37", sort_order: 5 },
+  { option_group: "FRAME_COLOR", option_code: "GREY", label_en: "Industrial Grey", swatch_color_hex: "#4B5563", sort_order: 2 },
+  { option_group: "FRAME_COLOR", option_code: "SS_FINISH", label_en: "SS Mirror / Matte Finish", swatch_color_hex: "#E5E5EA", sort_order: 3 },
+  // Removed: WHITE (Pure White Coated), RAW (Raw Primed), GOLD (Gold)
 
   // BUILD_TYPE
   {
@@ -304,10 +170,8 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   { option_group: "SIZE", option_code: "6x3", label_en: "6 x 3 ft", spec_note: "Large 6-seater dining or conference table", sort_order: 5 },
   { option_group: "SIZE", option_code: "CUSTOM", label_en: "Custom Size Request", spec_note: "Made to your exact size", sort_order: 6 },
 
-  // ADDON
-  { option_group: "ADDON", option_code: "GROMMET", label_en: "+ ₹50 Laptop Wire Grommet Hole", spec_note: "Clean circular cable portal with brush cap", sort_order: 1 },
-  { option_group: "ADDON", option_code: "CPU_HOLDER", label_en: "+ ₹150 Under-Table CPU / Bag Holder", spec_note: "Heavy-gauge steel suspended cradle for tower / backpacks", sort_order: 2 },
-  { option_group: "ADDON", option_code: "CHAIRS4", label_en: "+ ₹600 Add 4 Matching Chairs Combo", spec_note: "Matching structural steel frame chairs with bumper feet", sort_order: 3 },
+  // ADDON — all defaults removed (hide section when empty)
+  // Removed: GROMMET (Laptop Wire Grommet Hole), CPU_HOLDER (Under-Table CPU / Bag Holder), CHAIRS4 (Add 4 Matching Chairs Combo)
 
   // CHAIR - METAL_TYPE
   {
@@ -460,3 +324,27 @@ export const FALLBACK_OPTIONS: ConfigOption[] = [
   { option_group: "QTY_TIER", option_code: "TIER_10_PLUS", label_en: "10+ Pcs (12% B2B Factory Wholesale Discount)", spec_note: "12% direct volume bulk pricing", sort_order: 3 },
 ];
 
+export const FRAME_MATERIAL_OPTIONS: ConfigOption[] = FALLBACK_OPTIONS.filter(
+  (option) => option.option_group === "FRAME_MATERIAL"
+);
+
+export const MS_FRAME_COLOR_CODES = ["MATTE_BLACK", "GREY"] as const;
+export const SS_FRAME_COLOR_CODES = ["SS_FINISH"] as const;
+export const MS_GAUGE_CODES = ["G18", "G16", "G14"] as const;
+
+export function isFrameMaterial(value: string | null | undefined): value is "MS" | "SS" {
+  return value === "MS" || value === "SS";
+}
+
+export function mergeConfigOptions(...sources: ConfigOption[][]): ConfigOption[] {
+  const merged = new Map<string, ConfigOption>();
+
+  for (const source of sources) {
+    for (const option of source) {
+      if (!option.option_group || !option.option_code) continue;
+      merged.set(`${option.option_group}:${option.option_code}`, option);
+    }
+  }
+
+  return [...merged.values()];
+}

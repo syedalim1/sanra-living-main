@@ -6,6 +6,7 @@ export interface TypePriceInput {
   ssWeightFactor?: number;
   seatArea?: number;
   seatRate?: number;
+  frameFinishingCost?: number;
   consumables: number;
   labor: number;
   overheadPct: number;
@@ -49,6 +50,7 @@ export function calculateTypePrice(input: TypePriceInput): TypePriceOutput {
     ssWeightFactor = 1,
     seatArea = 0,
     seatRate = 0,
+    frameFinishingCost = 0,
     consumables,
     labor,
     overheadPct,
@@ -62,7 +64,8 @@ export function calculateTypePrice(input: TypePriceInput): TypePriceOutput {
   } = input;
 
   const metalCost =
-    baseWeight * metalRate * metalMultiplier * (isSS ? ssWeightFactor : 1);
+    baseWeight * metalRate * metalMultiplier * (isSS ? ssWeightFactor : 1) +
+    frameFinishingCost;
   const seatCost = seatArea * seatRate;
   const subtotal = metalCost + seatCost + consumables + labor;
   const withOverhead = subtotal * (1 + overheadPct / 100);
