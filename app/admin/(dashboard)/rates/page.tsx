@@ -16,6 +16,8 @@ export const metadata = {
   title: "Rate Master | SANRA Internal",
 };
 
+export const instant = false;
+
 export default async function RatesPage() {
   await connection();
   await requireAdmin();

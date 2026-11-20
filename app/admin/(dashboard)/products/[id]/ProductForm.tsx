@@ -8,14 +8,12 @@ import {
   MATERIAL_TAGS,
   PRODUCT_TYPES,
   TOP_CATEGORIES,
-  USE_CASES,
+  WARRANTY_PRESETS,
 } from "@/lib/admin/validation";
 import {
-  CUSTOM_CATEGORY_VALUE,
   CUSTOM_PRODUCT_TYPE_VALUE,
   PRODUCT_CATEGORY_OPTIONS,
 } from "@/lib/catalogCategories";
-import { labelForUseCase } from "@/lib/useCases";
 import { compressImage, formatBytes } from "@/lib/imageCompression";
 import type {
   AdminPricingRule,
@@ -42,10 +40,25 @@ const PRODUCT_TYPE_LABELS: Record<string, string> = {
   CUSTOM: "Custom Product Type",
 };
 const TOP_CATEGORY_LABELS: Record<string, string> = {
-  FRAME_ONLY: "Frame Only",
   STONE: "Granite Top",
-  WOOD: "Rubberwood & Plywood",
+  WOOD: "Wood Top",
 };
+const FRAME_MATERIAL_LABELS: Record<string, string> = {
+  MS: "MS - Mild Steel",
+  SS: "SS - Stainless Steel",
+};
+const DEFAULT_WARRANTY: Record<string, string> = {
+  MS: WARRANTY_PRESETS.MS,
+  SS: WARRANTY_PRESETS.SS,
+};
+
+function normalizeWarranty(text: string | null | undefined, frameMaterial: string): string {
+  if (!text) return DEFAULT_WARRANTY[frameMaterial] ?? WARRANTY_PRESETS.MS;
+  if (/10-Yr MIG/i.test(text) || /MIG Structural/i.test(text)) {
+    return WARRANTY_PRESETS.MS;
+  }
+  return text;
+}
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const PRODUCT_PLACEHOLDER = "/images/product-placeholder.svg";
@@ -283,165 +296,55 @@ function ImageDropField({
   );
 }
 
-function CostingPreview({
-  costing,
-  topCategories,
-  rates,
-  combo,
-}: {
-  costing: {
-    metalWeight: number;
-    topArea: number;
-    consumables: number;
-    labor: number;
-    finishing: number;
-    overhead: number;
-    retail: number;
-    b2b: number;
-    b2bMoq: number;
-  };
-  topCategories: string[];
-  rates?: { ms: number; wood: number; stone: number };
-  combo: { chairQty: number; chairCost: number; discountPct: number } | null;
-}) {
-  const priceRates = rates ?? { ms: 0, wood: 0, stone: 0 };
-  const shown = topCategories.length > 0 ? topCategories : ["FRAME_ONLY"];
-
-  const rows = shown.map((key) => {
-    const topRate =
-      key === "WOOD"
-        ? priceRates.wood
-        : key === "STONE"
-        ? priceRates.stone
-        : 0;
-    const factory =
-      costing.metalWeight * priceRates.ms +
-      costing.topArea * topRate +
-      costing.consumables +
-      costing.labor +
-      costing.finishing;
-    const withOverhead = factory * (1 + costing.overhead / 100);
-    const retail = withOverhead * (1 + costing.retail / 100);
-    const b2b = withOverhead * (1 + costing.b2b / 100);
-
-    return {
-      key,
-      factory: Math.round(factory),
-      retail: Math.round(retail),
-      retailProfit: Math.round(retail - factory),
-      b2b: Math.round(b2b),
-      b2bProfit: Math.round(b2b - factory),
-    };
-  });
-
-  const comboTotal = combo
-    ? rows.map((row) => {
-        const gross = row.retail + combo.chairQty * combo.chairCost;
-        const net = gross * (1 - combo.discountPct / 100);
-        const factory =
-          row.factory + combo.chairQty * combo.chairCost;
-        return {
-          key: row.key,
-          retail: Math.round(net),
-          profit: Math.round(net - factory),
-        };
-      })
-    : [];
-
-  return (
-    <div className="rounded-lg border border-neutral-300 bg-[#F5F5F7] p-4 space-y-3">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-600">
-        Live cost &amp; profit preview (admin only)
-      </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {rows.map((row) => (
-          <div key={row.key} className="rounded-md bg-white border border-neutral-200 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-800">
-              {row.key === "FRAME_ONLY"
-                ? "Without top / frame only"
-                : row.key === "WOOD"
-                ? "With wood top"
-                : "With stone/granite top"}
-            </p>
-            <p className="text-[11px] text-neutral-600 mt-1">
-              Factory cost: ₹{row.factory.toLocaleString("en-IN")}
-            </p>
-            <p className="text-[11px] text-neutral-800 font-semibold">
-              Retail: ₹{row.retail.toLocaleString("en-IN")} · Profit ₹
-              {row.retailProfit.toLocaleString("en-IN")}
-            </p>
-            <p className="text-[11px] text-neutral-800 font-semibold">
-              B2B: ₹{row.b2b.toLocaleString("en-IN")} · Profit ₹
-              {row.b2bProfit.toLocaleString("en-IN")}
-            </p>
-          </div>
-        ))}
-      </div>
-      {combo && comboTotal.length > 0 && (
-        <div className="rounded-md bg-white border border-neutral-200 p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-800">
-            Combo set total
-          </p>
-          {comboTotal.map((row) => (
-            <p key={row.key} className="text-[11px] text-neutral-700">
-              {row.key}: Retail ₹{row.retail.toLocaleString("en-IN")} · Profit ₹
-              {row.profit.toLocaleString("en-IN")}
-            </p>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+const TOP_CATEGORY_PRODUCT_TYPES = new Set([
+  "TABLE",
+  "CHAIR_TABLE_SET",
+  "BENCH_DESK",
+]);
 
 export default function ProductForm({
   product,
   pricing,
-  materialRates,
 }: {
   product: AdminProduct | null;
   pricing: AdminPricingRule | null;
-  materialRates?: { ms: number; wood: number; stone: number };
 }) {
+  const initialProductType = product?.product_type ?? "TABLE";
+  const initialFrameMaterial = (product?.frame_material ?? "MS").toUpperCase();
+
   const [state, formAction, pending] = useActionState(saveProductAction, initialState);
-  const [productType, setProductType] = useState(product?.product_type ?? "TABLE");
+  const [productType, setProductType] = useState(initialProductType);
   const [customProductType, setCustomProductType] = useState("");
   const [category, setCategory] = useState(
     product?.category ?? PRODUCT_CATEGORY_OPTIONS[0].value
   );
-  const [customCategory, setCustomCategory] = useState("");
+  const [frameMaterial, setFrameMaterial] = useState(
+    FRAME_MATERIAL_LABELS[initialFrameMaterial] ? initialFrameMaterial : "MS"
+  );
   const [sku, setSku] = useState(product?.sku ?? "");
   const [name, setName] = useState(product?.name ?? "");
   const [warranty, setWarranty] = useState(
-    product?.warranty_text ?? "10-Yr MIG Structural Warranty"
+    normalizeWarranty(product?.warranty_text, initialFrameMaterial)
   );
-  const [topCategories, setTopCategories] = useState<string[]>(
-    (product?.allowed_top_categories ?? [])
-      .map((category) => (category === "GRANITE" ? "STONE" : category))
-      .filter((category) =>
-        (TOP_CATEGORIES as readonly string[]).includes(category)
-      )
-  );
+  const [topCategories, setTopCategories] = useState<string[]>(() => {
+    const filtered = (product?.allowed_top_categories ?? [])
+      .map((entry) => (entry === "GRANITE" ? "STONE" : entry))
+      .filter((entry) => (TOP_CATEGORIES as readonly string[]).includes(entry));
+    if (filtered.length > 0) return filtered;
+    return TOP_CATEGORY_PRODUCT_TYPES.has(initialProductType) ? ["WOOD", "STONE"] : [];
+  });
   const [closedError, setClosedError] = useState<string | null>(null);
 
   const combo = (pricing?.combo_config ?? {}) as Record<string, unknown>;
-  const [costing, setCosting] = useState({
-    metalWeight: Number(valueOrEmpty(pricing?.base_pipe_weight_18g_kg) || 0),
-    topArea: Number(valueOrEmpty(pricing?.top_area_sqft) || 0),
-    consumables: Number(valueOrEmpty(pricing?.consumables_cost) || 0),
-    labor: Number(valueOrEmpty(pricing?.labor_cost) || 0),
-    finishing: Number(pricing?.finishing_cost ?? 0),
-    overhead: Number(valueOrEmpty(pricing?.overhead_pct) || 0),
-    retail: Number(valueOrEmpty(pricing?.retail_margin_pct) || 0),
-    b2b: Number(valueOrEmpty(pricing?.b2b_margin_pct) || 0),
-    b2bMoq: Number(pricing?.b2b_moq ?? 1),
-  });
 
   const isEdit = Boolean(product);
   const isComboType =
     productType === "CHAIR_TABLE_SET" || productType === "BENCH_DESK";
-  const topCategoryEnabled = !["CHAIR", "SS_UNIT", "COT_BUNK", "TROLLEY"].includes(
-    productType
+  const showTopCategories = TOP_CATEGORY_PRODUCT_TYPES.has(productType);
+  const showTopPrices = showTopCategories;
+  const hasLegacyCategory = Boolean(
+    product?.category &&
+      !PRODUCT_CATEGORY_OPTIONS.some((option) => option.value === product.category)
   );
 
   function toggleTopCategory(value: string) {
@@ -452,8 +355,18 @@ export default function ProductForm({
     );
   }
 
+  function handleFrameMaterialChange(nextMaterial: string) {
+    setFrameMaterial(nextMaterial);
+    const nextDefault = DEFAULT_WARRANTY[nextMaterial] ?? WARRANTY_PRESETS.MS;
+    const isKnownPreset =
+      warranty === WARRANTY_PRESETS.MS || warranty === WARRANTY_PRESETS.SS;
+    if (!isEdit || isKnownPreset) {
+      setWarranty(nextDefault);
+    }
+  }
+
   function generateSku() {
-    const base = `${category === CUSTOM_CATEGORY_VALUE ? customCategory : category}-${name}`
+    const base = `${category}-${name}`
       .toUpperCase()
       .replace(/[^A-Z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
@@ -465,6 +378,9 @@ export default function ProductForm({
   return (
     <form action={formAction} className="space-y-6">
       <input type="hidden" name="id" value={product?.id ?? ""} />
+      {(product?.use_cases ?? []).map((useCase) => (
+        <input key={useCase} type="hidden" name="use_cases" value={useCase} />
+      ))}
 
       {state.error && state.error !== closedError && (
         <AdminToast
@@ -533,35 +449,37 @@ export default function ProductForm({
             <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
               Category
             </span>
-            {category === CUSTOM_CATEGORY_VALUE ? (
-              <input
-                name="category"
-                value={customCategory}
-                onChange={(event) => setCustomCategory(event.target.value)}
-                placeholder="Type custom category name"
-                required
-                className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            ) : (
-              <select
-                name="category"
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                required
-                className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              >
-                {product?.category &&
-                  !PRODUCT_CATEGORY_OPTIONS.some(
-                    (option) => option.value === product.category
-                  ) && <option value={product.category}>{product.category}</option>}
-                {PRODUCT_CATEGORY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-                <option value={CUSTOM_CATEGORY_VALUE}>+ Custom Category...</option>
-              </select>
-            )}
+            <select
+              name="category"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+              required
+              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              {hasLegacyCategory && (
+                <option value={product?.category ?? ""}>{product?.category}</option>
+              )}
+              {PRODUCT_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="space-y-1.5">
+            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              Frame material
+            </span>
+            <select
+              name="frame_material"
+              value={frameMaterial}
+              onChange={(event) => handleFrameMaterialChange(event.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            >
+              <option value="MS">{FRAME_MATERIAL_LABELS.MS}</option>
+              <option value="SS">{FRAME_MATERIAL_LABELS.SS}</option>
+            </select>
           </label>
 
           <label className="space-y-1.5">
@@ -651,6 +569,22 @@ export default function ProductForm({
 
           <label className="space-y-1.5 sm:col-span-2">
             <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+              Short description
+            </span>
+            <textarea
+              name="short_description"
+              rows={3}
+              defaultValue={product?.short_description ?? ""}
+              placeholder="e.g. 4 x 2 ft table, 1.5 inch square tube, 16 gauge, 200 kg load"
+              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black resize-y"
+            />
+            <span className="block text-[10px] text-neutral-500">
+              Size, pipe gauge and other quick notes in plain text.
+            </span>
+          </label>
+
+          <label className="space-y-1.5 sm:col-span-2">
+            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
               Pipe spec / gauge
             </span>
             <input
@@ -687,11 +621,7 @@ export default function ProductForm({
               className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
             />
             <div className="flex flex-wrap gap-1.5 pt-1">
-              {[
-                "10-Yr MIG Structural Warranty",
-                "3-Yr SS Replacement Guarantee",
-                "Standard Commercial Warranty",
-              ].map((option) => (
+              {[WARRANTY_PRESETS.MS, WARRANTY_PRESETS.SS].map((option) => (
                 <button
                   key={option}
                   type="button"
@@ -702,6 +632,10 @@ export default function ProductForm({
                 </button>
               ))}
             </div>
+            <span className="block text-[10px] text-neutral-500">
+              Default for {FRAME_MATERIAL_LABELS[frameMaterial]} is{" "}
+              {DEFAULT_WARRANTY[frameMaterial]}.
+            </span>
           </label>
 
           <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -856,16 +790,7 @@ export default function ProductForm({
             currentUrl={product?.hover_blueprint_img ?? null}
           />
 
-          {topCategories.includes("FRAME_ONLY") && (
-            <ImageDropField
-              name="top_frame_image"
-              removeName="remove_top_frame_image"
-              label="Without top (frame only) image"
-              helper="Shown when the customer picks Frame Only."
-              currentUrl={product?.top_category_images?.FRAME_ONLY ?? null}
-            />
-          )}
-          {topCategories.includes("STONE") && (
+          {showTopCategories && topCategories.includes("STONE") && (
             <ImageDropField
               name="top_stone_image"
               removeName="remove_top_stone_image"
@@ -874,7 +799,7 @@ export default function ProductForm({
               currentUrl={product?.top_category_images?.STONE ?? null}
             />
           )}
-          {topCategories.includes("WOOD") && (
+          {showTopCategories && topCategories.includes("WOOD") && (
             <ImageDropField
               name="top_wood_image"
               removeName="remove_top_wood_image"
@@ -911,36 +836,13 @@ export default function ProductForm({
 
       <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-bold text-[#111111]">Catalog Filters</h2>
+          <h2 className="text-sm font-bold text-[#111111]">Catalog Tags</h2>
           <p className="text-[11px] text-neutral-500 mt-1">
-            Use cases, material tags and allowed top categories.
+            Material tags and, for tables and sets, the top options offered.
           </p>
         </div>
 
         <div className="p-5 space-y-5">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-2">
-              Use cases
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {USE_CASES.map((useCase) => (
-                <label
-                  key={useCase}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-neutral-200 text-[11px] font-semibold text-neutral-700"
-                >
-                  <input
-                    type="checkbox"
-                    name="use_cases"
-                    value={useCase}
-                    defaultChecked={product?.use_cases.includes(useCase)}
-                    className="w-3.5 h-3.5 accent-black"
-                  />
-                  {labelForUseCase(useCase)}
-                </label>
-              ))}
-            </div>
-          </div>
-
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-2">
               Material tags
@@ -964,242 +866,104 @@ export default function ProductForm({
             </div>
           </div>
 
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1">
-              Allowed top categories
-            </p>
-            <p className="text-[10px] text-neutral-500 mb-2">
-              Enables variant images and top selectors on the public page. Ticking a
-              category reveals its image upload card above.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {TOP_CATEGORIES.map((category) => (
-                <label
-                  key={category}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-neutral-200 text-[11px] font-semibold ${
-                    topCategoryEnabled ? "text-neutral-700" : "text-neutral-400"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    name="allowed_top_categories"
-                    value={category}
-                    disabled={!topCategoryEnabled}
-                    checked={topCategories.includes(category)}
-                    onChange={() => toggleTopCategory(category)}
-                    className="w-3.5 h-3.5 accent-black"
-                  />
-                  {TOP_CATEGORY_LABELS[category] ?? category}
-                </label>
-              ))}
+          {showTopCategories && (
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-1">
+                Available tops
+              </p>
+              <p className="text-[10px] text-neutral-500 mb-2">
+                Only Granite and Wood tops are offered. Ticking a top reveals its
+                image upload card above.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {TOP_CATEGORIES.map((category) => (
+                  <label
+                    key={category}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-neutral-200 text-[11px] font-semibold text-neutral-700"
+                  >
+                    <input
+                      type="checkbox"
+                      name="allowed_top_categories"
+                      value={category}
+                      checked={topCategories.includes(category)}
+                      onChange={() => toggleTopCategory(category)}
+                      className="w-3.5 h-3.5 accent-black"
+                    />
+                    {TOP_CATEGORY_LABELS[category] ?? category}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
       <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <h2 className="text-sm font-bold text-[#111111]">Private Costing Block</h2>
-              <p className="text-[11px] text-neutral-500 mt-1">
-                This never appears on the public site.
-              </p>
-            </div>
-            <span className="inline-block px-2 py-1 rounded bg-neutral-900 text-white text-[9px] font-bold uppercase tracking-widest">
-              Admin only
-            </span>
-          </div>
+          <h2 className="text-sm font-bold text-[#111111]">Pricing</h2>
+          <p className="text-[11px] text-neutral-500 mt-1">
+            Enter the selling price directly. No private costing fields.
+          </p>
         </div>
 
-        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label className="space-y-1.5">
             <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              Metal weight (kg)
+              Direct price (₹)
             </span>
             <input
-              name="base_pipe_weight_18g_kg"
+              name="direct_price"
               type="number"
               min="0"
               step="0.01"
-              defaultValue={valueOrEmpty(pricing?.base_pipe_weight_18g_kg)}
+              defaultValue={valueOrEmpty(pricing?.direct_price)}
+              placeholder="e.g. 4999"
               className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
             />
-          </label>
-
-          <label className="space-y-1.5">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              Top / seat / shelf area (sq.ft)
-            </span>
-            <input
-              name="top_area_sqft"
-              type="number"
-              min="0"
-              step="0.01"
-              value={costing.topArea}
-              onChange={(event) =>
-                setCosting((current) => ({ ...current, topArea: Number(event.target.value) || 0 }))
-              }
-              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            />
-            <span className="block text-[9px] text-neutral-500">
-              Seat area for chairs, shelf area for racks, top area for tables.
+            <span className="block text-[10px] text-neutral-500">
+              Used as the selling price for this product.
             </span>
           </label>
 
-          <label className="space-y-1.5">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              Consumables cost
-            </span>
-            <input
-              name="consumables_cost"
-              type="number"
-              min="0"
-              step="0.01"
-              value={costing.consumables}
-              onChange={(event) =>
-                setCosting((current) => ({
-                  ...current,
-                  consumables: Number(event.target.value) || 0,
-                }))
-              }
-              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            />
-          </label>
+          {showTopPrices && (
+            <>
+              <label className="space-y-1.5">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                  Granite Top Price (₹)
+                </span>
+                <input
+                  name="granite_top_price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={valueOrEmpty(pricing?.granite_top_price)}
+                  placeholder="Optional"
+                  className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                />
+                <span className="block text-[10px] text-neutral-500">
+                  Shown when Granite Top is selected.
+                </span>
+              </label>
 
-          <label className="space-y-1.5">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              Labor cost
-            </span>
-            <input
-              name="labor_cost"
-              type="number"
-              min="0"
-              step="0.01"
-              value={costing.labor}
-              onChange={(event) =>
-                setCosting((current) => ({ ...current, labor: Number(event.target.value) || 0 }))
-              }
-              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            />
-          </label>
-
-          <label className="space-y-1.5">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              Overhead %
-            </span>
-            <input
-              name="overhead_pct"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={costing.overhead}
-              onChange={(event) =>
-                setCosting((current) => ({
-                  ...current,
-                  overhead: Number(event.target.value) || 0,
-                }))
-              }
-              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            />
-          </label>
-
-          <label className="space-y-1.5">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              Retail margin %
-            </span>
-            <input
-              name="retail_margin_pct"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={costing.retail}
-              onChange={(event) =>
-                setCosting((current) => ({
-                  ...current,
-                  retail: Number(event.target.value) || 0,
-                }))
-              }
-              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            />
-          </label>
-
-          <label className="space-y-1.5">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              B2B margin %
-            </span>
-            <input
-              name="b2b_margin_pct"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={costing.b2b}
-              onChange={(event) =>
-                setCosting((current) => ({ ...current, b2b: Number(event.target.value) || 0 }))
-              }
-              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            />
-          </label>
-
-          <label className="space-y-1.5">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              Powder coating / finishing cost (₹)
-            </span>
-            <input
-              name="finishing_cost"
-              type="number"
-              min="0"
-              step="0.01"
-              value={costing.finishing}
-              onChange={(event) =>
-                setCosting((current) => ({
-                  ...current,
-                  finishing: Number(event.target.value) || 0,
-                }))
-              }
-              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm"
-            />
-          </label>
-
-          <label className="space-y-1.5">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              B2B MOQ (minimum order qty)
-            </span>
-            <input
-              name="b2b_moq"
-              type="number"
-              min="1"
-              step="1"
-              value={costing.b2bMoq}
-              onChange={(event) =>
-                setCosting((current) => ({
-                  ...current,
-                  b2bMoq: Number(event.target.value) || 1,
-                }))
-              }
-              className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm"
-            />
-          </label>
-        </div>
-
-        <div className="px-5 pb-5">
-          <CostingPreview
-            costing={costing}
-            topCategories={topCategories}
-            rates={materialRates}
-            combo={
-              isComboType
-                ? {
-                    chairQty: Number(combo.chair_quantity ?? 0),
-                    chairCost: Number(combo.single_chair_cost ?? 0),
-                    discountPct: Number(combo.combo_discount_pct ?? 0),
-                  }
-                : null
-            }
-          />
+              <label className="space-y-1.5">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                  Wood Top Price (₹)
+                </span>
+                <input
+                  name="wood_top_price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  defaultValue={valueOrEmpty(pricing?.wood_top_price)}
+                  placeholder="Optional"
+                  className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                />
+                <span className="block text-[10px] text-neutral-500">
+                  Shown when Wood Top is selected.
+                </span>
+              </label>
+            </>
+          )}
         </div>
       </section>
 

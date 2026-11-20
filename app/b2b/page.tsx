@@ -77,7 +77,7 @@ const WHY_CARDS = [
   {
     icon: ShieldCheck,
     title: "Steel pipe options",
-    body: "Material choices with up to 10-Yr MIG warranty on qualifying frames.",
+    body: "Material choices with a 3-Yr welding warranty on qualifying MS frames.",
   },
   {
     icon: Package,

@@ -12,6 +12,8 @@ export interface AdminProduct {
   top_category_images?: Record<string, string> | null;
   gallery_images?: string[] | null;
   allowed_top_categories: string[];
+  frame_material?: string | null;
+  short_description?: string | null;
   is_knockdown_available: boolean;
   warranty_text: string;
   main_image_url: string;
@@ -33,6 +35,9 @@ export interface AdminPricingRule {
   b2b_margin_pct: number;
   finishing_cost: number;
   b2b_moq: number;
+  direct_price?: number | null;
+  granite_top_price?: number | null;
+  wood_top_price?: number | null;
   combo_config?: Record<string, unknown> | null;
   pipe_spec?: string | null;
 }

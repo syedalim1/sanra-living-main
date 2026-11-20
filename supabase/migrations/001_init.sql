@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS products (
   base_width_ft NUMERIC(6, 2) NOT NULL,
   allowed_top_categories JSONB NOT NULL DEFAULT '[]'::jsonb,
   is_knockdown_available BOOLEAN NOT NULL DEFAULT true,
-  warranty_text TEXT NOT NULL DEFAULT '10-Yr MIG Structural Warranty',
+  warranty_text TEXT NOT NULL DEFAULT '3-Yr Welding Warranty',
   main_image_url TEXT NOT NULL,
   hover_blueprint_img TEXT,
   is_active BOOLEAN NOT NULL DEFAULT true,

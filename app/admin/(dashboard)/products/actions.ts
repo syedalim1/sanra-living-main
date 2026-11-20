@@ -16,6 +16,7 @@ import {
   formString,
   formStringArray,
   parseBoolean,
+  parseNullableNumber,
   parseNumber,
   validateImageSize,
 } from "@/lib/admin/validation";
@@ -118,7 +119,9 @@ export async function saveProductAction(
       base_length_ft: parseNumber(formData.get("base_length_ft")),
       base_width_ft: parseNumber(formData.get("base_width_ft")),
       base_height_ft: parseNumber(formData.get("base_height_ft"), 2.5),
+      short_description: formString(formData.get("short_description")),
       pipe_spec: formString(formData.get("pipe_spec")),
+      frame_material: (formString(formData.get("frame_material")) || "MS").toUpperCase(),
       use_cases: formStringArray(formData, "use_cases"),
       material_tags: formStringArray(formData, "material_tags"),
       sort_order: Math.trunc(parseNumber(formData.get("sort_order"), 100)),
@@ -126,17 +129,9 @@ export async function saveProductAction(
       is_active: parseBoolean(formData.get("is_active")),
       is_knockdown_available: parseBoolean(formData.get("is_knockdown_available")),
       allowed_top_categories: formStringArray(formData, "allowed_top_categories"),
-      costing: {
-        base_pipe_weight_18g_kg: parseNumber(formData.get("base_pipe_weight_18g_kg")),
-        top_area_sqft: parseNumber(formData.get("top_area_sqft")),
-        consumables_cost: parseNumber(formData.get("consumables_cost")),
-        labor_cost: parseNumber(formData.get("labor_cost")),
-        overhead_pct: parseNumber(formData.get("overhead_pct")),
-        retail_margin_pct: parseNumber(formData.get("retail_margin_pct")),
-        b2b_margin_pct: parseNumber(formData.get("b2b_margin_pct")),
-        finishing_cost: parseNumber(formData.get("finishing_cost"), 0),
-        b2b_moq: Math.max(1, Math.trunc(parseNumber(formData.get("b2b_moq"), 1))),
-      },
+      direct_price: parseNullableNumber(formData.get("direct_price")),
+      granite_top_price: parseNullableNumber(formData.get("granite_top_price")),
+      wood_top_price: parseNullableNumber(formData.get("wood_top_price")),
     });
 
     if (!parsed.success) {
@@ -174,7 +169,6 @@ export async function saveProductAction(
     const topImageFields = [
       { field: "top_wood_image", key: "WOOD", prefix: "top-wood" },
       { field: "top_stone_image", key: "STONE", prefix: "top-stone" },
-      { field: "top_frame_image", key: "FRAME_ONLY", prefix: "top-frame" },
     ];
 
     try {
@@ -239,6 +233,8 @@ export async function saveProductAction(
       base_width_ft: values.base_width_ft,
       base_height_ft: values.base_height_ft,
       allowed_top_categories: values.allowed_top_categories,
+      frame_material: values.frame_material,
+      short_description: values.short_description || null,
       is_knockdown_available: values.is_knockdown_available,
       warranty_text: values.warranty_text,
       is_active: values.is_active,
@@ -356,7 +352,9 @@ export async function saveProductAction(
     const { error: pricingError } = await db.from("product_pricing_rules").upsert(
       {
         product_id: savedProductId,
-        ...values.costing,
+        direct_price: values.direct_price ?? null,
+        granite_top_price: values.granite_top_price ?? null,
+        wood_top_price: values.wood_top_price ?? null,
         combo_config: comboConfig,
         pipe_spec: values.pipe_spec || null,
       },
@@ -364,7 +362,7 @@ export async function saveProductAction(
     );
 
     if (pricingError) {
-      return { ok: false, error: "Product saved, but the private costing block failed." };
+      return { ok: false, error: "Product saved, but the pricing details failed." };
     }
 
     await writeAudit(db, session.email, {
@@ -532,7 +530,10 @@ export async function duplicateProductAction(
         product_type: source.product_type,
         base_length_ft: source.base_length_ft,
         base_width_ft: source.base_width_ft,
+        base_height_ft: source.base_height_ft ?? 2.5,
         allowed_top_categories: source.allowed_top_categories,
+        frame_material: source.frame_material ?? "MS",
+        short_description: source.short_description ?? null,
         is_knockdown_available: source.is_knockdown_available,
         warranty_text: source.warranty_text,
         main_image_url: PRODUCT_PLACEHOLDER,
@@ -563,6 +564,9 @@ export async function duplicateProductAction(
         b2b_margin_pct: rule.b2b_margin_pct,
         finishing_cost: rule.finishing_cost ?? 0,
         b2b_moq: rule.b2b_moq ?? 1,
+        direct_price: rule.direct_price ?? null,
+        granite_top_price: rule.granite_top_price ?? null,
+        wood_top_price: rule.wood_top_price ?? null,
         combo_config: rule.combo_config ?? {},
         pipe_spec: rule.pipe_spec ?? null,
       });

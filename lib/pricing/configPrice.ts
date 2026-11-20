@@ -41,6 +41,29 @@ interface FallbackRule {
   overhead_pct: number;
   retail_margin_pct: number;
   allowed_top_categories: string[];
+  direct_price?: number | null;
+  granite_top_price?: number | null;
+  wood_top_price?: number | null;
+}
+
+function positiveNumberOrNull(value: unknown): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function priceOverrideFor(
+  rule: FallbackRule,
+  topTab?: string
+): number | null {
+  if (topTab === "STONE") {
+    const granite = positiveNumberOrNull(rule.granite_top_price);
+    if (granite !== null) return granite;
+  }
+  if (topTab === "WOOD") {
+    const wood = positiveNumberOrNull(rule.wood_top_price);
+    if (wood !== null) return wood;
+  }
+  return positiveNumberOrNull(rule.direct_price);
 }
 
 const FALLBACK_RULES: Record<string, FallbackRule> = {
@@ -455,6 +478,9 @@ async function loadNonTableData(input: NonTableConfigInput): Promise<NonTableDat
             overhead_pct: Number(ruleData.overhead_pct),
             retail_margin_pct: Number(ruleData.retail_margin_pct),
             allowed_top_categories: [],
+            direct_price: ruleData.direct_price,
+            granite_top_price: ruleData.granite_top_price,
+            wood_top_price: ruleData.wood_top_price,
           };
         }
       }
@@ -660,6 +686,16 @@ async function calculateNonTableConfigPrice(
     }
   }
 
+  const directPrice = positiveNumberOrNull(rule.direct_price);
+  if (directPrice !== null) {
+    return {
+      unit_price: directPrice,
+      total_price: directPrice * input.quantity,
+      discount_pct: 0,
+      requires_quote: false,
+    };
+  }
+
   const baseWeight = Number(rule.base_pipe_weight_18g_kg);
   const consumables = Number(rule.consumables_cost);
   const labor = Number(rule.labor_cost);
@@ -853,6 +889,9 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
           overhead_pct: Number(ruleData.overhead_pct),
           retail_margin_pct: Number(ruleData.retail_margin_pct),
           allowed_top_categories: allowedTopCategories,
+          direct_price: ruleData.direct_price,
+          granite_top_price: ruleData.granite_top_price,
+          wood_top_price: ruleData.wood_top_price,
         };
       }
     }
@@ -874,6 +913,17 @@ async function calculateTableConfigPrice(rawInput: unknown): Promise<ConfigPrice
   // Validity rule: reject combinations not allowed for product
   if (!allowedTopCategories.includes(input.top_tab)) {
     throw new Error("Invalid top category for this model.");
+  }
+
+  const overridePrice = priceOverrideFor(productPricing, input.top_tab);
+  if (overridePrice !== null) {
+    return {
+      unit_price: overridePrice,
+      total_price: overridePrice * input.quantity,
+      discount_pct: 0,
+      bumper_included: input.top_tab === "STONE",
+      requires_quote: false,
+    };
   }
 
   if (availabilityRows.length > 0) {

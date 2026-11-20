@@ -1016,7 +1016,7 @@ export default function TableConfigurator({
                   {currentFrameMaterialOption?.warranty_text ||
                     (selectedFrameMaterial === "SS"
                       ? "3-Yr SS Replacement Guarantee"
-                      : "10-Yr MIG Structural Warranty")}
+                      : "3-Yr Welding Warranty")}
                 </p>
               </div>
             )}

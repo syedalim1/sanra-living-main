@@ -18,6 +18,8 @@ create table products (
   base_length_ft   numeric not null default 0,
   base_width_ft    numeric not null default 0,
   allowed_top_categories text[] not null default '{}',
+  frame_material   text not null default 'MS',
+  short_description text,
   is_knockdown_available boolean not null default false,
   warranty_text    text not null default '',
   main_image_url   text not null default '/images/product-placeholder.svg',
@@ -48,6 +50,9 @@ create table product_pricing_rules (
   overhead_pct              numeric not null default 0,
   retail_margin_pct         numeric not null default 0,
   b2b_margin_pct            numeric not null default 0,
+  direct_price              numeric,
+  granite_top_price         numeric,
+  wood_top_price            numeric,
   created_at                timestamptz not null default now()
 );
 
@@ -720,7 +725,7 @@ insert into configurator_options
 values
   ('FRAME_MATERIAL', 'MS', null, 'Mild Steel (Powder Coated)', null, '#111111',
    'Heavy-gauge CR steel pipe with industrial powder coating',
-   '10-Yr MIG Structural Warranty', 1, true),
+   '3-Yr Welding Warranty', 1, true),
   ('FRAME_MATERIAL', 'SS', null, 'Stainless Steel (SS 202 / 304)', null, '#E5E5EA',
    'Food-grade stainless steel with mirror or matte finish',
    '3-Yr SS Replacement Guarantee', 2, true),

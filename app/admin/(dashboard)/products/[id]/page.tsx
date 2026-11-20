@@ -77,6 +77,8 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
       allowed_top_categories: Array.isArray(row.allowed_top_categories)
         ? (row.allowed_top_categories as string[])
         : [],
+      frame_material: row.frame_material ?? "MS",
+      short_description: row.short_description ?? null,
       is_knockdown_available: Boolean(row.is_knockdown_available),
       warranty_text: row.warranty_text,
       main_image_url: row.main_image_url,
@@ -98,6 +100,18 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
         b2b_margin_pct: Number(pricingResult.data.b2b_margin_pct ?? 0),
         finishing_cost: Number(pricingResult.data.finishing_cost ?? 0),
         b2b_moq: Number(pricingResult.data.b2b_moq ?? 1),
+        direct_price:
+          pricingResult.data.direct_price == null
+            ? null
+            : Number(pricingResult.data.direct_price),
+        granite_top_price:
+          pricingResult.data.granite_top_price == null
+            ? null
+            : Number(pricingResult.data.granite_top_price),
+        wood_top_price:
+          pricingResult.data.wood_top_price == null
+            ? null
+            : Number(pricingResult.data.wood_top_price),
         combo_config:
           pricingResult.data.combo_config &&
           typeof pricingResult.data.combo_config === "object"
@@ -165,21 +179,11 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
     category: material.category,
   }));
 
-  const rateMap = new Map(
-    (materialResult.data ?? []).map((material) => [
-      material.material_code,
-      Number(material.cost_per_unit),
-    ])
-  );
-  const formMaterialRates = {
-    ms: rateMap.get("MS_CR") ?? 0,
-    wood: rateMap.get("WOOD_RUBBER_18") ?? 0,
-    stone: rateMap.get("GRANITE_JET_BLACK") ?? 0,
-  };
-
   const topOptions = allOptions.filter(
     (option) =>
-      option.option_group === "TOP_TAB" || option.option_group === "TOP_MATERIAL"
+      (option.option_group === "TOP_TAB" &&
+        (option.option_code === "WOOD" || option.option_code === "STONE")) ||
+      (option.option_group === "TOP_MATERIAL" && option.parent_code !== "METAL")
   );
   const sizeOptions =
     product?.product_type === "TABLE"
@@ -312,11 +316,7 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
         </div>
       </div>
 
-      <ProductForm
-        product={product}
-        pricing={pricing}
-        materialRates={formMaterialRates}
-      />
+      <ProductForm product={product} pricing={pricing} />
 
       {product && (
         <>
@@ -335,11 +335,17 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
             productId={product.id}
             productType={product.product_type}
             groups={availabilityGroups}
-            options={allOptions.map((option) => ({
-              option_group: option.option_group,
-              option_code: option.option_code,
-              label_en: option.label_en,
-            }))}
+            options={allOptions
+              .filter(
+                (option) =>
+                  option.option_code !== "FRAME_ONLY" &&
+                  !option.option_code.startsWith("SHEET_")
+              )
+              .map((option) => ({
+                option_group: option.option_group,
+                option_code: option.option_code,
+                label_en: option.label_en,
+              }))}
             disabledCodes={disabledOptionCodes}
           />
         </>

@@ -17,6 +17,24 @@ interface RawPricingRule {
   labor_cost: number | string | null;
   overhead_pct: number | string | null;
   retail_margin_pct: number | string | null;
+  direct_price: number | string | null;
+  granite_top_price: number | string | null;
+  wood_top_price: number | string | null;
+}
+
+function positiveNumberOrNull(value: number | string | null | undefined): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function simplePriceFor(rule: RawPricingRule): number | null {
+  const prices = [
+    positiveNumberOrNull(rule.direct_price),
+    positiveNumberOrNull(rule.granite_top_price),
+    positiveNumberOrNull(rule.wood_top_price),
+  ].filter((value): value is number => value !== null);
+
+  return prices.length > 0 ? Math.min(...prices) : null;
 }
 
 interface RawMaterialRate {
@@ -141,6 +159,12 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
       const rule = rulesMap.get(p.id);
       if (!rule) {
         results[p.id] = null;
+        continue;
+      }
+
+      const simplePrice = simplePriceFor(rule);
+      if (simplePrice !== null) {
+        results[p.id] = simplePrice;
         continue;
       }
 

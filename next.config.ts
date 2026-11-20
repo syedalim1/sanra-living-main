@@ -26,7 +26,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: ${supabase} https://*.supabase.co`,
+  `img-src 'self' data: blob: ${supabase} https://*.supabase.co https://images.unsplash.com`,
   "font-src 'self' data:",
   `connect-src 'self' ${supabase} https://*.supabase.co ${supabaseWs} wss://*.supabase.co https://wa.me${
     isProduction ? "" : " ws: http: https:"
@@ -102,6 +102,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: supabaseHostname(),
         pathname: "/storage/v1/object/sign/**",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
       },
     ],
   },

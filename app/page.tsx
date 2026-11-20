@@ -315,7 +315,7 @@ export default async function Home() {
               <div className="pt-4 border-t border-neutral-100 grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs text-neutral-600">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>10-Yr MIG Warranty</span>
+                  <span>3-Yr Welding Warranty</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -566,7 +566,7 @@ export default async function Home() {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Backed by 10-Year structural MIG warranty</span>
+                    <span>Backed by a 3-Yr welding warranty</span>
                   </li>
                 </ul>
               </div>

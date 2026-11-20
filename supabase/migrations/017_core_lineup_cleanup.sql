@@ -21,7 +21,7 @@ INSERT INTO public.configurator_options
 VALUES
   ('FRAME_MATERIAL', 'MS', NULL, 'Mild Steel (Powder Coated)', NULL, '#111111',
    'Heavy-gauge CR steel pipe with industrial powder coating',
-   '10-Yr MIG Structural Warranty', 1, true),
+   '3-Yr Welding Warranty', 1, true),
   ('FRAME_MATERIAL', 'SS', NULL, 'Stainless Steel (SS 202 / 304)', NULL, '#E5E5EA',
    'Food-grade stainless steel with mirror or matte finish',
    '3-Yr SS Replacement Guarantee', 2, true)

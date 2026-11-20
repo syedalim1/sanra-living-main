@@ -92,7 +92,7 @@ export default function Footer() {
               </li>
               <li className="flex items-start gap-2">
                 <FileCheck className="w-4 h-4 text-neutral-300 shrink-0 mt-0.5" />
-                <span>10-Yr MIG Structural Warranty</span>
+                <span>3-Yr Welding Warranty</span>
               </li>
             </ul>
           </div>

@@ -4,7 +4,7 @@ const TRUST_ITEMS = [
   "🏭 Direct SIDCO Coimbatore Factory",
   "🏆 11+ Years of Manufacturing Experience",
   "📄 GST Invoice",
-  "🛡️ 10-Yr MIG Warranty",
+  "🛡️ 3-Yr Welding Warranty",
   "🔄 3-Yr SS Replacement Guarantee",
 ];
 

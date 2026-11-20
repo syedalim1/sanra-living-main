@@ -26,6 +26,10 @@ import {
   productUrl,
 } from "@/lib/site";
 
+// Product data is fetched live from Supabase (metadata + configurator), so this
+// route is allowed to block instead of being validated for instant navigation.
+export const instant = false;
+
 interface SkuPageProps {
   params: Promise<{ sku: string }>;
 }
@@ -59,7 +63,7 @@ const KNOWN_PRODUCTS: Record<
     base_width_ft: 2.0,
     main_image_url: "/images/cat-dining-tables.svg",
     hover_blueprint_img: "/images/hero-workstation.svg",
-    warranty_text: "10-Yr MIG Structural Warranty",
+    warranty_text: "3-Yr Welding Warranty",
     is_knockdown_available: true,
     allowed_top_categories: ["FRAME_ONLY", "WOOD", "STONE"],
     top_overlay_note: "Paired with 100% Seasoned Grade-A Hardwood or 18mm Export-Grade Natural Granite",
@@ -74,7 +78,7 @@ const KNOWN_PRODUCTS: Record<
     base_width_ft: 2.5,
     main_image_url: "/images/cat-workstations.svg",
     hover_blueprint_img: "/images/hero-workstation.svg",
-    warranty_text: "10-Yr MIG Structural Warranty",
+    warranty_text: "3-Yr Welding Warranty",
     is_knockdown_available: true,
     allowed_top_categories: ["FRAME_ONLY", "WOOD", "STONE"],
     top_overlay_note: "Engineered for dual-monitor setups with cable management channel",
@@ -89,7 +93,7 @@ const KNOWN_PRODUCTS: Record<
     base_width_ft: 3.0,
     main_image_url: "/images/hero-workstation.svg",
     hover_blueprint_img: "/images/hero-workstation.svg",
-    warranty_text: "10-Yr MIG Structural Warranty",
+    warranty_text: "3-Yr Welding Warranty",
     is_knockdown_available: true,
     allowed_top_categories: ["FRAME_ONLY", "WOOD", "STONE"],
     top_overlay_note: "Heavy-duty cross-braced frame supporting up to 200 Kg load",

@@ -64,7 +64,12 @@ export function formatRateNumber(value: number): string {
 }
 
 export const MATERIAL_TAGS = ["MS", "SS", "WOOD", "GRANITE", "PLYWOOD"] as const;
-export const TOP_CATEGORIES = ["FRAME_ONLY", "WOOD", "STONE"] as const;
+export const TOP_CATEGORIES = ["WOOD", "STONE"] as const;
+export const FRAME_MATERIALS = ["MS", "SS"] as const;
+export const WARRANTY_PRESETS = {
+  MS: "3-Yr Welding Warranty",
+  SS: "3-Yr SS Replacement Guarantee",
+} as const;
 export const PRODUCT_TYPES = [
   "TABLE",
   "CHAIR",
@@ -114,7 +119,9 @@ export const ProductFormSchema = z.object({
   base_length_ft: DimensionSchema,
   base_width_ft: DimensionSchema,
   base_height_ft: z.number().min(0).max(200),
+  short_description: z.string().trim().max(2000).optional().default(""),
   pipe_spec: z.string().trim().max(160).optional().default(""),
+  frame_material: z.enum(FRAME_MATERIALS).default("MS"),
   use_cases: z.array(z.string().trim().min(1).max(40)).max(20),
   material_tags: z.array(z.string().trim().min(1).max(40)).max(20),
   sort_order: z.number().int().min(0).max(100000),
@@ -122,17 +129,9 @@ export const ProductFormSchema = z.object({
   is_active: z.boolean(),
   is_knockdown_available: z.boolean(),
   allowed_top_categories: z.array(z.enum(TOP_CATEGORIES)).max(TOP_CATEGORIES.length),
-  costing: z.object({
-    base_pipe_weight_18g_kg: NonNegativeMoney.max(10000),
-    top_area_sqft: NonNegativeMoney.max(10000),
-    consumables_cost: NonNegativeMoney.max(10000000),
-    labor_cost: NonNegativeMoney.max(10000000),
-    overhead_pct: NonNegativeMoney.max(100),
-    retail_margin_pct: NonNegativeMoney.max(100),
-    b2b_margin_pct: NonNegativeMoney.max(100),
-    finishing_cost: NonNegativeMoney.max(10000000),
-    b2b_moq: z.number().int().min(1).max(100000),
-  }),
+  direct_price: NonNegativeMoney.max(100000000).nullable().optional(),
+  granite_top_price: NonNegativeMoney.max(100000000).nullable().optional(),
+  wood_top_price: NonNegativeMoney.max(100000000).nullable().optional(),
 });
 
 export type ProductFormValues = z.infer<typeof ProductFormSchema>;
@@ -155,6 +154,12 @@ export function parseNumber(value: FormDataEntryValue | null, fallback = 0): num
   if (typeof value !== "string" || value.trim() === "") return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+export function parseNullableNumber(value: FormDataEntryValue | null): number | null {
+  if (typeof value !== "string" || value.trim() === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 export function parseBoolean(value: FormDataEntryValue | null): boolean {
