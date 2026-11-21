@@ -102,7 +102,7 @@ create index idx_config_options_active on configurator_options (is_active);
 -- ============================================================
 create table product_type_option_groups (
   id             uuid primary key default uuid_generate_v4(),
-  product_type   text not null check (product_type in ('TABLE','CHAIR','STAND','RACK','SS_UNIT')),
+  product_type   text not null check (product_type in ('TABLE','CHAIR','CHAIR_TABLE_SET','STAND','RACK','SS_UNIT')),
   option_group   text not null,
   group_title    text not null,
   sort_order     integer not null default 100,

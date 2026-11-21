@@ -6,7 +6,6 @@ import type { Metadata } from "next";
 import { ArrowDown, ArrowUp, Copy, Plus, Power } from "lucide-react";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createServerClient } from "@/lib/supabase/server";
-import { PRODUCT_TYPES, isProductType, type ProductType } from "@/lib/productTypeConfig";
 import OptionPreview from "@/app/admin/(dashboard)/options/OptionPreview";
 import {
   duplicateGroupAction,
@@ -26,7 +25,26 @@ export const metadata: Metadata = {
 export const instant = false;
 
 interface PageProps {
-  searchParams: Promise<{ type?: string }>;
+  searchParams: Promise<{ type?: string; inactive?: string }>;
+}
+
+type OptionsTabType = "TABLE" | "CHAIR" | "CHAIR_TABLE_SET";
+
+const OPTION_TABS: Array<{ type: OptionsTabType; label: string }> = [
+  { type: "TABLE", label: "TABLE" },
+  { type: "CHAIR", label: "CHAIR" },
+  { type: "CHAIR_TABLE_SET", label: "SET" },
+];
+const OPTION_TAB_TYPES = new Set<string>(OPTION_TABS.map((tab) => tab.type));
+
+const HIDDEN_GROUP_CODES = new Set(["ADDON", "GAUGE"]);
+const HIDDEN_OPTION_CODES = new Set(["FRAME_ONLY", "METAL", "GOLD", "RAW", "WHITE"]);
+
+function isHiddenOption(option: OptionRow): boolean {
+  return (
+    HIDDEN_OPTION_CODES.has(option.option_code) ||
+    option.option_code.startsWith("SHEET_")
+  );
 }
 
 interface GroupRow {
@@ -76,7 +94,11 @@ export default async function OptionsPage({ searchParams }: PageProps) {
   await requireAdmin();
   const db = createServerClient();
   const params = await searchParams;
-  const activeType: ProductType = isProductType(params.type) ? params.type : "TABLE";
+  const activeType: OptionsTabType =
+    params.type && OPTION_TAB_TYPES.has(params.type)
+      ? (params.type as OptionsTabType)
+      : "TABLE";
+  const showInactive = params.inactive === "1";
 
   const [
     groupResult,
@@ -117,11 +139,14 @@ export default async function OptionsPage({ searchParams }: PageProps) {
       .select("top_material_code, frame_color, size_option"),
   ]);
 
-  const groups = (groupResult.data ?? []) as GroupRow[];
-  const groupCodes = new Set(groups.map((group) => group.option_group));
-  const options = ((optionResult.data ?? []) as OptionRow[]).filter((option) =>
-    groupCodes.has(option.option_group)
+  const groups = ((groupResult.data ?? []) as GroupRow[]).filter(
+    (group) => !HIDDEN_GROUP_CODES.has(group.option_group)
   );
+  const groupCodes = new Set(groups.map((group) => group.option_group));
+  const options = ((optionResult.data ?? []) as OptionRow[])
+    .filter((option) => groupCodes.has(option.option_group))
+    .filter((option) => !isHiddenOption(option))
+    .filter((option) => showInactive || option.is_active !== false);
   const pricing = new Map(
     ((pricingResult.data ?? []) as PricingRow[]).map((row) => [row.option_code, row])
   );
@@ -157,20 +182,28 @@ export default async function OptionsPage({ searchParams }: PageProps) {
         </Link>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {PRODUCT_TYPES.map((type) => (
-          <Link
-            key={type}
-            href={`/admin/options?type=${type}`}
-            className={`px-3 py-2 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
-              type === activeType
-                ? "bg-[#111111] text-white border-[#111111]"
-                : "bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400"
-            }`}
-          >
-            {type.replace("_", " ")}
-          </Link>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          {OPTION_TABS.map((tab) => (
+            <Link
+              key={tab.type}
+              href={`/admin/options?type=${tab.type}`}
+              className={`px-3 py-2 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
+                tab.type === activeType
+                  ? "bg-[#111111] text-white border-[#111111]"
+                  : "bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400"
+              }`}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </div>
+        <Link
+          href={`/admin/options?type=${activeType}${showInactive ? "" : "&inactive=1"}`}
+          className="px-3 py-2 rounded-md text-[10px] font-bold uppercase tracking-wider border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-400"
+        >
+          {showInactive ? "Hide inactive" : "Show inactive"}
+        </Link>
       </div>
 
       <details className="bg-white rounded-xl border border-neutral-200">
@@ -430,7 +463,6 @@ export default async function OptionsPage({ searchParams }: PageProps) {
                         </summary>
                         <form
                           action={saveOptionAction}
-                          encType="multipart/form-data"
                           className="mt-3 grid gap-3 sm:grid-cols-2"
                         >
                           <input type="hidden" name="option_group" value={group.option_group} />
@@ -555,16 +587,18 @@ export default async function OptionsPage({ searchParams }: PageProps) {
                                 />
                               </label>
                             </div>
-                            <OptionPreview
-                              optionCode={option.option_code}
-                              products={products}
-                            />
                           </div>
 
                           <button className="justify-self-start px-4 py-2 rounded-md bg-[#111111] text-white text-[10px] font-bold uppercase tracking-wider">
                             Save option
                           </button>
                         </form>
+                        <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200">
+                          <OptionPreview
+                            optionCode={option.option_code}
+                            products={products}
+                          />
+                        </div>
                       </details>
                     </div>
                   );
@@ -578,7 +612,6 @@ export default async function OptionsPage({ searchParams }: PageProps) {
                   </summary>
                   <form
                     action={saveOptionAction}
-                    encType="multipart/form-data"
                     className="mt-3 grid gap-3 sm:grid-cols-2"
                   >
                     <input type="hidden" name="option_group" value={group.option_group} />

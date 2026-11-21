@@ -46,6 +46,12 @@ function isProductType(value: string): value is ProductType {
   return (PRODUCT_TYPES as string[]).includes(value);
 }
 
+type GroupProductType = ProductType | "CHAIR_TABLE_SET";
+
+function isGroupProductType(value: string): value is GroupProductType {
+  return isProductType(value) || value === "CHAIR_TABLE_SET";
+}
+
 function isDisplayStyle(value: string): value is (typeof DISPLAY_STYLES)[number] {
   return (DISPLAY_STYLES as readonly string[]).includes(value);
 }
@@ -100,7 +106,7 @@ export async function saveGroupAction(formData: FormData): Promise<void> {
   const db = createServerClient();
 
   const productType = field(formData, "product_type");
-  if (!isProductType(productType)) return;
+  if (!isGroupProductType(productType)) return;
 
   const title = field(formData, "group_title").slice(0, 80);
   if (!title) return;
@@ -173,7 +179,7 @@ export async function toggleGroupAction(formData: FormData): Promise<void> {
   const productType = field(formData, "product_type");
   const group = field(formData, "option_group");
   const next = field(formData, "next") === "true";
-  if (!isProductType(productType) || !group) return;
+  if (!isGroupProductType(productType) || !group) return;
 
   const { error } = await db
     .from("product_type_option_groups")
@@ -199,7 +205,7 @@ export async function moveGroupAction(formData: FormData): Promise<void> {
   const productType = field(formData, "product_type");
   const group = field(formData, "option_group");
   const direction = field(formData, "direction");
-  if (!isProductType(productType) || !group) return;
+  if (!isGroupProductType(productType) || !group) return;
 
   const { data } = await db
     .from("product_type_option_groups")
@@ -419,7 +425,7 @@ export async function duplicateGroupAction(formData: FormData): Promise<void> {
   const db = createServerClient();
   const productType = field(formData, "product_type");
   const group = field(formData, "option_group");
-  if (!isProductType(productType) || !group) return;
+  if (!isGroupProductType(productType) || !group) return;
 
   const { data: source } = await db
     .from("product_type_option_groups")

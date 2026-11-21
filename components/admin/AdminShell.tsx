@@ -10,10 +10,7 @@ import {
   Package,
   ClipboardList,
   Users,
-  FolderOpen,
   ListTree,
-  Layers,
-  ScrollText,
   LogOut,
   ExternalLink,
 } from "lucide-react";
@@ -23,11 +20,8 @@ const NAV_ITEMS = [
   { label: "Rates", href: "/admin/rates", icon: SlidersHorizontal },
   { label: "Options", href: "/admin/options", icon: ListTree },
   { label: "Products", href: "/admin/products", icon: Package },
-  { label: "Sets", href: "/admin/sets", icon: Layers },
   { label: "Orders", href: "/admin/orders", icon: ClipboardList },
   { label: "Leads", href: "/admin/leads", icon: Users, badgeKey: "leads" },
-  { label: "CAD Files", href: "/admin/cad", icon: FolderOpen },
-  { label: "Audit Log", href: "/admin/audit", icon: ScrollText },
 ];
 
 function SidebarContent({
