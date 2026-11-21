@@ -65,7 +65,7 @@ const KNOWN_PRODUCTS: Record<
     hover_blueprint_img: "/images/hero-workstation.svg",
     warranty_text: "3-Yr Welding Warranty",
     is_knockdown_available: true,
-    allowed_top_categories: ["FRAME_ONLY", "WOOD", "STONE"],
+    allowed_top_categories: ["WOOD", "STONE"],
     top_overlay_note: "Paired with 100% Seasoned Grade-A Hardwood or 18mm Export-Grade Natural Granite",
   },
   "IMS-WS-425": {
@@ -80,7 +80,7 @@ const KNOWN_PRODUCTS: Record<
     hover_blueprint_img: "/images/hero-workstation.svg",
     warranty_text: "3-Yr Welding Warranty",
     is_knockdown_available: true,
-    allowed_top_categories: ["FRAME_ONLY", "WOOD", "STONE"],
+    allowed_top_categories: ["WOOD", "STONE"],
     top_overlay_note: "Engineered for dual-monitor setups with cable management channel",
   },
   "IMS-DN-63": {
@@ -95,7 +95,7 @@ const KNOWN_PRODUCTS: Record<
     hover_blueprint_img: "/images/hero-workstation.svg",
     warranty_text: "3-Yr Welding Warranty",
     is_knockdown_available: true,
-    allowed_top_categories: ["FRAME_ONLY", "WOOD", "STONE"],
+    allowed_top_categories: ["WOOD", "STONE"],
     top_overlay_note: "Heavy-duty cross-braced frame supporting up to 200 Kg load",
   },
   "IMS-CH-01": {
@@ -326,8 +326,8 @@ export default async function SkuPage({ params }: SkuPageProps) {
         warranty_text: prodData.warranty_text,
         is_knockdown_available: prodData.is_knockdown_available,
         allowed_top_categories: Array.isArray(prodData.allowed_top_categories)
-          ? prodData.allowed_top_categories
-          : ["FRAME_ONLY", "WOOD", "STONE"],
+          ? prodData.allowed_top_categories.filter((c: string) => c !== "FRAME_ONLY")
+          : ["WOOD", "STONE"],
         top_overlay_note: safeOverlayNote(prodData.top_overlay_note),
       };
 

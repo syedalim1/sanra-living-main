@@ -26,7 +26,8 @@ import {
   FileText,
 } from "lucide-react";
 
-const CORE_TOP_TAB_CODES = new Set(["FRAME_ONLY", "WOOD", "STONE"]);
+// FRAME_ONLY excluded from public configurator — only Granite & Wood shown to customers
+const CORE_TOP_TAB_CODES = new Set(["WOOD", "STONE"]);
 const CORE_TOP_MATERIAL_CODES = new Set([
   "RUBBER_HONEY_TEAK",
   "BWR_WARM_TEAK",
@@ -128,7 +129,7 @@ export default function TableConfigurator({
   const initialTopTab =
     topTabs.some((t) => t.option_code === urlTopTab)
       ? urlTopTab!
-      : topTabs.find((t) => t.option_code === "WOOD")?.option_code || topTabs[0]?.option_code || "FRAME_ONLY";
+      : topTabs.find((t) => t.option_code === "WOOD")?.option_code || topTabs[0]?.option_code || "WOOD";
 
   const availableMaterialsForTab = topMaterials.filter((m) => m.parent_code === initialTopTab);
   const urlTopMaterial = searchParams.get("top_material");
@@ -526,8 +527,6 @@ export default function TableConfigurator({
       ? "STONE"
       : selectedTopTab === "WOOD"
       ? "WOOD"
-      : selectedTopTab === "FRAME_ONLY"
-      ? "FRAME_ONLY"
       : selectedTopTab;
 
   const readTopCategoryImage = (
@@ -622,12 +621,12 @@ export default function TableConfigurator({
         { icon: Sparkles, text: "Natural Grain Architecture" },
       ];
     }
-    // FRAME_ONLY
+    // Default fallback
     return [
       { icon: Shield, text: "Heavy Structural Frame" },
-      { icon: Zap, text: "Top-Mount Hole Provisions Included" },
       { icon: Layers, text: "Stable Leveling Feet" },
-      { icon: Sparkles, text: "Use with Custom Granite / Wood" },
+      { icon: Sparkles, text: "Factory Built for Daily Use" },
+      { icon: Droplets, text: "Weatherproof Finish" },
     ];
   };
 
@@ -646,10 +645,8 @@ export default function TableConfigurator({
   );
   const currentSizeOption = sizes.find((s) => s.option_code === selectedSize);
   const currentTopLabel =
-    selectedTopTab === "FRAME_ONLY"
-      ? "Frame Only"
-      : topTabs.find((tab) => tab.option_code === selectedTopTab)?.label_en ??
-        selectedTopTab;
+    topTabs.find((tab) => tab.option_code === selectedTopTab)?.label_en ??
+    selectedTopTab;
 
   const gaugeLabel = (option: ConfigOption) => {
     const short = option.label_en.split("(")[0].trim();
@@ -842,18 +839,16 @@ export default function TableConfigurator({
             {section(
               "Top",
               "Top",
-              selectedTopTab === "FRAME_ONLY"
-                ? "Frame Only"
-                : currentTopOption?.label_en ?? currentTopLabel,
+              currentTopOption?.label_en ?? currentTopLabel,
               <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-1.5" role="tablist" aria-label="Top type">
                   {topTabs.map((tab) => {
                     const shortLabel =
                       tab.option_code === "WOOD"
-                        ? "Wood"
+                        ? "Wood Top"
                         : tab.option_code === "STONE"
-                        ? "Granite"
-                        : "Frame Only";
+                        ? "Granite Top"
+                        : tab.option_code;
                     return (
                       <button
                         key={tab.option_code}
@@ -873,13 +868,8 @@ export default function TableConfigurator({
                   })}
                 </div>
 
-                {selectedTopTab === "FRAME_ONLY" ? (
-                  <p className="text-sm text-neutral-600">
-                    Bring your own top. Mounting brackets included.
-                  </p>
-                ) : (
-                  <>
-                    {Object.entries(materialGroups).map(([groupName, items]) => (
+                <>
+                  {Object.entries(materialGroups).map(([groupName, items]) => (
                       <div key={groupName}>
                         <p className="text-xs uppercase tracking-wider text-neutral-400">
                           {groupName}
@@ -908,14 +898,13 @@ export default function TableConfigurator({
                         </div>
                       </div>
                     ))}
-                    <p className="text-sm text-neutral-900">
-                      {currentTopOption?.label_en ?? ""}
-                    </p>
-                    {badgeLine && (
-                      <p className="text-xs text-neutral-500">{badgeLine}</p>
-                    )}
-                  </>
-                )}
+                  <p className="text-sm text-neutral-900">
+                    {currentTopOption?.label_en ?? ""}
+                  </p>
+                  {badgeLine && (
+                    <p className="text-xs text-neutral-500">{badgeLine}</p>
+                  )}
+                </>
               </div>
             )}
 
@@ -1021,70 +1010,17 @@ export default function TableConfigurator({
               </div>
             )}
 
-            {section(
-              "Size",
-              "Size",
-              currentSizeOption?.label_en ?? selectedSize,
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Size">
-                  {sizes.map((size) => (
-                    <button
-                      key={size.option_code}
-                      type="button"
-                      role="radio"
-                      aria-checked={selectedSize === size.option_code}
-                      onClick={() => handleSizeChange(size.option_code)}
-                      className={`min-h-[44px] px-3 rounded-md border text-xs font-semibold ${
-                        selectedSize === size.option_code
-                          ? "border-neutral-900 text-neutral-900"
-                          : "border-neutral-200 text-neutral-600"
-                      }`}
-                    >
-                      {size.label_en}
-                    </button>
-                  ))}
-                </div>
-                {selectedSize === "CUSTOM" ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <label className="text-xs uppercase tracking-wider text-neutral-500">
-                      Length (ft)
-                      <input
-                        type="number"
-                        min="1"
-                        max="12"
-                        step="0.1"
-                        value={customLength}
-                        onChange={(event) => handleCustomLengthChange(event.target.value)}
-                        onBlur={commitCustomLength}
-                        className="mt-1 w-full min-h-[44px] rounded-md border border-neutral-300 px-3 text-sm font-normal text-neutral-900"
-                      />
-                    </label>
-                    <label className="text-xs uppercase tracking-wider text-neutral-500">
-                      Width (ft)
-                      <input
-                        type="number"
-                        min="1"
-                        max="12"
-                        step="0.1"
-                        value={customWidth}
-                        onChange={(event) => handleCustomWidthChange(event.target.value)}
-                        onBlur={commitCustomWidth}
-                        className="mt-1 w-full min-h-[44px] rounded-md border border-neutral-300 px-3 text-sm font-normal text-neutral-900"
-                      />
-                    </label>
-                    {!customDimsValid && (
-                      <p className="col-span-2 text-xs text-red-700">
-                        Enter a length and width between 1 and 12 ft.
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-xs text-neutral-500">
-                    {currentSizeOption?.spec_note || "Standard factory size"}
-                  </p>
-                )}
+            {/* Fixed Dimensions Display — replaces the old SIZE dropdown */}
+            <div className="border-b border-neutral-200 last:border-b-0">
+              <div className="min-h-[44px] flex items-center justify-between gap-4 py-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                  Frame Size
+                </span>
+                <span className="text-sm text-neutral-800 font-medium">
+                  {Number(product.base_length_ft)} × {Number(product.base_width_ft)} ft
+                </span>
               </div>
-            )}
+            </div>
 
             {section(
               "Delivery",

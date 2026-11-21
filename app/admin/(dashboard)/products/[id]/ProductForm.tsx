@@ -6,14 +6,10 @@ import AdminToast from "@/components/admin/Toast";
 import { saveProductAction } from "@/app/admin/(dashboard)/products/actions";
 import {
   MATERIAL_TAGS,
-  PRODUCT_TYPES,
   TOP_CATEGORIES,
   WARRANTY_PRESETS,
 } from "@/lib/admin/validation";
-import {
-  CUSTOM_PRODUCT_TYPE_VALUE,
-  PRODUCT_CATEGORY_OPTIONS,
-} from "@/lib/catalogCategories";
+import { PRODUCT_CATEGORY_OPTIONS } from "@/lib/catalogCategories";
 import { compressImage, formatBytes } from "@/lib/imageCompression";
 import type {
   AdminPricingRule,
@@ -296,6 +292,14 @@ function ImageDropField({
   );
 }
 
+const PRODUCT_TYPE_OPTIONS = ["CHAIR", "TABLE", "CHAIR_TABLE_SET"] as const;
+const PRODUCT_TYPE_OPTION_SET = new Set<string>(PRODUCT_TYPE_OPTIONS);
+const CATEGORY_PRODUCT_TYPE: Record<string, string> = {
+  "SS & MS Chairs": "CHAIR",
+  "SS & MS Tables": "TABLE",
+  "SS & MS Chair & Table Sets": "CHAIR_TABLE_SET",
+};
+
 const TOP_CATEGORY_PRODUCT_TYPES = new Set([
   "TABLE",
   "CHAIR_TABLE_SET",
@@ -309,15 +313,16 @@ export default function ProductForm({
   product: AdminProduct | null;
   pricing: AdminPricingRule | null;
 }) {
-  const initialProductType = product?.product_type ?? "TABLE";
+  const initialCategory = product?.category ?? PRODUCT_CATEGORY_OPTIONS[0].value;
+  const initialProductType =
+    (product?.product_type && PRODUCT_TYPE_OPTION_SET.has(product.product_type)
+      ? product.product_type
+      : CATEGORY_PRODUCT_TYPE[initialCategory]) ?? "CHAIR";
   const initialFrameMaterial = (product?.frame_material ?? "MS").toUpperCase();
 
   const [state, formAction, pending] = useActionState(saveProductAction, initialState);
   const [productType, setProductType] = useState(initialProductType);
-  const [customProductType, setCustomProductType] = useState("");
-  const [category, setCategory] = useState(
-    product?.category ?? PRODUCT_CATEGORY_OPTIONS[0].value
-  );
+  const [category, setCategory] = useState(initialCategory);
   const [frameMaterial, setFrameMaterial] = useState(
     FRAME_MATERIAL_LABELS[initialFrameMaterial] ? initialFrameMaterial : "MS"
   );
@@ -333,6 +338,9 @@ export default function ProductForm({
     if (filtered.length > 0) return filtered;
     return TOP_CATEGORY_PRODUCT_TYPES.has(initialProductType) ? ["WOOD", "STONE"] : [];
   });
+  const [materialTags, setMaterialTags] = useState<string[]>(() => [
+    ...(product?.material_tags ?? []),
+  ]);
   const [closedError, setClosedError] = useState<string | null>(null);
 
   const combo = (pricing?.combo_config ?? {}) as Record<string, unknown>;
@@ -355,8 +363,35 @@ export default function ProductForm({
     );
   }
 
+  function toggleMaterialTag(tag: string) {
+    setMaterialTags((current) =>
+      current.includes(tag)
+        ? current.filter((entry) => entry !== tag)
+        : [...current, tag]
+    );
+  }
+
+  function updateProductType(nextType: string) {
+    if (nextType === productType) return;
+    setProductType(nextType);
+    if (nextType === "TABLE" || nextType === "CHAIR_TABLE_SET") {
+      setTopCategories((current) =>
+        current.length === 0 ? ["WOOD", "STONE"] : current
+      );
+    }
+  }
+
+  function handleCategoryChange(nextCategory: string) {
+    setCategory(nextCategory);
+    const nextType = CATEGORY_PRODUCT_TYPE[nextCategory];
+    if (nextType) updateProductType(nextType);
+  }
+
   function handleFrameMaterialChange(nextMaterial: string) {
     setFrameMaterial(nextMaterial);
+    setMaterialTags((current) =>
+      current.includes(nextMaterial) ? current : [...current, nextMaterial]
+    );
     const nextDefault = DEFAULT_WARRANTY[nextMaterial] ?? WARRANTY_PRESETS.MS;
     const isKnownPreset =
       warranty === WARRANTY_PRESETS.MS || warranty === WARRANTY_PRESETS.SS;
@@ -452,7 +487,7 @@ export default function ProductForm({
             <select
               name="category"
               value={category}
-              onChange={(event) => setCategory(event.target.value)}
+              onChange={(event) => handleCategoryChange(event.target.value)}
               required
               className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
             >
@@ -486,41 +521,18 @@ export default function ProductForm({
             <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
               Product type
             </span>
-            <input
-              type="hidden"
-              name="product_type"
-              value={
-                productType === CUSTOM_PRODUCT_TYPE_VALUE
-                  ? customProductType
-                  : productType
-              }
-            />
             <select
+              name="product_type"
               value={productType}
-              onChange={(event) => setProductType(event.target.value)}
+              onChange={(event) => updateProductType(event.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
             >
-              {productType &&
-                !(PRODUCT_TYPES as readonly string[]).includes(productType) && (
-                  <option value={productType}>{productType}</option>
-                )}
-              {PRODUCT_TYPES.map((type) => (
+              {PRODUCT_TYPE_OPTIONS.map((type) => (
                 <option key={type} value={type}>
                   {PRODUCT_TYPE_LABELS[type] ?? type}
                 </option>
               ))}
             </select>
-            {productType === CUSTOM_PRODUCT_TYPE_VALUE && (
-              <input
-                value={customProductType}
-                onChange={(event) =>
-                  setCustomProductType(event.target.value.toUpperCase())
-                }
-                placeholder="Type custom product type"
-                required
-                className="mt-2 w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            )}
           </label>
 
           <label className="space-y-1.5">
@@ -671,7 +683,7 @@ export default function ProductForm({
               Combo / Set Configuration
             </h2>
             <p className="text-[11px] text-neutral-500 mt-1">
-              Used by CHAIR_TABLE_SET and BENCH_DESK costing.
+              Set composition used for chair &amp; table combos.
             </p>
           </div>
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -717,46 +729,6 @@ export default function ProductForm({
                 min="0"
                 step="1"
                 defaultValue={Number(combo.chair_quantity ?? 4)}
-                className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm"
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                Single chair factory cost (₹)
-              </span>
-              <input
-                name="single_chair_cost"
-                type="number"
-                min="0"
-                step="0.01"
-                defaultValue={Number(combo.single_chair_cost ?? 0)}
-                className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm"
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                Per chair metal weight (kg)
-              </span>
-              <input
-                name="chair_metal_weight_kg"
-                type="number"
-                min="0"
-                step="0.01"
-                defaultValue={Number(combo.chair_metal_weight_kg ?? 0)}
-                className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm"
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                Combo discount (%)
-              </span>
-              <input
-                name="combo_discount_pct"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                defaultValue={Number(combo.combo_discount_pct ?? 0)}
                 className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm"
               />
             </label>
@@ -857,7 +829,8 @@ export default function ProductForm({
                     type="checkbox"
                     name="material_tags"
                     value={tag}
-                    defaultChecked={product?.material_tags.includes(tag)}
+                    checked={materialTags.includes(tag)}
+                    onChange={() => toggleMaterialTag(tag)}
                     className="w-3.5 h-3.5 accent-black"
                   />
                   {tag}
@@ -918,6 +891,7 @@ export default function ProductForm({
               step="0.01"
               defaultValue={valueOrEmpty(pricing?.direct_price)}
               placeholder="e.g. 4999"
+              required
               className="w-full px-3 py-2.5 rounded-lg border border-neutral-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-black"
             />
             <span className="block text-[10px] text-neutral-500">
