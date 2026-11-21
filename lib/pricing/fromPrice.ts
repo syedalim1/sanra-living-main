@@ -27,12 +27,46 @@ function positiveNumberOrNull(value: number | string | null | undefined): number
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function simplePriceFor(rule: RawPricingRule): number | null {
-  const prices = [
-    positiveNumberOrNull(rule.direct_price),
-    positiveNumberOrNull(rule.granite_top_price),
-    positiveNumberOrNull(rule.wood_top_price),
-  ].filter((value): value is number => value !== null);
+const TOP_CATEGORY_PRODUCT_TYPES = new Set(["TABLE", "CHAIR_TABLE_SET"]);
+
+function allowedTopTabs(product: RawProductData): string[] {
+  const raw = Array.isArray(product.allowed_top_categories)
+    ? (product.allowed_top_categories as string[])
+    : [];
+  const allowed = [
+    ...new Set(
+      raw
+        .map((code) => (code === "GRANITE" ? "STONE" : code))
+        .filter((code) => code === "WOOD" || code === "STONE")
+    ),
+  ];
+
+  // The public configurator shows both top families when none are restricted.
+  return allowed.length > 0 ? allowed : ["WOOD", "STONE"];
+}
+
+function simplePriceFor(
+  rule: RawPricingRule,
+  product: RawProductData
+): number | null {
+  const direct = positiveNumberOrNull(rule.direct_price);
+
+  // Non-table products use direct_price only; top overrides never apply.
+  if (!TOP_CATEGORY_PRODUCT_TYPES.has(product.product_type)) {
+    return direct;
+  }
+
+  // Mirror priceOverrideFor(): a top-specific price wins for that top,
+  // otherwise direct_price is the fallback. Only allowed tops count.
+  const prices: number[] = [];
+  for (const tab of allowedTopTabs(product)) {
+    const specific =
+      tab === "STONE"
+        ? positiveNumberOrNull(rule.granite_top_price)
+        : positiveNumberOrNull(rule.wood_top_price);
+    const price = specific ?? direct;
+    if (price !== null) prices.push(price);
+  }
 
   return prices.length > 0 ? Math.min(...prices) : null;
 }
@@ -67,11 +101,11 @@ function roundUpToClean99(val: number): number {
  */
 async function computeAllFromPricesInternal(): Promise<Record<string, number | null>> {
   try {
-    // 1. Fetch active products
+    // 1. Fetch products. Archived products are included so the admin product
+    // list can still show their price; public pages only render active rows.
     const { data: products, error: pErr } = await supabaseServer
       .from("products")
-      .select("id, product_type, allowed_top_categories")
-      .eq("is_active", true);
+      .select("id, product_type, allowed_top_categories");
 
     if (pErr || !products || products.length === 0) {
       return {};
@@ -139,13 +173,12 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
       materialMap.set(m.material_code, Number(m.cost_per_unit));
     }
 
-    // Identify MS_CR rate
+    // Identify MS_CR rate. A missing rate only blocks formula-priced products;
+    // products with direct_price overrides (handled above) still get a price.
     const msCrRateObj = materials.find((m) => m.material_code === "MS_CR");
-    const msCrRate = msCrRateObj ? Number(msCrRateObj.cost_per_unit) : null;
-
-    if (msCrRate === null || isNaN(msCrRate) || msCrRate <= 0) {
-      return {};
-    }
+    const rawMsCrRate = msCrRateObj ? Number(msCrRateObj.cost_per_unit) : NaN;
+    const msCrRate =
+      Number.isFinite(rawMsCrRate) && rawMsCrRate > 0 ? rawMsCrRate : null;
 
     const qtyDiscount4 = globals.get("QTY_DISCOUNT_4_9_PCT") ?? 5;
     const qtyDiscount10 = globals.get("QTY_DISCOUNT_10_PLUS_PCT") ?? 12;
@@ -162,7 +195,7 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
         continue;
       }
 
-      const simplePrice = simplePriceFor(rule);
+      const simplePrice = simplePriceFor(rule, p);
       if (simplePrice !== null) {
         results[p.id] = simplePrice;
         continue;
@@ -188,6 +221,10 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
       }
 
       if (p.product_type === "CHAIR") {
+        if (msCrRate === null) {
+          results[p.id] = null;
+          continue;
+        }
         const cheapestRexineFlat = Math.min(
           ...[ 
             optionFlat("REXINE_BLACK"),
@@ -221,6 +258,10 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
       }
 
       if (p.product_type === "STAND") {
+        if (msCrRate === null) {
+          results[p.id] = null;
+          continue;
+        }
         const price = calculateTypePrice({
           baseWeight,
           metalRate: msCrRate,
@@ -240,6 +281,10 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
       }
 
       if (p.product_type === "RACK") {
+        if (msCrRate === null) {
+          results[p.id] = null;
+          continue;
+        }
         const price = calculateTypePrice({
           baseWeight,
           metalRate: msCrRate,
@@ -292,6 +337,11 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
           qtyDiscount10PlusPct: qtyDiscount10,
         });
         results[p.id] = price.unit_price;
+        continue;
+      }
+
+      if (msCrRate === null) {
+        results[p.id] = null;
         continue;
       }
 

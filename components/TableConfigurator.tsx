@@ -66,6 +66,7 @@ interface TableConfiguratorProps {
     hover_blueprint_img?: string | null;
     warranty_text: string;
     allowed_top_categories: string[];
+    frame_material?: string | null;
     top_overlay_note?: string | null;
     base_height_ft?: number | null;
     pipe_spec?: string | null;
@@ -139,8 +140,11 @@ export default function TableConfigurator({
       : availableMaterialsForTab[0]?.option_code || null;
 
   const urlFrameMaterial = searchParams.get("frame_material");
+  const productFrameMaterial = product.frame_material?.toUpperCase();
   const initialFrameMaterial: "MS" | "SS" = isFrameMaterial(urlFrameMaterial)
     ? urlFrameMaterial
+    : isFrameMaterial(productFrameMaterial)
+    ? productFrameMaterial
     : "MS";
 
   const urlGauge = searchParams.get("gauge");
@@ -260,7 +264,7 @@ export default function TableConfigurator({
             params.set(key, value);
           }
         }
-        router.replace(`₹${params.toString()}`, { scroll: false });
+        router.replace(`?${params.toString()}`, { scroll: false });
       });
     },
     [router, searchParams]
@@ -542,9 +546,17 @@ export default function TableConfigurator({
     return match?.[1] ?? null;
   };
 
+  const legacyTopCategoryKey = topCategoryKey === "STONE" ? "GRANITE" : null;
+
   const topVariantImage =
     readTopCategoryImage(topCategoryImages, topCategoryKey) ??
-    readTopCategoryImage(product.top_category_images ?? null, topCategoryKey);
+    (legacyTopCategoryKey
+      ? readTopCategoryImage(topCategoryImages, legacyTopCategoryKey)
+      : null) ??
+    readTopCategoryImage(product.top_category_images ?? null, topCategoryKey) ??
+    (legacyTopCategoryKey
+      ? readTopCategoryImage(product.top_category_images ?? null, legacyTopCategoryKey)
+      : null);
 
   const mainImageUrl =
     (activeThumbnailIndex === 0 ? topVariantImage : null) ||

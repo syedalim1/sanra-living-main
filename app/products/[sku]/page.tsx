@@ -8,7 +8,6 @@ import ProductConfiguratorLoader from "@/components/ProductConfiguratorLoader";
 import { supabaseServer } from "@/lib/supabase/server";
 import {
   FALLBACK_OPTIONS,
-  FRAME_MATERIAL_OPTIONS,
   mergeConfigOptions,
   type ConfigOption,
 } from "@/lib/configuratorOptions";
@@ -33,6 +32,37 @@ export const instant = false;
 interface SkuPageProps {
   params: Promise<{ sku: string }>;
 }
+
+type PublicProduct = {
+  id: string;
+  sku: string;
+  name: string;
+  category: string;
+  product_type: string;
+  base_length_ft: number;
+  base_width_ft: number;
+  base_height_ft?: number;
+  allowed_top_categories: string[];
+  frame_material?: string | null;
+  is_knockdown_available: boolean;
+  warranty_text: string;
+  main_image_url: string;
+  hover_blueprint_img?: string | null;
+  top_category_images?: Record<string, string>;
+  gallery_images?: string[];
+  use_cases?: string[];
+  material_tags?: string[];
+  sort_order?: number;
+  top_overlay_note?: string | null;
+};
+
+type PublicVariant = {
+  top_material_code?: string | null;
+  frame_color?: string | null;
+  preview_image_url: string;
+  size_option?: string | null;
+  selection_key?: string | null;
+};
 
 // Fallback known products for offline / pre-seed verification
 const KNOWN_PRODUCTS: Record<
@@ -287,8 +317,8 @@ export default async function SkuPage({ params }: SkuPageProps) {
   const { sku } = await params;
   const upperSku = sku.toUpperCase();
 
-  let product: any = null;
-  let visualVariants: any[] = [];
+  let product: PublicProduct | null = null;
+  let visualVariants: PublicVariant[] = [];
   let configuratorOptions: ConfigOption[] = FALLBACK_OPTIONS;
   let typeGroups: OptionGroupRow[] = [];
   let pipeSpec: string | null = null;
@@ -297,7 +327,7 @@ export default async function SkuPage({ params }: SkuPageProps) {
     const { data: prodData } = await supabaseServer
       .from("products")
       .select(
-        "id, sku, name, category, product_type, base_length_ft, base_width_ft, base_height_ft, allowed_top_categories, is_knockdown_available, warranty_text, main_image_url, hover_blueprint_img, is_active, use_cases, material_tags, sort_order, top_overlay_note, top_category_images, gallery_images"
+        "id, sku, name, category, product_type, base_length_ft, base_width_ft, base_height_ft, allowed_top_categories, frame_material, is_knockdown_available, warranty_text, main_image_url, hover_blueprint_img, is_active, use_cases, material_tags, sort_order, top_overlay_note, top_category_images, gallery_images"
       )
       .eq("sku", upperSku)
       .eq("is_active", true)
@@ -328,6 +358,7 @@ export default async function SkuPage({ params }: SkuPageProps) {
         allowed_top_categories: Array.isArray(prodData.allowed_top_categories)
           ? prodData.allowed_top_categories.filter((c: string) => c !== "FRAME_ONLY")
           : ["WOOD", "STONE"],
+        frame_material: prodData.frame_material ?? null,
         top_overlay_note: safeOverlayNote(prodData.top_overlay_note),
       };
 
@@ -413,27 +444,21 @@ export default async function SkuPage({ params }: SkuPageProps) {
       .eq("product_id", product.id);
 
     if (availability && availability.length > 0) {
-      const enabled = new Set(
-        availability.filter((row) => row.is_enabled).map((row) => row.option_code)
+      const tracked = new Set(
+        availability.map((row) => row.option_code)
       );
       const disabled = new Set(
         availability.filter((row) => !row.is_enabled).map((row) => row.option_code)
       );
-      const frameMaterialTracked = FRAME_MATERIAL_OPTIONS.some((option) =>
-        enabled.has(option.option_code) || disabled.has(option.option_code)
-      );
 
-      typeOptions = typeOptions.filter((option) => {
-        if (option.option_group === "FRAME_MATERIAL" && !frameMaterialTracked) {
-          return true;
-        }
-        return enabled.size > 0
-          ? enabled.has(option.option_code)
-          : !disabled.has(option.option_code);
-      });
-    } else if (availability && availability.length === 0) {
-      typeOptions = [];
+      // Options without a row (including newly added options) stay available;
+      // only options explicitly recorded as disabled are hidden.
+      typeOptions = typeOptions.filter(
+        (option) => !tracked.has(option.option_code) || !disabled.has(option.option_code)
+      );
     }
+    // No availability rows means every option is available by default;
+    // the admin only writes rows after an option is explicitly toggled.
   } catch {
     // Keep all active options when availability cannot be loaded.
   }

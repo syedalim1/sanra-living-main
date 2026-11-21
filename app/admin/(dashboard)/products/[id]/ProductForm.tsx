@@ -338,9 +338,11 @@ export default function ProductForm({
     if (filtered.length > 0) return filtered;
     return TOP_CATEGORY_PRODUCT_TYPES.has(initialProductType) ? ["WOOD", "STONE"] : [];
   });
-  const [materialTags, setMaterialTags] = useState<string[]>(() => [
-    ...(product?.material_tags ?? []),
-  ]);
+  const [materialTags, setMaterialTags] = useState<string[]>(() => {
+    const tags = [...(product?.material_tags ?? [])];
+    if (!tags.includes(frameMaterial)) tags.push(frameMaterial);
+    return tags;
+  });
   const [closedError, setClosedError] = useState<string | null>(null);
 
   const combo = (pricing?.combo_config ?? {}) as Record<string, unknown>;

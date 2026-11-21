@@ -99,6 +99,21 @@ const FALLBACK_PRODUCTS: CatalogProduct[] = [
   },
 ];
 
+interface CatalogRow {
+  id: string;
+  sku: string;
+  name: string;
+  category: string;
+  product_type: string;
+  base_length_ft: number | string;
+  base_width_ft: number | string;
+  main_image_url: string | null;
+  hover_blueprint_img?: string | null;
+  from_price?: number | null;
+  use_cases?: string[] | null;
+  material_tags?: string[] | null;
+}
+
 interface ProductsPageProps {
   searchParams: Promise<{
     category?: string;
@@ -115,7 +130,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const { category, use, material, top, budget, sort = "recommended" } = resolvedParams;
 
   // 1. Fetch products from Supabase
-  let rawProducts: any[] = [];
+  let rawProducts: CatalogRow[] = [];
 
   if (HAS_SUPABASE) {
     try {
@@ -150,21 +165,25 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   // 2. Fetch computed from_prices
   const priceMap = HAS_SUPABASE ? await getCachedFromPrices() : {};
 
-  // Attach from_price
-  let catalog: CatalogProduct[] = rawProducts.map((p) => ({
-    id: p.id,
-    sku: p.sku,
-    name: p.name,
-    category: p.category,
-    product_type: p.product_type,
-    base_length_ft: Number(p.base_length_ft),
-    base_width_ft: Number(p.base_width_ft),
-    main_image_url: p.main_image_url,
-    hover_blueprint_img: p.hover_blueprint_img,
-    from_price: HAS_SUPABASE ? priceMap[p.id] ?? null : null,
-    use_cases: p.use_cases || [],
-    material_tags: p.material_tags || [],
-  }));
+  // Attach from_price. Fallback rows carry their own display price so the
+  // catalog still shows prices when Supabase is not configured or unreachable.
+  let catalog: CatalogProduct[] = rawProducts.map((p) => {
+    const fallbackPrice = typeof p.from_price === "number" ? p.from_price : null;
+    return {
+      id: p.id,
+      sku: p.sku,
+      name: p.name,
+      category: p.category,
+      product_type: p.product_type,
+      base_length_ft: Number(p.base_length_ft),
+      base_width_ft: Number(p.base_width_ft),
+      main_image_url: p.main_image_url,
+      hover_blueprint_img: p.hover_blueprint_img,
+      from_price: HAS_SUPABASE ? priceMap[p.id] ?? fallbackPrice : fallbackPrice,
+      use_cases: p.use_cases || [],
+      material_tags: p.material_tags || [],
+    };
+  });
 
   // 3. Apply Filters on Server
   if (category) {

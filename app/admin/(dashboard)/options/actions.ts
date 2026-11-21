@@ -10,6 +10,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { processAdminImage, buildStoragePath, uploadImageBuffer } from "@/lib/admin/images";
 import { validateImageSize } from "@/lib/admin/validation";
 import { PRODUCT_TYPES, type ProductType } from "@/lib/productTypeConfig";
+import { FALLBACK_OPTIONS } from "@/lib/configuratorOptions";
 import { calculateConfigPrice } from "@/lib/pricing/configPrice";
 
 const DISPLAY_STYLES = ["SWATCH", "CARD", "PILL", "CHECKBOX"] as const;
@@ -533,16 +534,27 @@ export async function saveAvailabilityAction(formData: FormData): Promise<void> 
     .select("option_code, option_group")
     .in("option_group", groupCodes);
 
-  const allOptions = options ?? [];
+  // Availability rows are keyed by option_code only. Include the built-in
+  // catalogue so options that exist in the UI but not in this DB snapshot
+  // (for example METAL_TYPE SS202, whose code is shared with GAUGE) persist too.
+  const optionCodes = new Set<string>();
+  for (const option of FALLBACK_OPTIONS) {
+    if (groupCodes.includes(option.option_group)) {
+      optionCodes.add(option.option_code);
+    }
+  }
+  for (const option of options ?? []) {
+    optionCodes.add(option.option_code);
+  }
 
   await db.from("product_option_availability").delete().eq("product_id", productId);
 
-  if (allOptions.length > 0) {
+  if (optionCodes.size > 0) {
     await db.from("product_option_availability").insert(
-      allOptions.map((option) => ({
+      [...optionCodes].map((code) => ({
         product_id: productId,
-        option_code: option.option_code,
-        is_enabled: enabledCodes.has(option.option_code),
+        option_code: code,
+        is_enabled: enabledCodes.has(code),
       }))
     );
   }

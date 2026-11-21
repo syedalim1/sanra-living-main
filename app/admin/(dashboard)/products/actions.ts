@@ -142,6 +142,11 @@ export async function saveProductAction(
     }
 
     const values = parsed.data;
+
+    if (values.direct_price == null) {
+      return { ok: false, error: "Enter the direct selling price before saving." };
+    }
+
     const skuCheck = await db
       .from("products")
       .select("id")
@@ -218,9 +223,6 @@ export async function saveProductAction(
             set_configuration: formString(formData.get("set_configuration")),
             seating_type: formString(formData.get("seating_type")),
             chair_quantity: Math.max(0, Math.trunc(parseNumber(formData.get("chair_quantity"), 0))),
-            single_chair_cost: parseNumber(formData.get("single_chair_cost"), 0),
-            chair_metal_weight_kg: parseNumber(formData.get("chair_metal_weight_kg"), 0),
-            combo_discount_pct: parseNumber(formData.get("combo_discount_pct"), 0),
           }
         : {};
 

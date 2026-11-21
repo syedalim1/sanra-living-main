@@ -294,7 +294,7 @@ export default function TypeConfigurator({
         for (const [group, code] of Object.entries(next)) {
           params.set(selectionParam(group), code);
         }
-        router.replace(`₹${params.toString()}`, { scroll: false });
+        router.replace(`?${params.toString()}`, { scroll: false });
       });
     },
     [groups, router, searchParams]
@@ -331,7 +331,7 @@ export default function TypeConfigurator({
       const params = new URLSearchParams(searchParams.toString());
       if (clamped > 1) params.set("quantity", String(clamped));
       else params.delete("quantity");
-      router.replace(`₹${params.toString()}`, { scroll: false });
+      router.replace(`?${params.toString()}`, { scroll: false });
     });
   };
 

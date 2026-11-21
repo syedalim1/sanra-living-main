@@ -11,6 +11,7 @@ import VariantManager from "@/app/admin/(dashboard)/products/[id]/VariantManager
 import SwatchManager from "@/app/admin/(dashboard)/products/[id]/SwatchManager";
 import ProductLifecycleActions from "@/app/admin/(dashboard)/products/[id]/ProductLifecycleActions";
 import ProductOptionsAvailability from "@/app/admin/(dashboard)/products/[id]/ProductOptionsAvailability";
+import { FALLBACK_OPTIONS } from "@/lib/configuratorOptions";
 import { isProductType } from "@/lib/productTypeConfig";
 import type {
   AdminMaterialOption,
@@ -153,31 +154,36 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
     label_en: option.label_en,
     swatch_texture_img: option.swatch_texture_img ?? null,
   }));
-  const allOptions: AdminOption[] = [...dbOptions];
-  if (!allOptions.some((o) => o.option_group === "FRAME_MATERIAL")) {
-    allOptions.unshift(
-      {
-        option_group: "FRAME_MATERIAL",
-        option_code: "MS",
-        parent_code: null,
-        label_en: "Mild Steel (Powder Coated)",
-        swatch_texture_img: null,
-      },
-      {
-        option_group: "FRAME_MATERIAL",
-        option_code: "SS",
-        parent_code: null,
-        label_en: "Stainless Steel (SS 202 / 304)",
-        swatch_texture_img: null,
-      }
-    );
+  // Start from the built-in option catalogue so the admin screens stay in sync
+  // with the customer configurator even when a DB group/code pair is missing
+  // (option_code is unique per table, so some groups share codes like SS202).
+  const optionMap = new Map<string, AdminOption>();
+  for (const option of FALLBACK_OPTIONS) {
+    optionMap.set(`${option.option_group}:${option.option_code}`, {
+      option_group: option.option_group,
+      option_code: option.option_code,
+      parent_code: option.parent_code ?? null,
+      label_en: option.label_en,
+      swatch_texture_img: option.swatch_texture_img ?? null,
+    });
   }
+  for (const option of dbOptions) {
+    optionMap.set(`${option.option_group}:${option.option_code}`, option);
+  }
+  const allOptions: AdminOption[] = [...optionMap.values()];
 
   const materialOptions: AdminMaterialOption[] = (materialResult.data ?? []).map((material) => ({
     material_code: material.material_code,
     display_name: material.display_name,
     category: material.category,
   }));
+
+  // CHAIR_TABLE_SET products are rendered and priced with the TABLE engine,
+  // so their variants and option availability must use the TABLE groups.
+  const engineProductType =
+    product?.product_type === "CHAIR_TABLE_SET"
+      ? "TABLE"
+      : product?.product_type ?? null;
 
   const topOptions = allOptions.filter(
     (option) =>
@@ -186,11 +192,11 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
       (option.option_group === "TOP_MATERIAL" && option.parent_code !== "METAL")
   );
   const sizeOptions =
-    product?.product_type === "TABLE"
+    engineProductType === "TABLE"
       ? allOptions.filter(
           (option) => option.option_group === "SIZE" && option.option_code !== "CUSTOM"
         )
-      : product?.product_type === "RACK"
+      : engineProductType === "RACK"
       ? allOptions.filter((option) => option.option_group === "RACK_SIZE")
       : [
           {
@@ -205,12 +211,12 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
   let availabilityGroups: Array<{ option_group: string; group_title: string }> = [];
   let disabledOptionCodes: string[] = [];
 
-  if (product && isProductType(product.product_type)) {
+  if (product && engineProductType && isProductType(engineProductType)) {
     const [typeGroupResult, availabilityResult] = await Promise.all([
       db
         .from("product_type_option_groups")
         .select("option_group, group_title, is_active, sort_order")
-        .eq("product_type", product.product_type)
+        .eq("product_type", engineProductType)
         .order("sort_order"),
       db
         .from("product_option_availability")
@@ -225,7 +231,7 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
         group_title: group.group_title,
       }));
 
-    if (product.product_type === "TABLE" && !availabilityGroups.some((g) => g.option_group === "FRAME_MATERIAL")) {
+    if (engineProductType === "TABLE" && !availabilityGroups.some((g) => g.option_group === "FRAME_MATERIAL")) {
       availabilityGroups.unshift({
         option_group: "FRAME_MATERIAL",
         group_title: "Frame material",
@@ -333,7 +339,7 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
 
           <ProductOptionsAvailability
             productId={product.id}
-            productType={product.product_type}
+            productType={engineProductType ?? product.product_type}
             groups={availabilityGroups}
             options={allOptions
               .filter(
