@@ -1,4 +1,3 @@
-import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -6,14 +5,9 @@ import {
   ArrowRight,
   MessageSquare,
   ShieldCheck,
-  CheckCircle2,
-  XCircle,
   Truck,
-  Package,
-  Flame,
-  Boxes,
-  ShieldAlert,
-  ScanLine,
+  Factory,
+  ReceiptIndianRupee,
   UtensilsCrossed,
   Coffee,
   Cake,
@@ -21,37 +15,50 @@ import {
   GraduationCap,
   Briefcase,
 } from "lucide-react";
-import TrustBar from "@/components/TrustBar";
 import SectionHeading from "@/components/SectionHeading";
 import CategoryCard from "@/components/CategoryCard";
 import WatermarkedImage from "@/components/WatermarkedImage";
 import { company, whatsappHref, SOCIAL } from "@/lib/company";
-import { SITE_URL } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { getCachedFromPrices } from "@/lib/pricing/fromPrice";
 import { calculateSetPrice } from "@/lib/pricing/setPrice";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export const instant = false;
 
+const HOME_TITLE =
+  "SANRA LIVING | Factory-Direct MS & SS Steel Furniture in SIDCO Coimbatore";
+const HOME_DESCRIPTION =
+  "Buy heavy-duty MS and Stainless Steel chairs, granite & wood top tables, and dining sets direct from Indian Make Steel Industries, SIDCO Coimbatore. GST invoice, 3-Yr warranty & Pan-India delivery.";
+
 const HAS_SUPABASE = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
 export const metadata: Metadata = {
-  title: "SANRA LIVING | Direct Steel Furniture Factory, SIDCO Coimbatore",
-  description:
-    "Shop factory-direct steel tables, workstations, chairs, stands and racks built in SIDCO Coimbatore. Live pricing, GST invoicing and pan-India dispatch.",
-  alternates: { canonical: "/" },
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
+  alternates: { canonical: SITE_URL },
   openGraph: {
-    title: "SANRA LIVING | Direct Steel Furniture Factory",
-    description: "Factory-direct steel furniture for cafes, offices, hostels, hospitals and projects.",
-    url: "/",
-    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "SANRA LIVING factory steel furniture" }],
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "en_IN",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    url: SITE_URL,
+    images: [
+      {
+        url: "/og-default.png",
+        width: 1200,
+        height: 630,
+        alt: "SANRA LIVING factory-direct MS and SS steel furniture in SIDCO Coimbatore, Tamil Nadu",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "SANRA LIVING | Direct Steel Furniture Factory",
-    description: "Factory-direct steel furniture for cafes, offices, hostels, hospitals and projects.",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     images: ["/og-default.png"],
   },
 };
@@ -178,20 +185,52 @@ export default async function Home() {
     {
       name: "SS & MS Chairs",
       imageSrc: "/images/cat-chairs-stools.jpg",
-      description: "Factory-welded MS and stainless steel seating built for cafes, dining chains, and high-footfall commercial spaces.",
+      imageAlt:
+        "MS and stainless steel chairs manufactured by SANRA LIVING in SIDCO Coimbatore, Tamil Nadu",
+      description:
+        "Factory-welded MS and stainless steel seating for cafés, restaurants, dining halls, and high-footfall commercial spaces.",
       href: "/products?category=SS+%26+MS+Chairs",
     },
     {
       name: "SS & MS Tables",
-      imageSrc: "/images/cat-dining-tables.jpg",
-      description: "Heavy gauge MS & SS frames paired with Seasoned Rubberwood, Plywood, or Natural Granite.",
+      imageSrc: "/images/cat-tables.jpg",
+      imageAlt:
+        "Heavy-duty MS and SS cafe table with a wood top, built in SIDCO Coimbatore, Tamil Nadu",
+      description:
+        "Heavy-gauge MS & SS frames paired with seasoned hardwood, plywood, or natural granite tops.",
       href: "/products?category=SS+%26+MS+Tables",
     },
     {
       name: "SS & MS Chair & Table Sets",
-      imageSrc: "/images/cat-workstations.jpg",
-      description: "Matching chair and table combos engineered for dining spaces, commercial cafes, and institutions.",
+      imageSrc: "/images/cat-sets.jpg",
+      imageAlt:
+        "Dining table and chair set from the SANRA LIVING steel furniture factory in SIDCO Coimbatore, Tamil Nadu",
+      description:
+        "Matching chair-and-table combinations for dining spaces, cafés, restaurants, and institutions.",
       href: "/products?category=SS+%26+MS+Chair+%26+Table+Sets",
+    },
+  ];
+
+  const trustPoints = [
+    {
+      title: "Direct SIDCO Coimbatore Factory",
+      detail: "11+ years of in-house steel furniture manufacturing.",
+      icon: Factory,
+    },
+    {
+      title: "Heavy-Duty MS & SS Build",
+      detail: "3-Yr MS Welding Warranty | 3-Yr SS Replacement Guarantee",
+      icon: ShieldCheck,
+    },
+    {
+      title: "Local Coimbatore & Pan-India Dispatch",
+      detail: "Factory delivery in Coimbatore and courier across India.",
+      icon: Truck,
+    },
+    {
+      title: "Direct Factory Price & GST Invoice",
+      detail: "No showroom markup. GST invoice with every order.",
+      icon: ReceiptIndianRupee,
     },
   ];
 
@@ -204,159 +243,140 @@ export default async function Home() {
     { label: "Offices & Homes", use: "OFFICE", icon: Briefcase },
   ];
 
-  const factoryBays = [
-    {
-      title: "Welding",
-      description: "Factory welded for everyday commercial use.",
-      icon: Flame,
-      imageSrc: "/images/bay-welding.jpg",
-    },
-    {
-      title: "Material Stock",
-      description: "Steel and stainless steel stock kept ready for fast dispatch.",
-      icon: Boxes,
-      imageSrc: "/images/bay-pipe-stock.jpg",
-    },
-    {
-      title: "Edge Protection",
-      description: "Edges finished for safe daily handling.",
-      icon: ShieldAlert,
-      imageSrc: "/images/bay-bumper-frame.jpg",
-    },
-    {
-      title: "Quality Check",
-      description: "Every piece is quality checked before dispatch.",
-      icon: ScanLine,
-      imageSrc: "/images/bay-qa-plate.jpg",
-    },
-  ];
-
-  const localBusinessJsonLd = {
+  const businessJsonLd = {
     "@context": "https://schema.org",
-    "@type": ["Organization", "LocalBusiness"],
-    name: company.name,
+    "@type": ["FurnitureStore", "LocalBusiness"],
+    "@id": `${SITE_URL}/#store`,
+    name: "SANRA LIVING - Indian Make Steel Industries",
     url: SITE_URL,
-    ...(company.phone ? { telephone: company.phone } : {}),
+    telephone: "+91-9585745303",
     ...(company.email ? { email: company.email } : {}),
-    ...(company.address
-      ? {
-          address: {
-            "@type": "PostalAddress",
-            streetAddress: company.address,
-            addressCountry: "IN",
-          },
-        }
-      : {}),
+    image: `${SITE_URL}/og-default.png`,
+    logo: `${SITE_URL}/og-default.png`,
+    description:
+      "Factory-direct manufacturer of heavy-duty MS and stainless steel chairs, tables, and dining sets in SIDCO Coimbatore, Tamil Nadu.",
+    priceRange: "₹₹",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "K6, Pollachi Main Rd, SIDCO Private Industrial Estate",
+      addressLocality: "Coimbatore",
+      addressRegion: "Tamil Nadu",
+      postalCode: "641021",
+      addressCountry: "IN",
+    },
+    openingHours: "Mo-Sa 09:00-19:00",
+    openingHoursSpecification: {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+      ],
+      opens: "09:00",
+      closes: "19:00",
+    },
+    areaServed: "India",
     ...(Object.values(SOCIAL).filter(Boolean).length > 0
       ? { sameAs: Object.values(SOCIAL).filter(Boolean) }
       : {}),
-    areaServed: "India",
   };
 
   return (
     <div>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(businessJsonLd).replace(/</g, "\\u003c"),
+        }}
       />
-      {/* 1. TOP TRUST BAR */}
-      <TrustBar />
 
-      {/* 2. HERO SECTION */}
-      <section className="bg-[#FFFFFF] py-12 md:py-20 lg:py-24 border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            {/* Left Hero Content */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#111111] text-white text-[11px] font-bold uppercase tracking-wider">
-                <span>🏆</span>
-                11+ Years of Manufacturing Experience
-              </div>
+      {/* 1. HERO */}
+      <section className="bg-white border-b border-neutral-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20 lg:py-24">
+          <div className="max-w-4xl mx-auto text-center">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 border border-neutral-200 text-[11px] font-bold uppercase tracking-wider text-neutral-800">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true" />
+              SIDCO Coimbatore Factory • 11+ Years
+            </span>
 
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 border border-neutral-200 text-xs font-semibold text-neutral-800">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                Live Factory Direct Pricing • Direct SIDCO Coimbatore Unit
-              </div>
+            <h1 className="mt-6 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#111111] tracking-tight leading-[1.08]">
+              Factory-Direct MS &amp; SS Steel Furniture. Built Rock-Solid in SIDCO
+              Coimbatore.
+            </h1>
 
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#111111] tracking-tight leading-[1.1]">
-                Factory-Direct Steel Furniture. Built Rock-Solid in SIDCO Coimbatore.
-              </h1>
+            <p className="mt-5 text-base sm:text-lg text-neutral-600 leading-relaxed max-w-2xl mx-auto">
+              Heavy-duty MS &amp; SS chairs, tables, and dining sets — built direct in our
+              SIDCO Coimbatore factory for hotels, restaurants, cafés, and institutions.
+              GST invoicing and pan-India delivery.
+            </p>
 
-              <p className="text-base sm:text-lg text-neutral-600 leading-relaxed max-w-2xl font-normal">
-                Cut out showroom markups. Order heavy-duty MS and stainless steel furniture straight from our manufacturing line. Commercial tables, ergonomic workstations, and custom frames engineered with our proprietary Zero-Shake lock.
-              </p>
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3">
+              <Link
+                href="/products"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#111111] hover:bg-neutral-800 text-white font-semibold text-sm uppercase tracking-wider rounded transition-colors shadow-sm min-h-[48px]"
+              >
+                Explore Catalog
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </Link>
 
-              {/* Price & GST Note Badge */}
-              <div className="pt-1">
-                <span className="inline-block bg-[#F5F5F7] border border-neutral-300 text-neutral-900 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded">
-                  Direct Factory Price • GST Invoice Available
-                </span>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Link
-                  href="/products"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#111111] hover:bg-neutral-800 text-white font-semibold text-sm uppercase tracking-wider rounded transition-colors shadow-sm"
-                >
-                  Explore Products & Live Prices
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-
-                <Link
-                  href="/b2b"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#F5F5F7] hover:bg-neutral-200 text-[#111111] border border-neutral-300 font-semibold text-sm uppercase tracking-wider rounded transition-colors"
-                >
-                  B2B / Architect Portal
-                </Link>
-              </div>
-
-              {/* Quick Trust Highlights */}
-              <div className="pt-4 border-t border-neutral-100 grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs text-neutral-600">
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>3-Yr Welding Warranty</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>3-Yr SS Replacement</span>
-                </div>
-                <div className="flex items-center gap-1.5 col-span-2 sm:col-span-1">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>200 Kg Tested Lock</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Hero Image */}
-            <div className="lg:col-span-5">
-              <div className="rounded-xl overflow-hidden border border-neutral-200 shadow-sm bg-[#F5F5F7] p-2">
-                <WatermarkedImage
-                  src="/images/hero-creative.jpg"
-                  alt="SANRA LIVING Factory Direct Steel Workstation and Dining Frame"
-                  priority={true}
-                  aspectRatio="square"
-                  sizes="(max-width: 1024px) 100vw, 42vw"
-                  className="rounded-lg"
-                />
-                <div className="p-3 text-center">
-                  <span className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">
-                    SIDCO Industrial Estate Unit • Factory Built
-                  </span>
-                </div>
-              </div>
+              <a
+                href={whatsappHref(
+                  "Hello SANRA LIVING, I would like to speak to the factory desk about your steel furniture."
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm uppercase tracking-wider rounded transition-colors shadow-sm min-h-[48px]"
+              >
+                <MessageSquare className="w-4 h-4" aria-hidden="true" />
+                WhatsApp Factory Desk
+              </a>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3. THREE CORE CATEGORIES GRID */}
+      {/* 2. FACTORY TRUST STRIP */}
+      <section
+        aria-labelledby="factory-trust-heading"
+        className="bg-white border-b border-neutral-200 py-10 md:py-12"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 id="factory-trust-heading" className="sr-only">
+            Why buy direct from the SANRA LIVING factory
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+            {trustPoints.map((point) => {
+              const Icon = point.icon;
+              return (
+                <div key={point.title} className="flex items-start gap-3">
+                  <span className="shrink-0 w-10 h-10 rounded-lg bg-[#F5F5F7] border border-neutral-200 flex items-center justify-center text-[#111111]">
+                    <Icon className="w-5 h-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-bold text-[#111111] leading-snug">
+                      {point.title}
+                    </p>
+                    <p className="mt-1 text-xs text-neutral-600 leading-relaxed">
+                      {point.detail}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. THREE CORE CATEGORIES */}
       <section className="bg-[#F5F5F7] py-16 md:py-24 border-b border-neutral-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionHeading
             badge="Factory Catalog"
             title="Three Core Categories"
-            subtitle="Engineered for institutional durability and modern minimalism. Each item comes with our direct factory price badge and GST invoice."
+            subtitle="MS & SS chairs, tables, and complete dining sets — built in SIDCO Coimbatore with direct factory pricing and GST invoicing."
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -365,6 +385,7 @@ export default async function Home() {
                 key={cat.name}
                 name={cat.name}
                 imageSrc={cat.imageSrc}
+                imageAlt={cat.imageAlt}
                 priceBadge={
                   lowestByCategory.has(cat.name)
                     ? `From ₹${lowestByCategory
@@ -376,16 +397,6 @@ export default async function Home() {
                 href={cat.href}
               />
             ))}
-          </div>
-
-          <div className="mt-12 text-center">
-            <Link
-            href="/b2b"
-            className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#111111] hover:bg-neutral-800 text-white font-semibold text-sm uppercase tracking-wider rounded transition-colors shadow-sm"
-          >
-          View Full Factory Price List
-              <ArrowRight className="w-4 h-4" />
-            </Link>
           </div>
         </div>
       </section>
@@ -419,7 +430,7 @@ export default async function Home() {
                 >
                   <WatermarkedImage
                     src={set.image}
-                    alt={set.name}
+                    alt={`${set.name} — factory-direct steel furniture set from SIDCO Coimbatore`}
                     aspectRatio="video"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                   />
@@ -446,18 +457,18 @@ export default async function Home() {
         </section>
       )}
 
-      {/* 3B. ABOUT SANRA LIVING & WHO WE SUPPLY */}
-      <section className="bg-[#FFFFFF] py-16 md:py-24 border-b border-neutral-200">
+      {/* 4. ABOUT SANRA LIVING & WHO WE SUPPLY */}
+      <section className="bg-white py-16 md:py-24 border-b border-neutral-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#111111]">
             About SANRA LIVING
           </h2>
           <p className="mt-5 text-sm sm:text-base text-neutral-600 leading-relaxed">
             SANRA LIVING is the brand of Indian Make Steel Industries, a steel furniture
-            factory in SIDCO Coimbatore. For over 11 years we have been making steel and
-            stainless steel chairs, tables and furniture for hotels, restaurants, messes,
-            canteens, bakeries and homes. You buy direct from the factory at factory
-            prices, with a GST invoice.
+            factory in SIDCO Coimbatore. For over 11 years, we have manufactured heavy-duty
+            MS and stainless steel chairs, tables, and dining sets for hotels, restaurants,
+            messes, canteens, bakeries, offices, and homes. You buy direct from the factory
+            at factory prices, with a GST invoice.
           </p>
 
           <h3 className="mt-12 text-xs font-extrabold uppercase tracking-widest text-neutral-500">
@@ -472,7 +483,7 @@ export default async function Home() {
                   href={`/products?use=${chip.use}`}
                   className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#F5F5F7] border border-neutral-200 text-xs font-semibold text-neutral-800 hover:border-neutral-400 hover:bg-neutral-100 transition-colors min-h-[44px]"
                 >
-                  <Icon className="w-4 h-4 text-neutral-600" />
+                  <Icon className="w-4 h-4 text-neutral-600" aria-hidden="true" />
                   {chip.label}
                 </Link>
               );
@@ -481,239 +492,18 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 4. SANRA ZERO-SHAKE TELESCOPIC LOCK (200 KG TESTED) */}
-      <section className="bg-[#FFFFFF] py-16 md:py-24 border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            badge="Proprietary Technology"
-            title="SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested)"
-            subtitle="The fundamental difference between retail furniture that wobbles within months and industrial-grade steel furniture that stays rock steady for a decade."
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-stretch mt-8">
-            {/* Conventional Flat Plate Joint */}
-            <div className="bg-[#F5F5F7] rounded-xl border border-red-200/60 p-6 md:p-8 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 px-3 py-1 rounded">
-                    Conventional Market Build
-                  </span>
-                  <XCircle className="w-5 h-5 text-red-500" />
-                </div>
-                <h3 className="text-xl font-bold text-[#111111] mb-2">
-                  Flat-Plate Joint (Wobble-Prone)
-                </h3>
-                <p className="text-sm text-neutral-600 mb-6 leading-relaxed">
-                  Standard market furniture relies on a simple flat-plate joint welded on top of the leg. Under dynamic weight, lateral force stresses the single contact plane, resulting in noticeable table wobble and frame fatigue over time.
-                </p>
-                <div className="rounded-lg overflow-hidden border border-neutral-300 mb-6 bg-white">
-                  <WatermarkedImage
-                    src="/images/joint-standard.jpg"
-                    alt="Conventional Flat Plate Joint"
-                    aspectRatio="video"
-                  />
-                </div>
-                <ul className="space-y-2.5 text-xs text-neutral-700">
-                  <li className="flex items-start gap-2">
-                    <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                    <span>Single-plane point load with high flex vulnerability</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                    <span>Gradual lateral play under daily vibration and dining use</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <XCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                    <span>Requires constant manual retightening</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* SANRA Telescopic Lock */}
-            <div className="bg-[#FFFFFF] rounded-xl border-2 border-[#111111] p-6 md:p-8 flex flex-col justify-between shadow-md relative">
-              <div className="absolute -top-3.5 right-6 bg-[#111111] text-white text-[11px] font-extrabold px-3 py-1 uppercase tracking-widest rounded">
-                Factory Engineered
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded">
-                    SANRA Engineering
-                  </span>
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                </div>
-                <h3 className="text-xl font-bold text-[#111111] mb-2">
-                  SANRA Zero-Shake Telescopic Lock™
-                </h3>
-                <p className="text-sm text-neutral-600 mb-6 leading-relaxed">
-                  Our SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested) keeps the structure steady in daily commercial use.
-                </p>
-                <div className="rounded-lg overflow-hidden border border-neutral-300 mb-6 bg-neutral-50">
-                  <WatermarkedImage
-                    src="/images/joint-sanra.jpg"
-                    alt="SANRA Zero-Shake Telescopic Lock"
-                    aspectRatio="video"
-                  />
-                </div>
-                <ul className="space-y-2.5 text-xs text-neutral-900 font-medium">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>200 Kg load tested</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>Backed by a 3-Yr welding warranty</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. TWO-WAY DELIVERY CARD */}
-      <section className="bg-[#F5F5F7] py-16 md:py-24 border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            badge="Logistics Options"
-            title="Two Flexible Ways We Dispatch From SIDCO"
-            subtitle="Whether you are outfitting a cafe down the street in Coimbatore or furnishing an IT office in Delhi, we have a dispatch model built for your timeline."
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-            {/* Option A */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6 md:p-8 flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-lg bg-neutral-100 flex items-center justify-center mb-5 text-[#111111]">
-                  <Truck className="w-6 h-6" />
-                </div>
-                <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                  Option A • Local Factory Direct
-                </span>
-                <h3 className="text-xl font-bold text-[#111111] mt-1 mb-3">
-                  Fully Welded (Local Factory Tempo Delivery, Coimbatore)
-                </h3>
-                <p className="text-sm text-neutral-600 mb-6 leading-relaxed">
-                  Delivered 100% pre-welded and surface-finished directly from our SIDCO factory floor via dedicated transport. Zero assembly required on-site—just unwrap and place.
-                </p>
-                <div className="rounded-lg overflow-hidden border border-neutral-200 mb-6">
-                  <WatermarkedImage
-                    src="/images/delivery-tempo.jpg"
-                    alt="Fully Welded Factory Delivery Coimbatore"
-                    aspectRatio="video"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2 pt-4 border-t border-neutral-100 text-xs text-neutral-600">
-                <p>• Direct tempo dispatch within Coimbatore & surrounding industrial districts</p>
-                <p>• Ideal for cafes, commercial kitchens, labs, and pre-scheduled turnkeys</p>
-              </div>
-            </div>
-
-            {/* Option B */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-6 md:p-8 flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-lg bg-neutral-100 flex items-center justify-center mb-5 text-[#111111]">
-                  <Package className="w-6 h-6" />
-                </div>
-                <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-                  Option B • Pan-India Standard
-                </span>
-                <h3 className="text-xl font-bold text-[#111111] mt-1 mb-3">
-                  5-Min Flat-Pack Knock-Down (Pan-India Courier)
-                </h3>
-                <p className="text-sm text-neutral-600 mb-6 leading-relaxed">
-                  Precision modular units featuring our SANRA Zero-Shake Telescopic Lock™. Packed in reinforced corrugated export crates and delivered anywhere in India. Sets up in under 5 minutes with zero special tools.
-                </p>
-                <div className="rounded-lg overflow-hidden border border-neutral-200 mb-6">
-                  <WatermarkedImage
-                    src="/images/delivery-flatpack.jpg"
-                    alt="5-Min Flat-Pack Knock-Down Courier"
-                    aspectRatio="video"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2 pt-4 border-t border-neutral-100 text-xs text-neutral-600">
-                <p>• Doorstep courier dispatch to any pincode across India</p>
-                <p>• Protected with corner guards, bubble sleeves, and heavy-gauge carton crates</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. INSIDE OUR SIDCO FACTORY (4 BAYS) */}
-      <section className="bg-[#FFFFFF] py-16 md:py-24 border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            badge="Manufacturing Excellence"
-            title="Inside Our SIDCO Factory"
-            subtitle="Four production steps that keep every order simple and reliable."
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {factoryBays.map((bay, idx) => {
-              const Icon = bay.icon;
-              return (
-                <div
-                  key={bay.title}
-                  className="bg-[#F5F5F7] rounded-lg border border-neutral-200 overflow-hidden flex flex-col hover:border-neutral-400 transition-colors"
-                >
-                  <div className="relative">
-                    <WatermarkedImage
-                      src={bay.imageSrc}
-                      alt={bay.title}
-                      aspectRatio="video"
-                    />
-                    <div className="absolute top-2 left-2 z-20">
-                      <span className="text-[10px] font-extrabold bg-[#111111] text-white px-2 py-0.5 rounded uppercase tracking-wider">
-                        Bay 0{idx + 1}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-5 flex flex-col flex-1">
-                    <div className="w-8 h-8 rounded bg-white border border-neutral-200 flex items-center justify-center mb-3 text-[#111111]">
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <h3 className="text-base font-bold text-[#111111] mb-2 leading-snug">
-                      {bay.title}
-                    </h3>
-                    <p className="text-xs text-neutral-600 leading-relaxed mt-auto">
-                      {bay.description}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Sourcing Clarification Box */}
-          <div className="mt-12 p-6 rounded-lg bg-[#F5F5F7] border border-neutral-200 text-center max-w-3xl mx-auto">
-            <h4 className="text-sm font-bold text-[#111111] uppercase tracking-wider mb-2">
-              Authentic Direct Sourcing Guarantee
-            </h4>
-            <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed">
-              We manufacture on-site at SIDCO Kurichi using quality structural steel pipes. Table tops are paired with <strong>100% Seasoned Grade-A Hardwood</strong> and <strong>18mm Natural Granite</strong>.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* FINAL WHATSAPP CTA BANNER */}
+      {/* 5. FINAL WHATSAPP CTA */}
       <section className="bg-[#111111] py-14 text-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center space-y-5">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center space-y-5">
           <span className="inline-block text-xs font-bold tracking-widest text-emerald-400 uppercase">
-            Direct SIDCO Coimbatore Factory Access
+            Direct SIDCO Coimbatore Factory
           </span>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
-            Need Live Factory Quotes or Custom Steel Fabrications?
+            Need Live Factory Prices or Custom Steel Fabrication?
           </h2>
           <p className="text-neutral-400 text-sm sm:text-base max-w-2xl mx-auto">
-            Connect directly with our factory floor engineering desk. Send us your dimensional drawings or select from our standard catalog for immediate pricing.
+            Speak directly with our factory desk. Share your dimensions, drawings, or catalog
+            selection for a direct factory quote.
           </p>
           <div className="pt-2">
             <a
@@ -724,8 +514,8 @@ export default async function Home() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm uppercase tracking-wider transition-colors shadow-md"
             >
-              <MessageSquare className="w-4 h-4" />
-              Chat on WhatsApp for Live Quotes
+              <MessageSquare className="w-4 h-4" aria-hidden="true" />
+              WhatsApp Factory Desk
             </a>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { whatsappHref } from "@/lib/company";
 interface CategoryCardProps {
   name: string;
   imageSrc: string;
+  imageAlt?: string;
   priceBadge?: string;
   description?: string;
   href?: string;
@@ -15,6 +16,7 @@ interface CategoryCardProps {
 export default function CategoryCard({
   name,
   imageSrc,
+  imageAlt,
   priceBadge,
   description,
   href = "/products",
@@ -28,7 +30,7 @@ export default function CategoryCard({
       <Link href={href} className="block relative overflow-hidden bg-neutral-100">
         <WatermarkedImage
           src={imageSrc}
-          alt={name}
+          alt={imageAlt ?? name}
           aspectRatio="video"
           className="group-hover:scale-[1.02] transition-transform duration-300"
         />
@@ -44,16 +46,11 @@ export default function CategoryCard({
 
       <div className="p-5 flex flex-col flex-1 justify-between">
         <div>
-          <div className="mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-              Direct Factory Price • GST Invoice Available
-            </span>
-          </div>
           <h3 className="text-lg font-bold text-[#111111] tracking-tight group-hover:text-neutral-700 transition-colors">
             <Link href={href}>{name}</Link>
           </h3>
           {description && (
-            <p className="mt-1.5 text-xs text-neutral-600 line-clamp-2 leading-relaxed">
+            <p className="mt-2 text-xs text-neutral-600 line-clamp-2 leading-relaxed">
               {description}
             </p>
           )}

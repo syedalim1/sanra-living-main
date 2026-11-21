@@ -11,6 +11,7 @@ const makeSvg = (title, sub, icon = "📦") => `
 </svg>
 `.trim();
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
 
@@ -20,21 +21,13 @@ if (!fs.existsSync(imgDir)) {
 }
 
 const images = [
-  { file: 'hero-workstation.svg', title: 'Industrial Steel Workstation & Dining Frame', sub: 'Telescopic Zero-Shake Assembly • SIDCO Coimbatore', icon: '🏭' },
+  { file: 'hero-workstation.svg', title: 'Steel Table & Chairs', sub: 'Factory Built • SIDCO Coimbatore', icon: '🏭' },
   { file: 'cat-dining-tables.svg', title: 'Cafe & Dining Tables', sub: 'Commercial MIG Welded Heavy Gauge Steel Frames', icon: '🍽️' },
   { file: 'cat-workstations.svg', title: 'Office & Workstation Tables', sub: 'Modular Heavy-Duty Steel Base with Cable Channels', icon: '💻' },
   { file: 'cat-chairs-stools.svg', title: 'SS & MS Chairs / Bar Stools', sub: 'Precision Argon TIG Welded Heavy Load Ergonomics', icon: '🪑' },
   { file: 'cat-utility-stands.svg', title: 'Home Utility Stands', sub: 'High-Load Appliance & Heavy Duty Storage', icon: '🧺' },
   { file: 'cat-boutique-racks.svg', title: 'Boutique & Showroom Racks', sub: 'Minimal Architectural Powder-Coated Display Racks', icon: '👗' },
   { file: 'cat-hospital-lab.svg', title: 'Hospital, Canteen & Lab SS', sub: 'Jindal SS Grade Anti-Corrosion Sanitary Systems', icon: '🧪' },
-  { file: 'joint-standard.svg', title: 'Conventional Flat-Plate Joint', sub: 'Wobbles under dynamic loads • Prone to micro-flex & bolt loosening', icon: '⚠️' },
-  { file: 'joint-sanra.svg', title: 'SANRA Telescopic Lock™', sub: 'Internal sleeve locking structure • 200 Kg Tested Rock-Steady Stability', icon: '🛡️' },
-  { file: 'delivery-tempo.svg', title: 'Fully Welded Factory Delivery', sub: 'Coimbatore Local Direct Tempo Dispatch', icon: '🚚' },
-  { file: 'delivery-flatpack.svg', title: '5-Min Knock-Down Flat-Pack', sub: 'Pan-India Reinforced Courier Crate Dispatch', icon: '📦' },
-  { file: 'bay-welding.svg', title: 'CO2 MIG & Argon TIG Welding', sub: 'Deep-penetration bead consistency across structural steel', icon: '⚡' },
-  { file: 'bay-pipe-stock.svg', title: 'Tata MS & Jindal SS Pipe Stock', sub: 'Prime structural steel tubes directly cut & prepared', icon: '🏗️' },
-  { file: 'bay-bumper-frame.svg', title: 'Protective Steel Bumper Frame Fitting', sub: 'Rigid perimeter reinforcements for heavy daily wear', icon: '⚙️' },
-  { file: 'bay-qa-plate.svg', title: '200 Kg Surface Plate QA Inspection', sub: 'Laser verified true level and continuous static load tolerance', icon: '🔍' },
 ];
 
 images.forEach(img => {

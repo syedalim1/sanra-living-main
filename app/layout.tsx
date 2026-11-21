@@ -13,38 +13,44 @@ const inter = Inter({
   display: "swap",
 });
 
+const HOME_TITLE =
+  "SANRA LIVING | Factory-Direct MS & SS Steel Furniture in SIDCO Coimbatore";
+const HOME_DESCRIPTION =
+  "Buy heavy-duty MS and Stainless Steel chairs, granite & wood top tables, and dining sets direct from Indian Make Steel Industries, SIDCO Coimbatore. GST invoice, 3-Yr warranty & Pan-India delivery.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "SANRA LIVING | Indian Make Steel Industries • SIDCO Coimbatore",
-    description:
-      "Direct steel furniture factory in SIDCO Coimbatore, India. Heavy-duty MS and stainless steel tables, workstations, cafe furniture, and utility stands with SANRA Zero-Shake Telescopic Lock™.",
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
   keywords: [
-    "steel furniture factory",
-    "SIDCO Coimbatore furniture",
-    "direct factory furniture",
-    "commercial cafe tables",
-    "industrial steel workstation",
-    "stainless steel tables",
-    "zero-shake telescopic lock",
+    "MS steel furniture Coimbatore",
+    "SS steel furniture Tamil Nadu",
+    "steel chairs Coimbatore",
+    "steel dining tables",
+    "granite top dining tables",
+    "steel dining sets",
+    "SIDCO Coimbatore furniture factory",
+    "factory direct furniture India",
   ],
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
     locale: "en_IN",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     images: [
       {
         url: "/og-default.png",
         width: 1200,
         height: 630,
-        alt: "SANRA LIVING — direct factory steel furniture in SIDCO Coimbatore",
+        alt: "SANRA LIVING factory-direct MS and SS steel furniture in SIDCO Coimbatore, Tamil Nadu",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_NAME,
-    description:
-      "Direct factory steel furniture for cafes, offices, hostels, hospitals and projects.",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     images: ["/og-default.png"],
   },
 };
