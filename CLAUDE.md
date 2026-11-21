@@ -55,7 +55,7 @@ This is the most important architectural invariant.
 - The Supabase **anon** client (`@supabase/ssr`) is used only for auth/session handling in `proxy.ts` and `lib/admin/auth.ts`. It is not used for catalog data.
 - RLS is enabled on every public-schema table. `supabase/migrations/014_privacy_lock.sql` removes public policies, then adds SELECT-only policies for safe catalog tables (`products`, `product_visual_variants`, `configurator_options`, `product_type_option_groups`, `product_option_availability`, `product_sets`, `product_set_items`). Private tables have no anon/authenticated policies.
 - **Never expose** cost, weight, labor, overhead, margin, discount, supplier or internal-note data in public APIs, public HTML, client component props, or public PDFs. Selling prices only.
-- Public pricing responses may contain only the `ConfigPriceOutput` shape: `unit_price`, `total_price`, `discount_pct`, `bumper_included`, `requires_quote`. Use `stripCostFragments` (`lib/sanitize.ts`) when surfacing DB labels publicly.
+- Public pricing responses may expose only selling-price fields such as `unit_price`, `total_price`, `discount_pct`, `bumper_included` and `requires_quote`. Use `stripCostFragments` (`lib/sanitize.ts`) when surfacing DB labels publicly.
 - The browser never computes prices. `TableConfigurator`, `TypeConfigurator` and `SetConfigurator` POST selections to `/api/price`, `/api/set-price`, `/api/whatsapp-link`, `/api/quote-pdf`, etc.
 
 ## Pricing architecture
