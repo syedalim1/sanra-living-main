@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { SlidersHorizontal, X, RotateCcw } from "lucide-react";
 import { PRODUCT_CATEGORY_OPTIONS } from "@/lib/catalogCategories";
 
@@ -22,9 +21,8 @@ const FRAME_MATERIAL_OPTIONS: FilterOption[] = [
 ];
 
 const TABLE_TOP_OPTIONS: FilterOption[] = [
-  { value: "FRAME_ONLY", label: "Frame Only" },
-  { value: "GRANITE", label: "Granite" },
-  { value: "WOOD", label: "Rubberwood & Plywood" },
+  { value: "GRANITE", label: "Granite Top" },
+  { value: "WOOD", label: "Wood Top" },
 ];
 
 const BUDGET_OPTIONS: FilterOption[] = [
@@ -77,14 +75,6 @@ export default function ProductFilters() {
 
   const renderFilterSections = () => (
     <div className="space-y-6">
-      <Link
-        href="/sets"
-        className="flex items-center justify-between rounded-md border border-[#111111] bg-[#111111] px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-white"
-      >
-        Sets &amp; Combos
-        <span aria-hidden="true">→</span>
-      </Link>
-
       {/* 1. Sort Order */}
       <div>
         <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2.5">

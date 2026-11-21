@@ -11,20 +11,29 @@ import ActiveChips from "@/components/ActiveChips";
 import { getCachedFromPrices } from "@/lib/pricing/fromPrice";
 import { supabaseServer } from "@/lib/supabase/server";
 import { whatsappHref } from "@/lib/company";
+import { PRODUCT_CATEGORIES } from "@/lib/catalogCategories";
 
 const HAS_SUPABASE = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
+const CORE_CATEGORIES = new Set(
+  PRODUCT_CATEGORIES.map((category) => category.trim().toLowerCase())
+);
+
+// Product types that can have a table-top material (GRANITE / WOOD).
+// BENCH_DESK was removed — it has no active category in the core 3.
+const TOP_CATEGORY_PRODUCT_TYPES = new Set(["TABLE", "CHAIR_TABLE_SET"]);
+
 export const metadata: Metadata = {
   title: "Steel Furniture Catalog | SANRA LIVING",
   description:
-    "Direct SIDCO Coimbatore factory steel furniture catalog. Heavy gauge MS and stainless steel cafe tables, office workstations, dining sets, and custom frames with live prices.",
+    "Direct SIDCO Coimbatore factory catalog of MS and stainless steel chairs, tables, and chair & table sets with live prices.",
   alternates: { canonical: "/products" },
   openGraph: {
     title: "Steel Furniture Catalog | SANRA LIVING",
     description:
-      "Browse factory-direct tables, workstations, chairs, stands, racks and stainless units with live prices.",
+      "Browse factory-direct MS and SS chairs, tables, and chair & table sets with live prices.",
     url: "/products",
     images: [
       {
@@ -130,6 +139,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     rawProducts = FALLBACK_PRODUCTS;
   }
 
+  // Only the three core categories are publicly listed. Legacy categories stay
+  // in the database but remain hidden until they are re-enabled.
+  rawProducts = rawProducts.filter(
+    (product) =>
+      typeof product.category === "string" &&
+      CORE_CATEGORIES.has(product.category.trim().toLowerCase())
+  );
+
   // 2. Fetch computed from_prices
   const priceMap = HAS_SUPABASE ? await getCachedFromPrices() : {};
 
@@ -162,23 +179,15 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     catalog = catalog.filter((p) => p.material_tags?.includes(material.toUpperCase()));
   }
 
-  if (top) {
+  const topUpper = top?.toUpperCase();
+  if (topUpper === "GRANITE" || topUpper === "STONE" || topUpper === "WOOD") {
     catalog = catalog.filter((p) => {
+      if (!TOP_CATEGORY_PRODUCT_TYPES.has(p.product_type)) return false;
       const tags = p.material_tags || [];
-      const topUpper = top.toUpperCase();
-      if (topUpper === "FRAME_ONLY") {
-        return (
-          tags.includes("FRAME_ONLY") ||
-          (!tags.includes("GRANITE") && !tags.includes("WOOD") && !tags.includes("PLYWOOD"))
-        );
-      }
-      if (topUpper === "GRANITE") {
-        return tags.includes("GRANITE");
-      }
       if (topUpper === "WOOD") {
         return tags.includes("WOOD") || tags.includes("PLYWOOD");
       }
-      return true;
+      return tags.includes("GRANITE") || tags.includes("STONE");
     });
   }
 

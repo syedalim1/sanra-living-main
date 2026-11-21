@@ -39,13 +39,10 @@ export default function ActiveChips({ totalCount }: ActiveChipsProps) {
         : material;
     chips.push({ key: "material", label: `Frame: ${matLabel}` });
   }
-  if (top) {
-    const topMap: Record<string, string> = {
-      FRAME_ONLY: "Frame Only",
-      GRANITE: "Granite",
-      WOOD: "Rubberwood & Plywood",
-    };
-    chips.push({ key: "top", label: `Top: ${topMap[top] || top}` });
+  if (top === "GRANITE" || top === "STONE") {
+    chips.push({ key: "top", label: "Top: Granite Top" });
+  } else if (top === "WOOD") {
+    chips.push({ key: "top", label: "Top: Wood Top" });
   }
   if (budget) {
     const budgetMap: Record<string, string> = {
