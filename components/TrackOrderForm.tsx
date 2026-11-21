@@ -92,6 +92,7 @@ function TrackPhotoCard({
           fill
           sizes={large ? "(max-width: 640px) 100vw, 50vw" : "(max-width: 640px) 50vw, 25vw"}
           className="object-cover"
+          unoptimized
           onError={() => setFailed(true)}
         />
       </div>

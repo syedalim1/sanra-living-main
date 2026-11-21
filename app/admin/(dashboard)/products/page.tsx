@@ -17,6 +17,8 @@ interface ProductsPageProps {
   searchParams: Promise<{ q?: string }>;
 }
 
+export const instant = false;
+
 export default async function AdminProductsPage({ searchParams }: ProductsPageProps) {
   await connection();
   await requireAdmin();

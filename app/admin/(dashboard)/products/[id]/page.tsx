@@ -28,6 +28,8 @@ interface ProductPageProps {
   params: Promise<{ id: string }>;
 }
 
+export const instant = false;
+
 export default async function AdminProductPage({ params }: ProductPageProps) {
   await connection();
   await requireAdmin();

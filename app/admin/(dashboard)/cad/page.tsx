@@ -10,6 +10,8 @@ export const metadata = {
   title: "CAD Files | SANRA Internal",
 };
 
+export const instant = false;
+
 export default async function AdminCadPage() {
   await connection();
   await requireAdmin();

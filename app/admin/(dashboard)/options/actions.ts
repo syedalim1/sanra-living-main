@@ -522,39 +522,115 @@ export async function saveAvailabilityAction(formData: FormData): Promise<void> 
 
   const { data: groups } = await db
     .from("product_type_option_groups")
-    .select("option_group")
+    .select("option_group, is_required, default_code, is_active")
     .eq("product_type", productType);
 
-  const groupCodes = (groups ?? []).map((group) => group.option_group);
+  // Only active groups are rendered in the admin form. Saving availability for
+  // an inactive group used to mark every option in it as disabled without the
+  // admin ever seeing those checkboxes.
+  const activeGroups = (groups ?? []).filter((group) => group.is_active !== false);
+  const groupCodes = activeGroups.map((group) => group.option_group);
 
   if (groupCodes.length === 0) return;
 
   const { data: options } = await db
     .from("configurator_options")
-    .select("option_code, option_group")
-    .in("option_group", groupCodes);
+    .select("option_code, option_group, parent_code")
+    .in("option_group", groupCodes)
+    .eq("is_active", true);
 
-  // Availability rows are keyed by option_code only. Include the built-in
-  // catalogue so options that exist in the UI but not in this DB snapshot
-  // (for example METAL_TYPE SS202, whose code is shared with GAUGE) persist too.
-  const optionCodes = new Set<string>();
+  type ManagedOption = {
+    option_code: string;
+    option_group: string;
+    parent_code: string | null;
+  };
+
+  const managed = new Map<string, ManagedOption>();
+  const addOption = (option: ManagedOption) => {
+    if (option.option_code === "FRAME_ONLY" || option.option_code.startsWith("SHEET_")) {
+      return;
+    }
+    managed.set(option.option_code, option);
+  };
+
+  // Match the option list rendered on the product edit page: built-in
+  // catalogue plus DB options. Availability rows are keyed by option_code.
   for (const option of FALLBACK_OPTIONS) {
     if (groupCodes.includes(option.option_group)) {
-      optionCodes.add(option.option_code);
+      addOption({
+        option_code: option.option_code,
+        option_group: option.option_group,
+        parent_code: option.parent_code ?? null,
+      });
     }
   }
   for (const option of options ?? []) {
-    optionCodes.add(option.option_code);
+    addOption({
+      option_code: option.option_code,
+      option_group: option.option_group,
+      parent_code: option.parent_code ?? null,
+    });
   }
+
+  const enabled = new Set([...enabledCodes].filter((code) => managed.has(code)));
+
+  // A required group must keep at least one option so the public configurator
+  // can still produce a valid configuration and price.
+  const ensureGroupHasEnabled = (optionGroup: string, defaultCode: string | null) => {
+    const groupOptions = [...managed.values()].filter(
+      (option) => option.option_group === optionGroup
+    );
+    if (groupOptions.length === 0) return;
+    if (groupOptions.some((option) => enabled.has(option.option_code))) return;
+
+    const fallback =
+      groupOptions.find((option) => option.option_code === defaultCode) ??
+      groupOptions[0];
+    enabled.add(fallback.option_code);
+  };
+
+  for (const group of activeGroups) {
+    if (group.is_required) {
+      ensureGroupHasEnabled(group.option_group, group.default_code ?? null);
+    }
+  }
+
+  // An enabled top family must have at least one enabled top material.
+  const enabledTopTabs = [...managed.values()]
+    .filter(
+      (option) => option.option_group === "TOP_TAB" && enabled.has(option.option_code)
+    )
+    .map((option) => option.option_code);
+
+  if (enabledTopTabs.length > 0) {
+    const topMaterials = [...managed.values()].filter(
+      (option) =>
+        option.option_group === "TOP_MATERIAL" &&
+        option.parent_code !== null &&
+        enabledTopTabs.includes(option.parent_code)
+    );
+
+    for (const tab of enabledTopTabs) {
+      const tabMaterials = topMaterials.filter((option) => option.parent_code === tab);
+      if (
+        tabMaterials.length > 0 &&
+        !tabMaterials.some((option) => enabled.has(option.option_code))
+      ) {
+        enabled.add(tabMaterials[0].option_code);
+      }
+    }
+  }
+
+  const managedOptions = [...managed.values()];
 
   await db.from("product_option_availability").delete().eq("product_id", productId);
 
-  if (optionCodes.size > 0) {
+  if (managedOptions.length > 0) {
     await db.from("product_option_availability").insert(
-      [...optionCodes].map((code) => ({
+      managedOptions.map((option) => ({
         product_id: productId,
-        option_code: code,
-        is_enabled: enabledCodes.has(code),
+        option_code: option.option_code,
+        is_enabled: enabled.has(option.option_code),
       }))
     );
   }
@@ -563,7 +639,7 @@ export async function saveAvailabilityAction(formData: FormData): Promise<void> 
     action: "UPDATE",
     target_table: "product_option_availability",
     target_id: productId,
-    summary: `Saved exact product option availability (${enabledCodes.size} enabled).`,
+    summary: `Saved product option availability (${enabled.size} enabled).`,
   });
 
   revalidatePath(`/admin/products/${productId}`);

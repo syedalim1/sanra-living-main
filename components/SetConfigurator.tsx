@@ -132,7 +132,9 @@ export default function SetConfigurator({
       <div className="lg:col-span-6 space-y-3">
         <div className="rounded-xl overflow-hidden border border-neutral-200">
           <WatermarkedImage
+            key={images[gallery] ?? "set-image"}
             src={images[gallery] ?? null}
+            fallbackSrc={mainImage ?? null}
             alt={name}
             aspectRatio="video"
             priority

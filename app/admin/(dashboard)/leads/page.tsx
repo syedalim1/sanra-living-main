@@ -25,6 +25,8 @@ interface LeadsPageProps {
   }>;
 }
 
+export const instant = false;
+
 export default async function AdminLeadsPage({ searchParams }: LeadsPageProps) {
   await connection();
   await requireAdmin();

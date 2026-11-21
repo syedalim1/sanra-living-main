@@ -44,6 +44,7 @@ type PublicProduct = {
   base_height_ft?: number;
   allowed_top_categories: string[];
   frame_material?: string | null;
+  short_description?: string | null;
   is_knockdown_available: boolean;
   warranty_text: string;
   main_image_url: string;
@@ -327,7 +328,7 @@ export default async function SkuPage({ params }: SkuPageProps) {
     const { data: prodData } = await supabaseServer
       .from("products")
       .select(
-        "id, sku, name, category, product_type, base_length_ft, base_width_ft, base_height_ft, allowed_top_categories, frame_material, is_knockdown_available, warranty_text, main_image_url, hover_blueprint_img, is_active, use_cases, material_tags, sort_order, top_overlay_note, top_category_images, gallery_images"
+        "id, sku, name, category, product_type, base_length_ft, base_width_ft, base_height_ft, allowed_top_categories, frame_material, short_description, is_knockdown_available, warranty_text, main_image_url, hover_blueprint_img, is_active, use_cases, material_tags, sort_order, top_overlay_note, top_category_images, gallery_images"
       )
       .eq("sku", upperSku)
       .eq("is_active", true)
@@ -359,6 +360,7 @@ export default async function SkuPage({ params }: SkuPageProps) {
           ? prodData.allowed_top_categories.filter((c: string) => c !== "FRAME_ONLY")
           : ["WOOD", "STONE"],
         frame_material: prodData.frame_material ?? null,
+        short_description: prodData.short_description ?? null,
         top_overlay_note: safeOverlayNote(prodData.top_overlay_note),
       };
 

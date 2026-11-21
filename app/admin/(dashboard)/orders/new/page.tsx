@@ -8,6 +8,8 @@ export const metadata = {
   title: "Create Order | SANRA Internal",
 };
 
+export const instant = false;
+
 export default async function NewOrderPage() {
   await connection();
   await requireAdmin();

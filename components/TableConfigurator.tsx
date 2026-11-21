@@ -67,6 +67,8 @@ interface TableConfiguratorProps {
     warranty_text: string;
     allowed_top_categories: string[];
     frame_material?: string | null;
+    short_description?: string | null;
+    is_knockdown_available?: boolean;
     top_overlay_note?: string | null;
     base_height_ft?: number | null;
     pipe_spec?: string | null;
@@ -78,6 +80,7 @@ interface TableConfiguratorProps {
   topCategoryImages?: Record<string, string> | null;
   pipeSpec?: string | null;
   chairAddonPrice?: number | null;
+  fromPrice?: number | null;
 }
 
 export default function TableConfigurator({
@@ -87,6 +90,7 @@ export default function TableConfigurator({
   topCategoryImages,
   pipeSpec,
   chairAddonPrice,
+  fromPrice,
 }: TableConfiguratorProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -238,19 +242,22 @@ export default function TableConfigurator({
   const [pincodeOpen, setPincodeOpen] = useState(false);
   const [pincode, setPincode] = useState("");
 
-  // Live pricing state
+  // Live pricing state. Seed from the server-computed direct/from price so a
+  // configured direct_price is visible immediately instead of "Calculating…".
   const [priceData, setPriceData] = useState<{
     unit_price?: number;
     total_price?: number;
     bumper_included?: boolean;
     requires_quote?: boolean;
     discount_pct?: number;
-  }>({
+  }>(() => ({
+    unit_price: fromPrice ?? undefined,
+    total_price: fromPrice != null ? Math.round(fromPrice * initialQuantity) : undefined,
     bumper_included: false,
     requires_quote: false,
-  });
+  }));
 
-  const [isCalculating, setIsCalculating] = useState<boolean>(true);
+  const [isCalculating, setIsCalculating] = useState<boolean>(fromPrice == null);
 
   // Sync state to URL search params
   const updateUrlState = useCallback(
@@ -270,18 +277,35 @@ export default function TableConfigurator({
     [router, searchParams]
   );
 
-  // Fetch live price debounced
+  // Fetch live price debounced. If the request fails or times out, fall back to
+  // the server-provided direct/from price instead of staying on "Calculating…".
   useEffect(() => {
     let isCancelled = false;
+    let controller: AbortController | null = null;
+    let requestTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const fallbackPrice =
+      fromPrice != null
+        ? {
+            unit_price: fromPrice,
+            total_price: Math.round(fromPrice * quantity),
+            bumper_included: false,
+            requires_quote: false,
+          }
+        : null;
 
     const timer = setTimeout(async () => {
       if (isCancelled) return;
       setIsCalculating(true);
 
+      controller = new AbortController();
+      requestTimeout = setTimeout(() => controller?.abort(), 8000);
+
       try {
         const res = await fetch("/api/price", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             sku: product.sku,
             frame_material: selectedFrameMaterial,
@@ -301,10 +325,15 @@ export default function TableConfigurator({
           if (!isCancelled) {
             setPriceData(json);
           }
+        } else if (!isCancelled && fallbackPrice) {
+          setPriceData(fallbackPrice);
         }
       } catch {
-        // preserve previous price on network glitch
+        if (!isCancelled && fallbackPrice) {
+          setPriceData(fallbackPrice);
+        }
       } finally {
+        if (requestTimeout) clearTimeout(requestTimeout);
         if (!isCancelled) {
           setIsCalculating(false);
         }
@@ -314,6 +343,8 @@ export default function TableConfigurator({
     return () => {
       isCancelled = true;
       clearTimeout(timer);
+      if (requestTimeout) clearTimeout(requestTimeout);
+      controller?.abort();
     };
   }, [
     product.sku,
@@ -326,6 +357,7 @@ export default function TableConfigurator({
     selectedSize,
     selectedAddons,
     quantity,
+    fromPrice,
   ]);
 
   // Tab switch handler: auto-select first material in that tab
@@ -561,7 +593,9 @@ export default function TableConfigurator({
   const mainImageUrl =
     (activeThumbnailIndex === 0 ? topVariantImage : null) ||
     matchedVariant?.preview_image_url ||
-    product.main_image_url;
+    product.main_image_url ||
+    product.hover_blueprint_img ||
+    null;
 
   const blueprintImage = product.hover_blueprint_img ?? null;
   const lifestyleImages = [
@@ -627,9 +661,9 @@ export default function TableConfigurator({
       }
       // Rubberwood
       return [
-        { icon: Layers, text: "100% Seasoned Grade-A Hardwood" },
+        { icon: Layers, text: "100% Seasoned Grade-A Rubberwood" },
         { icon: Droplets, text: "Polyurethane Water Guard Seal" },
-        { icon: Shield, text: "18mm Finger-Jointed Solid Hardwood" },
+        { icon: Shield, text: "18mm Finger-Jointed Solid Rubberwood" },
         { icon: Sparkles, text: "Natural Grain Architecture" },
       ];
     }
@@ -728,7 +762,9 @@ export default function TableConfigurator({
               </div>
             ) : (
               <WatermarkedImage
+                key={activeImage ?? "main-image"}
                 src={activeImage}
+                fallbackSrc={product.main_image_url}
                 alt={product.name}
                 aspectRatio="square"
                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -773,6 +809,11 @@ export default function TableConfigurator({
             <p className="mt-1 text-xs uppercase tracking-wider text-neutral-500">
               {product.sku} · Direct SIDCO Coimbatore production
             </p>
+            {product.short_description && (
+              <p className="mt-2 text-sm leading-relaxed text-neutral-600">
+                {product.short_description}
+              </p>
+            )}
           </div>
 
           <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
@@ -883,7 +924,7 @@ export default function TableConfigurator({
                 <>
                   {Object.entries(materialGroups).map(([groupName, items]) => (
                       <div key={groupName}>
-                        <p className="text-xs uppercase tracking-wider text-neutral-400">
+                        <p className="text-xs uppercase tracking-wider text-neutral-400 break-words">
                           {groupName}
                         </p>
                         <div className="mt-1 flex flex-wrap gap-1.5" role="radiogroup" aria-label={groupName}>
@@ -914,7 +955,9 @@ export default function TableConfigurator({
                     {currentTopOption?.label_en ?? ""}
                   </p>
                   {badgeLine && (
-                    <p className="text-xs text-neutral-500">{badgeLine}</p>
+                    <p className="text-xs text-neutral-500 leading-relaxed break-words">
+                      {badgeLine}
+                    </p>
                   )}
                 </>
               </div>
@@ -1170,9 +1213,11 @@ export default function TableConfigurator({
             </div>
           </div>
 
-          <p className="text-xs text-neutral-500">
-            SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested)
-          </p>
+          {product.is_knockdown_available && (
+            <p className="text-xs text-neutral-500">
+              SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested)
+            </p>
+          )}
         </div>
       </div>
 

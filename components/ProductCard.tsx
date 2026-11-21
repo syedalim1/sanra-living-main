@@ -48,8 +48,10 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="relative overflow-hidden bg-neutral-100 aspect-video select-none">
         <Link href={productPath(product.sku)} className="block w-full h-full">
           <WatermarkedImage
+            key={currentImage ?? "catalog-image"}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             src={currentImage}
+            fallbackSrc={product.main_image_url}
             alt={product.name}
             aspectRatio="video"
             className="w-full h-full transition-transform duration-300 group-hover:scale-[1.02]"

@@ -6,6 +6,7 @@ import PlaceholderImage from "./PlaceholderImage";
 
 interface WatermarkedImageProps {
   src: string | null | undefined;
+  fallbackSrc?: string | null;
   alt: string;
   width?: number;
   height?: number;
@@ -25,6 +26,7 @@ function isRealPhoto(src: string): boolean {
 
 export default function WatermarkedImage({
   src,
+  fallbackSrc = null,
   alt,
   width = 800,
   height = 600,
@@ -33,9 +35,10 @@ export default function WatermarkedImage({
   priority = false,
   sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
 }: WatermarkedImageProps) {
+  const [currentSrc, setCurrentSrc] = useState<string>(src ?? "");
   const [failed, setFailed] = useState(false);
 
-  if (!src || failed) {
+  if (!currentSrc || failed) {
     return <PlaceholderImage aspectRatio={aspectRatio} className={className} label={alt} />;
   }
 
@@ -48,21 +51,31 @@ export default function WatermarkedImage({
       ? "aspect-[4/3]"
       : "";
 
-  const showWatermark = !isPlaceholderSource(src) && isRealPhoto(src);
+  const showWatermark = !isPlaceholderSource(currentSrc) && isRealPhoto(currentSrc);
+  const isRemote = /^https?:\/\//i.test(currentSrc);
 
   return (
     <div
       className={`relative overflow-hidden bg-[#F5F5F7] select-none ${aspectClass} ${className}`}
     >
       <Image
-        src={src}
+        src={currentSrc}
         alt={alt}
         width={width}
         height={height}
         priority={priority}
         sizes={sizes}
         className="w-full h-full object-cover"
-        onError={() => setFailed(true)}
+        // Remote Supabase Storage URLs bypass the image optimizer, which can
+        // reject them when the deployment host differs from the build env.
+        unoptimized={isRemote}
+        onError={() => {
+          if (fallbackSrc && fallbackSrc !== currentSrc) {
+            setCurrentSrc(fallbackSrc);
+          } else {
+            setFailed(true);
+          }
+        }}
       />
       {showWatermark && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">

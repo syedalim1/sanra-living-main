@@ -104,6 +104,13 @@ const nextConfig: NextConfig = {
         pathname: "/storage/v1/object/sign/**",
       },
       {
+        // Safety net for deployments where the build-time Supabase env differs
+        // from the runtime project (or is supplied only at runtime).
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/**",
+      },
+      {
         protocol: "https",
         hostname: "images.unsplash.com",
         pathname: "/**",

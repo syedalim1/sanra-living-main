@@ -26,6 +26,8 @@ function stageChip(stage: Stage): string {
     : "bg-neutral-100 text-neutral-700 border-neutral-200";
 }
 
+export const instant = false;
+
 export default async function AdminOrdersPage({ searchParams }: OrdersPageProps) {
   await connection();
   await requireAdmin();

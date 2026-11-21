@@ -53,6 +53,10 @@ export const metadata: Metadata = {
   },
 };
 
+// Catalog data and prices are read live from Supabase, so this route is
+// allowed to block instead of being validated for instant navigation.
+export const instant = false;
+
 // Fallback products if DB has not been seeded yet
 const FALLBACK_PRODUCTS: CatalogProduct[] = [
   {

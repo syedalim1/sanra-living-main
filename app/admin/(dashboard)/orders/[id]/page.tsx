@@ -32,6 +32,8 @@ interface OrderDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+export const instant = false;
+
 export default async function AdminOrderDetailPage({
   params,
 }: OrderDetailPageProps) {

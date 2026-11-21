@@ -15,6 +15,8 @@ function formatAuditTime(value: string): string {
   return date.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
 }
 
+export const instant = false;
+
 export default async function AdminAuditPage() {
   await connection();
   await requireAdmin();

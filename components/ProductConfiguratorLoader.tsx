@@ -61,6 +61,7 @@ export default function ProductConfiguratorLoader({
         topCategoryImages={topCategoryImages ?? null}
         pipeSpec={pipeSpec ?? null}
         chairAddonPrice={chairAddonPrice ?? null}
+        fromPrice={fromPrice}
       />
     );
   }

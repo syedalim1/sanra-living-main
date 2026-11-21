@@ -40,6 +40,8 @@ interface TypeConfiguratorProduct {
   main_image_url: string;
   hover_blueprint_img?: string | null;
   warranty_text: string;
+  short_description?: string | null;
+  is_knockdown_available?: boolean;
 }
 
 interface TypeVisualVariant {
@@ -130,18 +132,18 @@ function SafeImage({
   sizes = "100vw",
   priority = false,
 }: {
-  src: string;
+  src: string | null | undefined;
   fallback: string;
   alt: string;
   className?: string;
   sizes?: string;
   priority?: boolean;
 }) {
-  const [current, setCurrent] = useState(src);
+  const [current, setCurrent] = useState(src ?? "");
   const [attempt, setAttempt] = useState(0);
   const [failed, setFailed] = useState(false);
 
-  if (failed) {
+  if (!current || failed) {
     return (
       <PlaceholderImage fill className="h-full w-full border-0" label={alt} />
     );
@@ -155,6 +157,9 @@ function SafeImage({
       sizes={sizes}
       priority={priority}
       className={className}
+      // Remote Supabase Storage URLs bypass the optimizer so uploaded images
+      // render even if the deployment host is not in images.remotePatterns.
+      unoptimized={/^https?:\/\//i.test(current)}
       onError={() => {
         if (attempt === 0 && fallback) {
           setCurrent(fallback);
@@ -337,15 +342,31 @@ export default function TypeConfigurator({
 
   useEffect(() => {
     let cancelled = false;
+    let controller: AbortController | null = null;
+    let requestTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const fallbackPrice =
+      fromPrice != null
+        ? {
+            unit_price: fromPrice,
+            total_price: Math.round(fromPrice * quantity),
+            bumper_included: false,
+            requires_quote: false,
+          }
+        : null;
 
     const timer = setTimeout(async () => {
       if (cancelled) return;
       setIsCalculating(true);
 
+      controller = new AbortController();
+      requestTimeout = setTimeout(() => controller?.abort(), 8000);
+
       try {
         const res = await fetch("/api/price", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({
             sku: product.sku,
             quantity,
@@ -356,10 +377,16 @@ export default function TypeConfigurator({
         if (res.ok) {
           const json = (await res.json()) as PriceState;
           if (!cancelled) setPriceData(json);
+        } else if (!cancelled && fallbackPrice) {
+          setPriceData(fallbackPrice);
         }
       } catch {
-        // Preserve the previous price on a network glitch.
+        // Fall back to the server-provided price on a network glitch/timeout.
+        if (!cancelled && fallbackPrice) {
+          setPriceData(fallbackPrice);
+        }
       } finally {
+        if (requestTimeout) clearTimeout(requestTimeout);
         if (!cancelled) setIsCalculating(false);
       }
     }, 250);
@@ -367,8 +394,10 @@ export default function TypeConfigurator({
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      if (requestTimeout) clearTimeout(requestTimeout);
+      controller?.abort();
     };
-  }, [product.sku, quantity, selections]);
+  }, [product.sku, quantity, selections, fromPrice]);
 
   const pinParam = searchParams.get("pin") ?? "";
   const validPin = /^\d{6}$/.test(pinParam) ? pinParam : null;
@@ -466,7 +495,8 @@ export default function TypeConfigurator({
   const matchedVariant = visualVariants.find(
     (variant) => variant.selection_key === selectionKey
   );
-  const previewUrl = matchedVariant?.preview_image_url || product.main_image_url;
+  const previewUrl =
+    matchedVariant?.preview_image_url || product.main_image_url || null;
   const activeImage =
     activeThumbnailIndex === 1 && product.hover_blueprint_img
       ? product.hover_blueprint_img
@@ -583,9 +613,10 @@ export default function TypeConfigurator({
           )}
         </div>
 
-        {(product.product_type === "CHAIR" ||
-          product.product_type === "STAND" ||
-          product.product_type === "RACK") && (
+        {product.is_knockdown_available &&
+          (product.product_type === "CHAIR" ||
+            product.product_type === "STAND" ||
+            product.product_type === "RACK") && (
           <div className="p-4 rounded-xl bg-[#F5F5F7] border border-neutral-200">
             <p className="text-xs font-bold text-[#111111]">
               SANRA Zero-Shake Telescopic Lock™ (200 Kg Tested)
@@ -626,6 +657,11 @@ export default function TypeConfigurator({
           <p className="text-xs text-neutral-500 mt-1 uppercase tracking-wider font-semibold">
             SKU: {product.sku} • Direct SIDCO Coimbatore Production
           </p>
+          {product.short_description && (
+            <p className="mt-2 text-sm leading-relaxed text-neutral-600">
+              {product.short_description}
+            </p>
+          )}
         </div>
 
         {visibleGroups.map((group, index) => {
