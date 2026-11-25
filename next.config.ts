@@ -77,6 +77,7 @@ const nextConfig: NextConfig = {
     "/api/quote-pdf": ["./lib/fonts/**/*"],
     "/api/warranty-pdf": ["./lib/fonts/**/*"],
     "/api/bulk-quote-pdf": ["./lib/fonts/**/*"],
+    "/*": ["./lib/fonts/**/*"],
   },
   experimental: {
     serverActions: {

@@ -1,4 +1,7 @@
-﻿import sharp from "sharp";
+﻿import { readFile } from "node:fs/promises";
+import path from "node:path";
+import fontkit from "@pdf-lib/fontkit";
+import sharp from "sharp";
 
 export type MediaProfile = "catalog" | "project" | "order" | "swatch";
 
@@ -22,13 +25,70 @@ export interface ProtectedImage {
   sourceType: (typeof formats)[keyof typeof formats];
 }
 
-function watermarkSvg(
+interface TextRun {
+  width: number;
+  markup: string;
+}
+
+type WatermarkFont = ReturnType<typeof fontkit.create>;
+
+let fontLoader: Promise<WatermarkFont | null> | null = null;
+const textRuns = new Map<string, TextRun>();
+
+function loadWatermarkFont() {
+  fontLoader ??= readFile(path.join(process.cwd(), "lib", "fonts", "NotoSans-Bold.ttf"))
+    .then((bytes) => fontkit.create(bytes))
+    .catch(() => null);
+  return fontLoader;
+}
+
+function textRun(font: WatermarkFont, text: string): TextRun {
+  const cached = textRuns.get(text);
+  if (cached) return cached;
+  const run = font.layout(text);
+  let pen = 0;
+  let markup = "";
+  run.glyphs.forEach((glyph, index) => {
+    const position = run.positions[index];
+    const outline = glyph.path.toSVG();
+    if (outline) {
+      markup += '<path transform="translate(' + (pen + position.xOffset) + ' ' + position.yOffset + ')" d="' + outline + '"/>';
+    }
+    pen += position.xAdvance;
+  });
+  const result = { width: pen, markup };
+  textRuns.set(text, result);
+  return result;
+}
+
+function svgText(
+  font: WatermarkFont | null,
+  text: string,
+  x: number,
+  baseline: number,
+  fontSize: number,
+  anchor: "middle" | "end"
+) {
+  if (!font) {
+    return '<text x="' + x + '" y="' + baseline + '" font-size="' + fontSize + '" text-anchor="' + anchor +
+      '" stroke-width="' + fontSize * .03 + '">' + text + '</text>';
+  }
+  const run = textRun(font, text);
+  const scale = fontSize / font.unitsPerEm;
+  const width = run.width * scale;
+  const left = anchor === "middle" ? x - width / 2 : x - width;
+  return '<g transform="translate(' + left + ' ' + baseline + ') scale(' + scale + ' ' + -scale +
+    ')" stroke-width="' + font.unitsPerEm * .03 + '">' + run.markup + '</g>';
+}
+
+async function watermarkSvg(
   width: number,
   height: number,
   profile: MediaProfile,
   luminance: number,
   logo: Buffer | null
 ) {
+  const font = await loadWatermarkFont();
   const style = profiles[profile];
   const size = Math.min(width * style.width / 8.1, height * .18, 150);
   const white = luminance < .59;
@@ -42,18 +102,15 @@ function watermarkSvg(
   const logoSvg = logo
     ? '<image href="data:image/png;base64,' + logo.toString("base64") + '" x="' + (width - logoSize * 2) / 2 + '" y="' + (center - size * .58 - logoSize) + '" width="' + logoSize * 2 + '" height="' + logoSize + '"/>'
     : "";
-  const text = (value: string, x: number, y: number, font: number, anchor: string) =>
-    '<text x="' + x + '" y="' + y + '" font-size="' + font + '" text-anchor="' + anchor +
-    '" stroke-width="' + font * .03 + '">' + value + '</text>';
 
   return Buffer.from(
     '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '">' +
       '<g opacity="' + opacity + '" fill="' + fill + '" stroke="' + stroke + '" stroke-opacity=".56" paint-order="stroke fill" font-family="Arial, sans-serif" font-weight="700">' +
       logoSvg +
-      text("SANRA LIVING", width / 2, center + size * .16, size, "middle") +
-      text("INDIAN MAKE STEEL INDUSTRIES", width / 2, center + size * .65, secondSize, "middle") +
+      svgText(font, "SANRA LIVING", width / 2, center + size * .16, size, "middle") +
+      svgText(font, "INDIAN MAKE STEEL INDUSTRIES", width / 2, center + size * .65, secondSize, "middle") +
       '</g><g opacity="' + Math.min(.8, opacity + .17) + '" fill="' + fill + '" stroke="' + stroke + '" stroke-opacity=".8" paint-order="stroke fill" font-family="Arial, sans-serif" font-weight="700">' +
-      text("sanraliving.com", width - Math.max(domainSize * .8, width * .035), height - Math.max(domainSize * .8, height * .05), domainSize, "end") +
+      svgText(font, "sanraliving.com", width - Math.max(domainSize * .8, width * .035), height - Math.max(domainSize * .8, height * .05), domainSize, "end") +
       '</g></svg>'
   );
 }
@@ -89,7 +146,7 @@ export async function renderProtectedImage(
   const luminance = (stats[0].mean * .213 + stats[1].mean * .715 + stats[2].mean * .072) / 255;
 
   const composited = await image()
-    .composite([{ input: watermarkSvg(width, height, profile, luminance, logo) }])
+    .composite([{ input: await watermarkSvg(width, height, profile, luminance, logo) }])
     .png()
     .toBuffer();
   const encode = (max: number) => sharp(composited)
