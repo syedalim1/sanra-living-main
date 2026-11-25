@@ -661,13 +661,18 @@ html:has(.sanra-site) { scroll-padding-top: 84px; }
 }
 .sanra-project:nth-child(even) { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
 .sanra-project:nth-child(even) .sanra-project-gallery { grid-column: 2; grid-row: 1; }
-.sanra-project-gallery { min-width: 0; margin: 0; }
-.sanra-project-photo { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--paper); }
+.sanra-project-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  align-self: start;
+}
+.sanra-project-photo { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: var(--paper); margin: 0; }
+.sanra-project-photo--cover, .sanra-project-photo--wide { grid-column: 1 / -1; aspect-ratio: 16 / 10; }
+.sanra-project-gallery[data-count="1"] .sanra-project-photo { grid-column: 1 / -1; aspect-ratio: 4 / 3; }
 .sanra-project-photo img { object-fit: contain; animation: sanra-catalog-image .32s ease-out; }
-.sanra-project-gallery figcaption { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); font-size: .79rem; }
-.sanra-project-gallery button { display: grid; width: 48px; min-height: 44px; place-items: center; cursor: pointer; }
-.sanra-project-gallery button:hover { color: var(--rust); }
-.sanra-project-gallery button:disabled { opacity: .42; cursor: default; }
 .sanra-project-copy h2 { margin: 8px 0 20px; font-size: clamp(1.9rem, 4.5vw, 4rem); line-height: 1; letter-spacing: -.06em; font-weight: 620; }
 .sanra-project-copy dl > div { display: grid; grid-template-columns: 5.4rem 1fr; gap: 9px; border-top: 1px solid var(--line); padding: 11px 0; font-size: .9rem; }
 .sanra-project-copy dt, .sanra-project-copy > p:last-child { color: var(--muted); }
