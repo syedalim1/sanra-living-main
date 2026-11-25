@@ -1,4 +1,6 @@
-"use client";
+﻿"use client";
+
+import { adminImageUrl } from "@/lib/media/paths";
 
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -201,7 +203,7 @@ function VariantEditor({
             className="block w-full text-[10px] text-neutral-600 file:mr-2 file:px-2 file:py-1 file:rounded file:border-0 file:bg-neutral-900 file:text-white file:text-[9px] file:font-bold file:uppercase"
           />
           <span className="block text-[9px] text-neutral-500">
-            Optional. Compressed in your browser first, then watermarked and saved as WEBP.
+            Optional. The original is stored privately and a protected WebP is published.
           </span>
         </label>
 
@@ -209,7 +211,7 @@ function VariantEditor({
           {previewUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={previewUrl}
+              src={adminImageUrl(previewUrl) ?? undefined}
               alt="Variant preview"
               className="w-12 h-12 rounded border border-neutral-200 object-cover bg-neutral-100"
             />

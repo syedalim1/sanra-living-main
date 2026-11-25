@@ -1,4 +1,6 @@
-import "server-only";
+﻿import "server-only";
+
+import { adminImageUrl } from "@/lib/media/paths";
 
 import Link from "next/link";
 import { connection } from "next/server";
@@ -83,7 +85,7 @@ export default async function AdminSetsPage() {
               {set.main_image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={set.main_image_url}
+                  src={adminImageUrl(set.main_image_url) ?? undefined}
                   alt=""
                   className="w-16 h-16 rounded-lg object-cover border border-neutral-200"
                 />

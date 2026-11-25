@@ -1,4 +1,6 @@
-"use client";
+﻿"use client";
+
+import { adminImageUrl } from "@/lib/media/paths";
 
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -164,7 +166,7 @@ export default function SwatchManager({ options }: { options: AdminOption[] }) {
                   <div className="aspect-square rounded bg-neutral-100 overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={option.swatch_texture_img ?? ""}
+                      src={adminImageUrl(option.swatch_texture_img) ?? undefined}
                       alt={option.label_en}
                       className="w-full h-full object-cover"
                     />

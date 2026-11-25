@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useEffect, useRef, useState, type DragEvent } from "react";
 import { ImagePlus, Loader2, Plus, Save, X } from "lucide-react";
@@ -10,7 +10,8 @@ import {
   WARRANTY_PRESETS,
 } from "@/lib/admin/validation";
 import { PRODUCT_CATEGORY_OPTIONS } from "@/lib/catalogCategories";
-import { compressImage, formatBytes } from "@/lib/imageCompression";
+import { formatBytes } from "@/lib/imageCompression";
+import { adminImageUrl } from "@/lib/media/paths";
 import type {
   AdminPricingRule,
   AdminProduct,
@@ -78,17 +79,12 @@ function ImageDropField({
   const [removeExisting, setRemoveExisting] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [compressing, setCompressing] = useState(false);
-  const [compressionInfo, setCompressionInfo] = useState<
-    { original: number; compressed: number } | null
-  >(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
-  const selectionToken = useRef(0);
 
   const hasExisting = Boolean(currentUrl && currentUrl !== PRODUCT_PLACEHOLDER);
-  const shownUrl = previewUrl ?? (removeExisting ? null : hasExisting ? currentUrl : null);
+  const shownUrl = previewUrl ?? (removeExisting ? null : hasExisting ? adminImageUrl(currentUrl) : null);
 
   useEffect(() => {
     return () => {
@@ -103,7 +99,7 @@ function ImageDropField({
     }
   }
 
-  async function applyFile(file: File | undefined) {
+  function applyFile(file: File | undefined) {
     if (!file) return;
 
     if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
@@ -116,13 +112,10 @@ function ImageDropField({
       return;
     }
 
-    const token = ++selectionToken.current;
     setError(null);
     setRemoveExisting(false);
-    setCompressionInfo(null);
     setSelectedName(file.name);
     setSelectedSize(file.size);
-    setCompressing(true);
 
     if (inputRef.current) {
       const transfer = new DataTransfer();
@@ -135,40 +128,14 @@ function ImageDropField({
     objectUrlRef.current = preview;
     setPreviewUrl(preview);
 
-    const result = await compressImage(file);
-    if (token !== selectionToken.current) return;
 
-    if (inputRef.current) {
-      const transfer = new DataTransfer();
-      transfer.items.add(result.file);
-      inputRef.current.files = transfer.files;
-    }
-
-    if (result.compressed) {
-      releaseObjectUrl();
-      const compressedPreview = URL.createObjectURL(result.file);
-      objectUrlRef.current = compressedPreview;
-      setPreviewUrl(compressedPreview);
-      setSelectedName(result.file.name);
-    }
-
-    setSelectedSize(result.compressedSize);
-    setCompressionInfo(
-      result.compressed
-        ? { original: result.originalSize, compressed: result.compressedSize }
-        : null
-    );
-    setCompressing(false);
   }
 
   function clearSelection() {
-    selectionToken.current += 1;
     releaseObjectUrl();
     setPreviewUrl(null);
     setSelectedName(null);
     setSelectedSize(null);
-    setCompressionInfo(null);
-    setCompressing(false);
     setError(null);
     if (inputRef.current) inputRef.current.value = "";
   }
@@ -252,22 +219,10 @@ function ImageDropField({
           {selectedName ? "Change image" : hasExisting ? "Replace image" : "Choose image"}
         </button>
 
-        {compressing && (
-          <span className="text-[10px] font-semibold text-amber-700">
-            Compressing for faster upload…
-          </span>
-        )}
-
-        {!compressing && selectedName && (
+        {selectedName && (
           <span className="text-[10px] text-neutral-500 truncate max-w-[220px]">
             {selectedName}
-            {compressionInfo
-              ? ` · ${formatBytes(compressionInfo.original)} → ${formatBytes(
-                  compressionInfo.compressed
-                )}`
-              : selectedSize != null
-              ? ` · ${formatBytes(selectedSize)}`
-              : ""}
+            {selectedSize != null ? " · " + formatBytes(selectedSize) : ""}
           </span>
         )}
       </div>
@@ -743,8 +698,8 @@ export default function ProductForm({
           <h2 className="text-sm font-bold text-[#111111]">Product Images</h2>
           <p className="text-[11px] text-neutral-500 mt-1">
             {isEdit
-              ? "Replace or remove images and save. Photos are compressed in your browser to 1600 px WEBP for faster uploads."
-              : "Add images now — they upload when you create the product. Photos are compressed in your browser to 1600 px WEBP before upload."}
+              ? "Replace or remove images and save. The server keeps the original private and creates a protected WebP."
+              : "Add images when you create the product. The server keeps the originals private."}
           </p>
         </div>
 

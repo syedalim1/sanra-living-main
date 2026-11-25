@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import "server-only";
 
@@ -24,9 +24,8 @@ import {
 import {
   buildStoragePath,
   isManagedImage,
-  processAdminImage,
   removeStoredImage,
-  uploadImageBuffer,
+  uploadImageFile,
 } from "@/lib/admin/images";
 import type { AdminActionResult } from "@/lib/admin/product-types";
 
@@ -64,9 +63,7 @@ async function storeProductImage(
   file: File
 ): Promise<string> {
   validateImageSize(file.size);
-  const processed = await processAdminImage(Buffer.from(await file.arrayBuffer()), true);
-  const path = buildStoragePath(sku, kind);
-  return await uploadImageBuffer(db, path, processed.buffer);
+  return await uploadImageFile(db, buildStoragePath(sku, kind), file);
 }
 
 async function discardUploads(
@@ -649,9 +646,7 @@ export async function uploadProductImageAction(
       return { ok: false, error: "Product not found." };
     }
 
-    const processed = await processAdminImage(Buffer.from(await file.arrayBuffer()), true);
-    const path = buildStoragePath(product.sku, kind);
-    const url = await uploadImageBuffer(db, path, processed.buffer);
+    const url = await uploadImageFile(db, buildStoragePath(product.sku, kind), file);
     const column = kind === "main" ? "main_image_url" : "hover_blueprint_img";
     const previousUrl =
       kind === "main" ? product.main_image_url : product.hover_blueprint_img;
@@ -800,9 +795,7 @@ export async function saveVariantAction(
 
     if (file) {
       validateImageSize(file.size);
-      const processed = await processAdminImage(Buffer.from(await file.arrayBuffer()), true);
-      const path = buildStoragePath(product.sku, "variant");
-      uploadedUrl = await uploadImageBuffer(db, path, processed.buffer);
+      uploadedUrl = await uploadImageFile(db, buildStoragePath(product.sku, "variant"), file);
       previewUrl = uploadedUrl;
     }
 
@@ -957,9 +950,7 @@ export async function uploadSwatchAction(
       return { ok: false, error: "Swatch option not found." };
     }
 
-    const processed = await processAdminImage(Buffer.from(await file.arrayBuffer()), false);
-    const path = buildStoragePath(optionCode, "swatch", "swatches");
-    const url = await uploadImageBuffer(db, path, processed.buffer);
+    const url = await uploadImageFile(db, buildStoragePath(optionCode, "swatch", "swatches"), file);
 
     const { error: updateError } = await db
       .from("configurator_options")

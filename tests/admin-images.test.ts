@@ -1,93 +1,80 @@
-import { describe, expect, it, vi } from "vitest";
+﻿import { describe, expect, it, vi } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import sharp from "sharp";
+import { renderProtectedImage, WATERMARK_MARKER } from "../lib/media/watermark";
+import { MEDIA_DERIVATIVES_BUCKET, MEDIA_ORIGINALS_BUCKET } from "../lib/media/paths";
 
 vi.mock("server-only", () => ({}));
 
-describe("admin image pipeline", () => {
-  it("resizes, converts to WEBP, strips EXIF and changes pixels for the watermark", async () => {
-    const { processAdminImage } = await import("../lib/admin/images");
+function solid(width: number, height: number, color: string) {
+  return sharp({ create: { width, height, channels: 3, background: color } });
+}
 
-    const input = await sharp({
-      create: {
-        width: 2400,
-        height: 1200,
-        channels: 3,
-        background: { r: 30, g: 90, b: 160 },
-      },
-    })
-      .jpeg()
-      .withExif({ IFD0: { Copyright: "SANRA Test" } })
-      .toBuffer();
-
-    const beforeMetadata = await sharp(input).metadata();
-    expect(beforeMetadata.exif).toBeDefined();
-
-    const processed = await processAdminImage(input, true);
-    const plain = await processAdminImage(input, false);
-    const metadata = await sharp(processed.buffer).metadata();
-
-    expect(metadata.format).toBe("webp");
-    expect(metadata.width).toBeLessThanOrEqual(1600);
-    expect(metadata.height).toBeLessThanOrEqual(1600);
-    expect(metadata.exif).toBeUndefined();
-    expect(Buffer.compare(processed.buffer, plain.buffer)).not.toBe(0);
-    expect(processed.buffer.length).toBeGreaterThan(0);
+describe("photo protection", () => {
+  it("embeds a watermark in WebP pixels, preserves aspect ratio and strips source metadata", async () => {
+    const input = await solid(1800, 900, "#256397").jpeg()
+      .withExif({ IFD0: { Copyright: "Source EXIF" } }).toBuffer();
+    const image = await renderProtectedImage(input, "catalog");
+    const full = await sharp(image.buffer).metadata();
+    const mobile = await sharp(image.mobile).metadata();
+    expect([full.format, full.width, full.height]).toEqual(["webp", 1600, 800]);
+    expect(full.exif).toBeUndefined();
+    expect(full.xmp?.includes(WATERMARK_MARKER)).toBe(true);
+    expect([mobile.width, mobile.height]).toEqual([640, 320]);
+    expect(image.mobile.length).toBeLessThan(image.buffer.length);
+    const pixels = await sharp(image.buffer).stats();
+    expect(pixels.channels[0].stdev).toBeGreaterThan(3);
+    await expect(renderProtectedImage(image.buffer, "catalog")).rejects.toThrow(/already watermarked/);
+    await expect(renderProtectedImage(image.mobile, "catalog")).rejects.toThrow(/already watermarked/);
   });
 
-  it("keeps swatch images unwatermarked and capped at 1600 px", async () => {
-    const { processAdminImage } = await import("../lib/admin/images");
-
-    const input = await sharp({
-      create: {
-        width: 900,
-        height: 400,
-        channels: 3,
-        background: { r: 210, g: 180, b: 120 },
-      },
-    })
-      .png()
-      .toBuffer();
-
-    const processed = await processAdminImage(input, false);
-    const metadata = await sharp(processed.buffer).metadata();
-
-    expect(metadata.format).toBe("webp");
-    expect(processed.width).toBe(900);
-    expect(processed.height).toBe(400);
+  it("adapts contrast and gives bulk supply images a stronger visible mark", async () => {
+    const lightInput = await solid(500, 300, "#fff").png().toBuffer();
+    const darkInput = await solid(500, 300, "#000").png().toBuffer();
+    const [light, dark, project] = await Promise.all([
+      renderProtectedImage(lightInput, "catalog"),
+      renderProtectedImage(darkInput, "catalog"),
+      renderProtectedImage(darkInput, "project"),
+    ]);
+    const [lightStats, darkStats, projectStats] = await Promise.all(
+      [light, dark, project].map((image) => sharp(image.buffer).stats())
+    );
+    expect(lightStats.channels[0].min).toBeLessThan(215);
+    expect(darkStats.channels[0].max).toBeGreaterThan(45);
+    expect(projectStats.channels[0].mean).toBeGreaterThan(darkStats.channels[0].mean);
   });
 
-  it("rejects unsupported content and oversized files", async () => {
-    const { processAdminImage } = await import("../lib/admin/images");
+  it("rejects unsupported images and enforces the upload size limit", async () => {
+    const gif = await solid(20, 20, "#fff").gif().toBuffer();
+    await expect(renderProtectedImage(gif, "catalog")).rejects.toThrow(/JPG, PNG and WebP/);
     const { validateImageSize, MAX_IMAGE_BYTES } = await import("../lib/admin/validation");
-
-    const gif = await sharp({
-      create: {
-        width: 20,
-        height: 20,
-        channels: 3,
-        background: { r: 0, g: 0, b: 0 },
-      },
-    })
-      .gif()
-      .toBuffer();
-
-    await expect(processAdminImage(gif, false)).rejects.toThrow(
-      "Only JPG, PNG and WEBP images are accepted."
-    );
-
-    expect(() => validateImageSize(MAX_IMAGE_BYTES + 1)).toThrow(
-      "Images must be 8 MB or smaller."
-    );
+    expect(() => validateImageSize(MAX_IMAGE_BYTES + 1)).toThrow(/8 MB/);
   });
 
-  it("generates random storage paths without the original filename", async () => {
-    const { buildStoragePath } = await import("../lib/admin/images");
-
+  it("archives the unchanged upload in a private bucket and saves only derivatives to the serving bucket", async () => {
+    const { buildStoragePath, uploadImageFile } = await import("../lib/admin/images");
     const first = buildStoragePath("IMS-CF-42", "main");
     const second = buildStoragePath("IMS-CF-42", "main");
-
     expect(first).toMatch(/^products\/IMS-CF-42\/main-[0-9a-f-]+\.webp$/);
-    expect(first).not.toBe(second);
-    expect(first).not.toContain("original");
+    expect(second).not.toBe(first);
+    const input = await solid(140, 90, "#f2bc60").jpeg().toBuffer();
+    const uploads: Array<{ bucket: string; key: string; bytes: Buffer }> = [];
+    const db = {
+      storage: { from: (bucket: string) => ({
+        download: vi.fn().mockResolvedValue({ data: null }),
+        upload: async (key: string, bytes: Buffer) => {
+          uploads.push({ bucket, key, bytes });
+          return { error: null };
+        },
+      }) },
+    } as unknown as SupabaseClient;
+
+    const url = await uploadImageFile(db, first, new File([Uint8Array.from(input)], "supplier-original.jpg"));
+    expect(url).toBe("/api/media/catalog/" + first);
+    expect(uploads.map(({ bucket }) => bucket)).toEqual([MEDIA_ORIGINALS_BUCKET, MEDIA_DERIVATIVES_BUCKET, MEDIA_DERIVATIVES_BUCKET]);
+    expect(uploads[0].bytes.equals(input)).toBe(true);
+    for (const derivative of uploads.slice(1)) {
+      expect((await sharp(derivative.bytes).metadata()).xmp?.includes(WATERMARK_MARKER)).toBe(true);
+    }
   });
 });

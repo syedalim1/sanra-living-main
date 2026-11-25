@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 export default function GlobalError({
   reset,
@@ -73,6 +73,7 @@ export default function GlobalError({
             >
               Try again
             </button>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Recover from a root error with a full document navigation. */}
             <a
               href="/"
               style={{

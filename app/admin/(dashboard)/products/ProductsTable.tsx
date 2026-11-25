@@ -1,4 +1,6 @@
-"use client";
+﻿"use client";
+
+import { adminImageUrl } from "@/lib/media/paths";
 
 import { useState, useActionState } from "react";
 import Link from "next/link";
@@ -132,7 +134,7 @@ export default function ProductsTable({ products }: { products: AdminProduct[] }
                 <td className="px-4 py-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={product.main_image_url}
+                    src={adminImageUrl(product.main_image_url) ?? undefined}
                     alt=""
                     className="w-12 h-12 rounded-md object-cover border border-neutral-200 bg-neutral-100"
                   />

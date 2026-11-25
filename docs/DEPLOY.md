@@ -38,7 +38,7 @@ GOOGLE_MAPS_URL
 4. Keep the email/password provider enabled; disable public sign-ups.
 5. Set **Authentication → URL Configuration → Site URL** to the production origin.
 6. Add the production origin to **Redirect URLs** (for example `https://sanraliving.com/**`).
-7. Create the private storage buckets used by migrations: `order-photos`, `cad-files`; `product-images` remains the public image bucket.
+7. Follow the [photo protection rollout](MEDIA-ROLLOUT.md) to provision media storage, backfill legacy photos and close the old public image endpoint.
 
 ## 5. Host project settings
 

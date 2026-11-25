@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 import type { MetadataRoute } from "next";
 import { connection } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -26,6 +26,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/projects`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
     },
     {
       url: `${SITE_URL}/b2b`,

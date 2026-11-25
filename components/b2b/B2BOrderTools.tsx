@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -238,6 +238,13 @@ export default function B2BOrderTools({
       aislePct: Math.max(15, Math.min(40, Number(aisle) || 25)),
     });
   }, [roomLength, roomWidth, roomTableSize, seatsPerTable, clearance, aisle]);
+
+  useEffect(() => {
+    const anchor = window.location.hash.slice(1);
+    if (anchor === "calculator" || anchor === "bulk") {
+      document.getElementById(anchor)?.scrollIntoView({ block: "start" });
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

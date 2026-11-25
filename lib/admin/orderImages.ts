@@ -1,7 +1,8 @@
-import "server-only";
+﻿import "server-only";
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sanitizeStorageSegment } from "@/lib/admin/images";
+import { archiveAndRender, removeOriginal } from "@/lib/media/storage";
 
 export const ORDER_PHOTO_BUCKET = "order-photos";
 
@@ -18,13 +19,18 @@ export async function uploadOrderPhoto(
   path: string,
   buffer: Buffer
 ): Promise<void> {
-  const { error } = await db.storage.from(ORDER_PHOTO_BUCKET).upload(path, buffer, {
+  const key = "order/" + path;
+  const processed = await archiveAndRender(db, key, buffer, "order");
+  const { error } = await db.storage.from(ORDER_PHOTO_BUCKET).upload(path, processed.buffer, {
     contentType: "image/webp",
     cacheControl: "600",
     upsert: false,
   });
 
-  if (error) throw new Error("Order photo upload failed.");
+  if (error) {
+    await removeOriginal(db, key);
+    throw new Error("Order photo upload failed.");
+  }
 }
 
 export async function removeOrderPhoto(
@@ -33,4 +39,5 @@ export async function removeOrderPhoto(
 ): Promise<void> {
   const { error } = await db.storage.from(ORDER_PHOTO_BUCKET).remove([path]);
   if (error) throw new Error("Order photo cleanup failed.");
+  await removeOriginal(db, "order/" + path);
 }

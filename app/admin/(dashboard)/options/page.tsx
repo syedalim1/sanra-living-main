@@ -1,4 +1,6 @@
-import "server-only";
+﻿import "server-only";
+
+import { adminImageUrl } from "@/lib/media/paths";
 
 import { connection } from "next/server";
 import Link from "next/link";
@@ -394,7 +396,7 @@ export default async function OptionsPage({ searchParams }: PageProps) {
                           {option.swatch_texture_img ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={option.swatch_texture_img}
+                              src={adminImageUrl(option.swatch_texture_img) ?? undefined}
                               alt=""
                               className="w-8 h-8 rounded object-cover border border-neutral-200"
                             />

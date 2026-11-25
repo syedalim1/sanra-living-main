@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -8,6 +8,8 @@ import {
   X,
   SlidersHorizontal,
   Package,
+  Images,
+  Camera,
   ClipboardList,
   Users,
   ListTree,
@@ -21,6 +23,8 @@ const NAV_ITEMS = [
   { label: "Options", href: "/admin/options", icon: ListTree },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Orders", href: "/admin/orders", icon: ClipboardList },
+  { label: "Projects", href: "/admin/projects", icon: Images },
+  { label: "Photo protection", href: "/admin/media", icon: Camera },
   { label: "Leads", href: "/admin/leads", icon: Users, badgeKey: "leads" },
 ];
 

@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import { Lock, MessageSquare } from "lucide-react";
+import { useEffect, useState, type ReactNode, type FormEvent } from "react";
+import { Lock } from "lucide-react";
 
 const STORAGE_KEY = "sanra-b2b-unlock";
 
@@ -16,86 +16,61 @@ export default function B2BPriceGate({ children }: { children: ReactNode }) {
       try {
         if (window.localStorage.getItem(STORAGE_KEY)) setUnlocked(true);
       } catch {
-        // Ignore storage access failures.
+        // Continue with the form if storage is unavailable.
       }
     });
 
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
+  function unlock(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (name.trim().length < 2) {
+      setError("Enter your name.");
+      return;
+    }
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      setError("Enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ name: name.trim(), phone, at: Date.now() }));
+    } catch {
+      // The tools can still be opened for this visit.
+    }
+    setUnlocked(true);
+  }
+
   if (unlocked) return <>{children}</>;
 
   return (
-    <div className="relative">
-      <div className="pointer-events-none select-none blur-sm opacity-40" aria-hidden="true">
-        {children}
-      </div>
-
-      <div className="absolute inset-0 z-20 flex items-start justify-center pt-6 px-4">
-        <div className="w-full max-w-md rounded-xl border border-neutral-200 bg-white p-6 shadow-xl space-y-3">
-          <div className="flex items-center gap-2 text-[#111111]">
-            <Lock className="w-5 h-5" />
-            <h2 className="text-sm font-bold uppercase tracking-wider">
-              Unlock factory wholesale prices
-            </h2>
-          </div>
-          <p className="text-[11px] text-neutral-600">
-            Enter your name and WhatsApp number to view the full B2B rate card. This
-            keeps our factory pricing private from anonymous scraping.
-          </p>
-
-          <label className="block space-y-1 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-            Name
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-neutral-300 text-sm font-normal"
-            />
+    <div id="calculator">
+      <section id="bulk" className="sanra-trade-gate" aria-labelledby="trade-tools-heading">
+        <div>
+          <p className="sanra-label"><Lock size={14} aria-hidden="true" /> Trade tools</p>
+          <h2 id="trade-tools-heading">Plan your room and build a bulk quote.</h2>
+          <p>Use your name and WhatsApp number to open the room size calculator and wholesale pricing tools.</p>
+        </div>
+        <form onSubmit={unlock}>
+          <label>
+            Your name
+            <input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" />
           </label>
-
-          <label className="block space-y-1 text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-            WhatsApp / phone number
+          <label>
+            WhatsApp or phone number
             <input
               value={phone}
-              onChange={(event) =>
-                setPhone(event.target.value.replace(/\D/g, "").slice(0, 12))
-              }
+              onChange={(event) => setPhone(event.target.value.replace(/\D/g, "").slice(0, 12))}
+              type="tel"
               inputMode="numeric"
+              autoComplete="tel-national"
               placeholder="10-digit number"
-              className="w-full px-3 py-2 rounded-md border border-neutral-300 text-sm font-normal"
             />
           </label>
-
-          {error && <p className="text-[11px] font-semibold text-red-700">{error}</p>}
-
-          <button
-            type="button"
-            onClick={() => {
-              if (name.trim().length < 2) {
-                setError("Enter your name.");
-                return;
-              }
-              if (!/^[6-9]\d{9}$/.test(phone)) {
-                setError("Enter a valid 10-digit Indian mobile number.");
-                return;
-              }
-              try {
-                window.localStorage.setItem(
-                  STORAGE_KEY,
-                  JSON.stringify({ name: name.trim(), phone, at: Date.now() })
-                );
-              } catch {
-                // Continue even if storage is blocked.
-              }
-              setUnlocked(true);
-            }}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-emerald-700 text-white text-[11px] font-bold uppercase tracking-wider"
-          >
-            <MessageSquare className="w-4 h-4" />
-            Unlock wholesale prices
-          </button>
-        </div>
-      </div>
+          {error && <p role="alert" className="text-red-800">{error}</p>}
+          <button type="submit" className="sanra-button sanra-button--rust">Open trade tools</button>
+        </form>
+      </section>
     </div>
   );
 }

@@ -1,19 +1,21 @@
-import { readFileSync } from "node:fs";
+﻿import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const PUBLIC_SOURCES = [
   "app/layout.tsx",
-  "app/page.tsx",
-  "app/products/page.tsx",
-  "app/products/[sku]/page.tsx",
-  "app/contact/page.tsx",
+  "app/(public)/page.tsx",
+  "components/public/PublicSite.tsx",
+  "components/public/FeaturedRange.tsx",
+  "app/(public)/products/page.tsx",
+  "app/(public)/products/[sku]/page.tsx",
+  "app/(public)/contact/page.tsx",
   "components/Navbar.tsx",
   "components/Footer.tsx",
   "components/FloatingWhatsApp.tsx",
   "components/TypeConfigurator.tsx",
   "components/TrackOrderForm.tsx",
-  "app/track/page.tsx",
+  "app/(public)/track/page.tsx",
   "app/api/price/route.ts",
   "app/api/track/route.ts",
   "app/api/warranty-pdf/route.ts",

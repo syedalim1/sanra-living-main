@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -8,14 +8,6 @@ function supabaseOrigin(): string {
     return new URL(supabaseUrl ?? "").origin;
   } catch {
     return "https://*.supabase.co";
-  }
-}
-
-function supabaseHostname(): string {
-  try {
-    return new URL(supabaseUrl ?? "").hostname;
-  } catch {
-    return "*.supabase.co";
   }
 }
 
@@ -92,33 +84,15 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: supabaseHostname(),
-        pathname: "/storage/v1/object/public/**",
-      },
-      {
-        protocol: "https",
-        hostname: supabaseHostname(),
-        pathname: "/storage/v1/object/sign/**",
-      },
-      {
-        // Safety net for deployments where the build-time Supabase env differs
-        // from the runtime project (or is supplied only at runtime).
-        protocol: "https",
-        hostname: "*.supabase.co",
-        pathname: "/storage/v1/object/**",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-        pathname: "/**",
-      },
+    localPatterns: [
+      { pathname: "/images/**" },
+      { pathname: "/og-default.png" },
+      { pathname: "/api/media/catalog/**" },
     ],
   },
   async rewrites() {
     return [
+      { source: "/images/:name(cat-[a-z-]+).jpg", destination: "/images/:name.webp" },
       {
         source: "/.well-known/security.txt",
         destination: "/security-txt",

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import "server-only";
 
@@ -13,7 +13,6 @@ import {
   parseNumber,
   validateImageSize,
 } from "@/lib/admin/validation";
-import { processAdminImage } from "@/lib/admin/images";
 import {
   buildOrderPhotoPath,
   removeOrderPhoto,
@@ -438,12 +437,8 @@ export async function uploadOrderPhotoAction(
       return { ok: false, error: "Order not found." };
     }
 
-    const processed = await processAdminImage(
-      Buffer.from(await file.arrayBuffer()),
-      true
-    );
     const path = buildOrderPhotoPath(order.tracking_code);
-    await uploadOrderPhoto(db, path, processed.buffer);
+    await uploadOrderPhoto(db, path, Buffer.from(await file.arrayBuffer()));
 
     const { data: photo, error } = await db
       .from("order_photos")

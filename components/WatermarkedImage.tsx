@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Image from "next/image";
 import PlaceholderImage from "./PlaceholderImage";
+import { mediaKeyFromUrl, publicImageUrl } from "@/lib/media/paths";
 
 interface WatermarkedImageProps {
   src: string | null | undefined;
@@ -16,17 +17,11 @@ interface WatermarkedImageProps {
   sizes?: string;
 }
 
-function isPlaceholderSource(src: string): boolean {
-  return /placeholder/i.test(src);
-}
-
-function isRealPhoto(src: string): boolean {
-  return /^https?:\/\//i.test(src) && /\.(jpe?g|png|webp|avif)(\?|#|$)/i.test(src);
-}
+const aspectClasses = { square: "aspect-square", wide: "aspect-video", video: "aspect-[4/3]", auto: "" };
 
 export default function WatermarkedImage({
   src,
-  fallbackSrc = null,
+  fallbackSrc,
   alt,
   width = 800,
   height = 600,
@@ -35,58 +30,36 @@ export default function WatermarkedImage({
   priority = false,
   sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
 }: WatermarkedImageProps) {
-  const [currentSrc, setCurrentSrc] = useState<string>(src ?? "");
-  const [failed, setFailed] = useState(false);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const [failedFallback, setFailedFallback] = useState<string | null>(null);
+  const primary = publicImageUrl(src);
+  const fallback = publicImageUrl(fallbackSrc);
+  const current = primary && primary !== failedSrc
+    ? primary
+    : fallback && fallback !== failedFallback && fallback !== primary ? fallback : null;
 
-  if (!currentSrc || failed) {
-    return <PlaceholderImage aspectRatio={aspectRatio} className={className} label={alt} />;
-  }
+  if (!current) return <PlaceholderImage aspectRatio={aspectRatio} className={className} label={alt} />;
 
-  const aspectClass =
-    aspectRatio === "square"
-      ? "aspect-square"
-      : aspectRatio === "wide"
-      ? "aspect-[16/9]"
-      : aspectRatio === "video"
-      ? "aspect-[4/3]"
-      : "";
-
-  const showWatermark = !isPlaceholderSource(currentSrc) && isRealPhoto(currentSrc);
-  const isRemote = /^https?:\/\//i.test(currentSrc);
+  const protectedPhoto = Boolean(mediaKeyFromUrl(current));
 
   return (
-    <div
-      className={`relative overflow-hidden bg-[#F5F5F7] select-none ${aspectClass} ${className}`}
-    >
-      <Image
-        src={currentSrc}
-        alt={alt}
-        width={width}
-        height={height}
-        priority={priority}
-        sizes={sizes}
-        className="w-full h-full object-cover"
-        // Remote Supabase Storage URLs bypass the image optimizer, which can
-        // reject them when the deployment host differs from the build env.
-        unoptimized={isRemote}
-        onError={() => {
-          if (fallbackSrc && fallbackSrc !== currentSrc) {
-            setCurrentSrc(fallbackSrc);
-          } else {
-            setFailed(true);
-          }
-        }}
-      />
-      {showWatermark && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-          <span
-            className="text-neutral-900/15 text-xs sm:text-sm md:text-base font-extrabold tracking-[0.25em] sm:tracking-[0.35em] uppercase text-center transform -rotate-12 select-none px-4 py-1.5 border border-neutral-900/10 rounded backdrop-blur-[0.5px]"
-            aria-hidden="true"
-          >
-            SANRA LIVING
-          </span>
-        </div>
-      )}
+    <div className={"relative overflow-hidden bg-[#F5F5F7] select-none " + aspectClasses[aspectRatio] + " " + className}>
+      <picture>
+        {protectedPhoto && <source media="(max-width: 760px)" srcSet={current + "?size=mobile"} />}
+        <Image
+          src={current}
+          alt={alt}
+          width={width}
+          height={height}
+          preload={priority && !protectedPhoto}
+          fetchPriority={priority && protectedPhoto ? "high" : undefined}
+          loading={priority && protectedPhoto ? "eager" : undefined}
+          sizes={sizes}
+          unoptimized={protectedPhoto}
+          className="w-full h-full object-cover"
+          onError={() => current === primary ? setFailedSrc(primary) : setFailedFallback(current)}
+        />
+      </picture>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import "server-only";
 
@@ -7,7 +7,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
 import { writeAudit } from "@/lib/admin/audit";
 import { createServerClient } from "@/lib/supabase/server";
-import { processAdminImage, buildStoragePath, uploadImageBuffer } from "@/lib/admin/images";
+import { buildStoragePath, uploadImageFile } from "@/lib/admin/images";
 import { validateImageSize } from "@/lib/admin/validation";
 import { PRODUCT_TYPES, type ProductType } from "@/lib/productTypeConfig";
 import { FALLBACK_OPTIONS } from "@/lib/configuratorOptions";
@@ -270,12 +270,7 @@ export async function saveOptionAction(formData: FormData): Promise<void> {
   if (file instanceof File && file.size > 0) {
     try {
       validateImageSize(file.size);
-      const processed = await processAdminImage(
-        Buffer.from(await file.arrayBuffer()),
-        false
-      );
-      const path = buildStoragePath(optionCode, "swatch", group);
-      swatchUrl = await uploadImageBuffer(db, path, processed.buffer);
+      swatchUrl = await uploadImageFile(db, buildStoragePath(optionCode, "swatch", group), file);
     } catch {
       return;
     }

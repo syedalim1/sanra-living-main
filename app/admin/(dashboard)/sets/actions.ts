@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import "server-only";
 
@@ -9,9 +9,8 @@ import { writeAudit } from "@/lib/admin/audit";
 import { createServerClient } from "@/lib/supabase/server";
 import {
   buildStoragePath,
-  processAdminImage,
   removeStoredImage,
-  uploadImageBuffer,
+  uploadImageFile,
 } from "@/lib/admin/images";
 import { validateImageSize } from "@/lib/admin/validation";
 
@@ -80,9 +79,7 @@ export async function saveSetAction(formData: FormData): Promise<void> {
   async function upload(file: FormDataEntryValue | null, prefix: string) {
     if (!(file instanceof File) || file.size === 0) return null;
     validateImageSize(file.size);
-    const processed = await processAdminImage(Buffer.from(await file.arrayBuffer()), true);
-    const path = buildStoragePath(rawSku, prefix, "sets");
-    return await uploadImageBuffer(db, path, processed.buffer);
+    return uploadImageFile(db, buildStoragePath(rawSku, prefix, "sets"), file);
   }
 
   try {
