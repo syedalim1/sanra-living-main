@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import ProjectGallery from "@/components/public/ProjectGallery";
@@ -32,10 +32,10 @@ export default async function ProjectsPage() {
                 <p className="sanra-label">{project.product_type}</p>
                 <h2>{project.title}</h2>
                 <dl>
-                  <div><dt>Quantity</dt><dd>{project.quantity.toLocaleString("en-IN")} pieces</dd></div>
+                  <div><dt>Quantity</dt><dd>{project.quantity.toLocaleString("en-IN")} {project.quantity === 1 ? "piece" : "pieces"}</dd></div>
                   <div><dt>Location</dt><dd>{project.location}</dd></div>
                   {project.delivery_date && (
-                    <div><dt>Delivered</dt><dd><time dateTime={project.delivery_date}>{new Intl.DateTimeFormat("en-IN", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(project.delivery_date))}</time></dd></div>
+                    <div><dt>Delivered</dt><dd><time dateTime={project.delivery_date}>{new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(project.delivery_date))}</time></dd></div>
                   )}
                 </dl>
                 {project.delivery_details && <p>{project.delivery_details}</p>}

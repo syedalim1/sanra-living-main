@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import sharp from "sharp";
@@ -90,12 +90,15 @@ export async function regenerateMedia(db: SupabaseClient, key: string, profile: 
 }
 
 export async function removeOriginal(db: SupabaseClient, key: string) {
-  if (isOriginalKey(key)) await db.storage.from(MEDIA_ORIGINALS_BUCKET).remove([key]);
+  if (!isOriginalKey(key)) return null;
+  const { error } = await db.storage.from(MEDIA_ORIGINALS_BUCKET).remove([key]);
+  return error;
 }
 
 export async function removeProtectedMedia(db: SupabaseClient, key: string) {
   if (!isMediaKey(key)) return;
   const { error } = await db.storage.from(MEDIA_DERIVATIVES_BUCKET).remove([key, "mobile/" + key]);
   if (error) throw new Error("Image cleanup failed.");
-  await removeOriginal(db, key);
+  const originalError = await removeOriginal(db, key);
+  if (originalError) throw new Error("Original image cleanup failed.");
 }

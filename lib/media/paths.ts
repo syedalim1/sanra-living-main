@@ -1,4 +1,5 @@
-﻿export const MEDIA_ORIGINALS_BUCKET = "sanra-image-originals";
+export const MAX_PROJECT_PHOTOS = 8;
+export const MEDIA_ORIGINALS_BUCKET = "sanra-image-originals";
 export const MEDIA_DERIVATIVES_BUCKET = "sanra-image-derivatives";
 export const LEGACY_IMAGE_BUCKET = "product-images";
 const publicPrefix = "/api/media/";

@@ -4,7 +4,7 @@ Use staging first. Production provisioning, uploads, deployment and bucket chang
 
 ## 1. Provision
 
-1. Confirm the target Supabase project. Apply [the provisioning migration](../supabase/migrations/20261125124253_media_protection_and_projects.sql) in its SQL Editor. It creates two private buckets, a staff-managed project table and an owner-only readiness view. The existing `product-images` bucket keeps serving the current storefront during preparation.
+1. Confirm the target Supabase project. Apply [the provisioning migration](../supabase/migrations/20261125124253_media_protection_and_projects.sql) in its SQL Editor. It creates two private buckets, a staff-managed project table and an owner-only readiness view. Apply the [project deletion grant](../supabase/migrations/20261125131100_allow_supply_project_deletion.sql) afterward. The existing `product-images` bucket keeps serving the current storefront during preparation.
 2. Start the redesigned app on a restricted preview connected to that target. For a staging clone, rebase copied legacy storage URL origins to the staging Supabase origin in staging only. The app resolves legacy paths for the Supabase origin it is configured to use.
 3. Run this read-only query in the target SQL Editor. Include inactive catalog rows so their photographs are available if republished.
 
@@ -29,4 +29,4 @@ ORDER BY status, legacy_key;
 3. Probe previously public legacy image URLs without credentials, including a cache-busted URL. Direct access to all three private media buckets and anonymous requests to staff original URLs must fail. Confirm the protected catalog endpoints still return WebP, draft or unpublished project images return 404, and staff can download an archived original.
 4. Retire cached and separately hosted legacy copies. Pre-existing downloads and client caches cannot be recalled. If a protected image fails after cutover, fix the derivative and keep the source bucket private.
 
-To publish a project, record its actual delivery details and upload approved photographs under **Admin → Projects**.
+Under **Admin → Projects**, record the actual delivery details and select up to eight approved photos. Arrange the photos before saving. The first photo becomes the gallery cover. Saved projects can be edited, unpublished or deleted from the same editor.
