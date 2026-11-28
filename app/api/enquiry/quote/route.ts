@@ -75,7 +75,9 @@ export async function POST(req: NextRequest) {
           .select(
             "id, product_id, variant_code, frame_material, build_category_id, surface_option_id, size_code, size_label, finish_label, status, is_active"
           )
-          .in("id", variantIds),
+          .in("id", variantIds)
+          .eq("is_active", true)
+          .eq("status", "PUBLISHED"),
         supabaseServer.from("build_categories").select("id, public_label"),
         supabaseServer.from("surface_options").select("id, label"),
         supabaseServer
@@ -98,6 +100,7 @@ export async function POST(req: NextRequest) {
             .from("products")
             .select("id, sku, name, product_type")
             .in("id", productIds)
+            .eq("is_active", true)
         : { data: [] as Array<Record<string, unknown>> };
 
     const productMap = new Map(
@@ -151,6 +154,8 @@ export async function POST(req: NextRequest) {
         quantity: reqItem.quantity,
         productType: prod.product_type as string,
       });
+
+      if (calc.quote_reason === "VARIANT_NOT_PUBLISHED") continue;
 
       const sku = prod.sku as string;
       const canonicalUrl = `${SITE_URL}${productPath(sku)}`;

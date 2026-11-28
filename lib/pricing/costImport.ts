@@ -178,6 +178,10 @@ export async function stageCostImport(params: {
         .select("variant_id, manufacturing_cost"),
     ]);
 
+  if (productsRes.error || buildCatsRes.error || surfacesRes.error || variantsRes.error || pricingRes.error) {
+    throw new Error("Unable to load the catalog needed to validate the CSV.");
+  }
+
   const productBySku = new Map(
     (productsRes.data ?? []).map((p) => [
       String(p.sku).trim().toUpperCase(),
@@ -305,13 +309,14 @@ export async function stageCostImport(params: {
   }
 
   if (dbRows.length > 0) {
-    await supabaseServer.from("cost_import_rows").insert(dbRows);
+    const { error } = await supabaseServer.from("cost_import_rows").insert(dbRows);
+    if (error) throw new Error("Unable to stage the CSV rows.");
   }
 
   const validCount = previews.filter((r) => !r.validation_error).length;
   const invalidCount = previews.length - validCount;
 
-  await supabaseServer
+  const { error: statusError } = await supabaseServer
     .from("cost_import_batches")
     .update({
       status: validCount > 0 ? "VALIDATED" : "FAILED",
@@ -320,7 +325,10 @@ export async function stageCostImport(params: {
         invalid_rows: invalidCount,
       },
     })
-    .eq("id", batch.id);
+    .eq("id", batch.id)
+    .select("id")
+    .single();
+  if (statusError) throw new Error("Unable to confirm the CSV validation status.");
 
   return {
     batch_id: batch.id as string,
@@ -331,119 +339,6 @@ export async function stageCostImport(params: {
     invalid_rows: invalidCount,
     rows: previews,
   };
-}
-
-/**
- * Applies a validated cost import batch after explicit confirmation.
- * Records append-only price_history and never auto-publishes DRAFT variants.
- */
-export async function applyCostImportBatch(params: {
-  batchId: string;
-  actorEmail: string;
-  effectiveFrom?: string;
-}): Promise<{ appliedRows: number }> {
-  const { data: batch, error: batchErr } = await supabaseServer
-    .from("cost_import_batches")
-    .select("id, status")
-    .eq("id", params.batchId)
-    .maybeSingle();
-
-  if (batchErr || !batch) {
-    throw new Error("Import batch not found.");
-  }
-  if (batch.status !== "VALIDATED") {
-    throw new Error("Only validated import batches can be applied.");
-  }
-
-  const { data: rows } = await supabaseServer
-    .from("cost_import_rows")
-    .select("variant_code, manufacturing_cost, validation_error")
-    .eq("batch_id", params.batchId)
-    .is("validation_error", null);
-
-  if (!rows || rows.length === 0) {
-    throw new Error("No valid rows found in import batch.");
-  }
-
-  const variantCodes = rows.map((r) => r.variant_code as string).filter(Boolean);
-  const { data: variants } = await supabaseServer
-    .from("product_variants")
-    .select("id, variant_code")
-    .in("variant_code", variantCodes);
-
-  const variantIdByCode = new Map(
-    (variants ?? []).map((v) => [v.variant_code as string, v.id as string])
-  );
-
-  const { data: existingPricing } = await supabaseServer
-    .from("variant_pricing_private")
-    .select("variant_id, manufacturing_cost")
-    .in("variant_id", [...variantIdByCode.values()]);
-
-  const existingCostMap = new Map(
-    (existingPricing ?? []).map((p) => [
-      p.variant_id as string,
-      p.manufacturing_cost != null ? String(p.manufacturing_cost) : null,
-    ])
-  );
-
-  const effectiveDate =
-    params.effectiveFrom ?? new Date().toISOString().slice(0, 10);
-  const nowIso = new Date().toISOString();
-  let appliedRows = 0;
-
-  for (const row of rows) {
-    const variantId = variantIdByCode.get(row.variant_code as string);
-    if (!variantId || row.manufacturing_cost == null) continue;
-
-    const oldValue = existingCostMap.get(variantId) ?? null;
-    const newValue = String(row.manufacturing_cost);
-
-    const { error: upsertErr } = await supabaseServer
-      .from("variant_pricing_private")
-      .upsert(
-        {
-          variant_id: variantId,
-          manufacturing_cost: row.manufacturing_cost,
-          cost_source: "EXCEL_IMPORT",
-          cost_effective_from: effectiveDate,
-          updated_by: params.actorEmail,
-          updated_at: nowIso,
-        },
-        { onConflict: "variant_id" }
-      );
-
-    if (upsertErr) {
-      throw new Error(`Failed updating cost for ${row.variant_code}`);
-    }
-
-    await supabaseServer.from("price_history").insert({
-      entity_type: "VARIANT_PRICING",
-      entity_id: variantId,
-      variant_id: variantId,
-      field: "manufacturing_cost",
-      old_value: oldValue,
-      new_value: newValue,
-      reason: "Excel/CSV manufacturing cost import",
-      source: "EXCEL_IMPORT",
-      actor_email: params.actorEmail,
-      batch_id: params.batchId,
-    });
-
-    appliedRows += 1;
-  }
-
-  await supabaseServer
-    .from("cost_import_batches")
-    .update({
-      status: "APPLIED",
-      applied_at: nowIso,
-    })
-    .eq("id", params.batchId);
-
-  invalidatePricingCaches();
-
-  return { appliedRows };
 }
 
 export function invalidatePricingCaches(): void {

@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { startTransition, useActionState } from "react";
+import { Loader2 } from "lucide-react";
 import { saveProductSeoAction, type VariantAdminActionState } from "./variant-actions";
+
+import { editorInput, editorSecondary } from "./EditorSection";
 
 const initialState: VariantAdminActionState = {};
 
@@ -34,61 +36,49 @@ export default function ProductSeoPanel({
   return (
     <form
       action={action}
-      className="bg-white rounded-xl border border-neutral-200 p-5 space-y-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        startTransition(() => action(data));
+      }}
+      className="mt-3 space-y-4"
     >
       <input type="hidden" name="product_id" value={productId} />
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Search className="w-4 h-4 text-neutral-700" />
-          <h2 className="text-base font-bold text-[#111111]">Product SEO Fields</h2>
-        </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#111111] text-white text-xs font-bold hover:bg-neutral-800 disabled:opacity-50"
-        >
-          {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-          Save SEO
-        </button>
-      </div>
-
-      {state.error && <p className="text-xs text-red-600">{state.error}</p>}
-      {state.message && (
-        <p className="text-xs text-emerald-700 font-semibold">{state.message}</p>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
         <div>
-          <label className="block font-bold text-neutral-700 mb-1">SEO Title</label>
+          <label htmlFor="product-seo_title" className="block font-medium text-neutral-700">SEO Title</label>
           <input
+            id="product-seo_title"
             name="seo_title"
             defaultValue={seo?.seo_title ?? ""}
             placeholder={suggestedTitle}
             maxLength={120}
-            className="w-full px-3 py-2 rounded-lg border border-neutral-300"
+            className={editorInput}
           />
         </div>
         <div>
-          <label className="block font-bold text-neutral-700 mb-1">Product H1</label>
+          <label htmlFor="product-product_h1" className="block font-medium text-neutral-700">Product H1</label>
           <input
+            id="product-product_h1"
             name="product_h1"
             defaultValue={seo?.product_h1 ?? ""}
             placeholder={productName}
             maxLength={140}
-            className="w-full px-3 py-2 rounded-lg border border-neutral-300"
+            className={editorInput}
           />
         </div>
-        <div className="md:col-span-2">
-          <label className="block font-bold text-neutral-700 mb-1">
+        <div className="sm:col-span-2">
+          <label htmlFor="product-meta_description" className="block font-medium text-neutral-700">
             Meta Description
           </label>
           <textarea
+            id="product-meta_description"
             name="meta_description"
             rows={2}
             defaultValue={seo?.meta_description ?? ""}
             placeholder={suggestedDesc}
             maxLength={260}
-            className="w-full px-3 py-2 rounded-lg border border-neutral-300"
+            className={editorInput}
           />
         </div>
         <div>
@@ -96,11 +86,12 @@ export default function ProductSeoPanel({
             Image Alt Text
           </label>
           <input
+            id="product-image_alt_text"
             name="image_alt_text"
             defaultValue={seo?.image_alt_text ?? ""}
             placeholder={suggestedAlt}
             maxLength={180}
-            className="w-full px-3 py-2 rounded-lg border border-neutral-300"
+            className={editorInput}
           />
         </div>
         <div>
@@ -108,13 +99,20 @@ export default function ProductSeoPanel({
             Open Graph Image URL
           </label>
           <input
+            id="product-og_image_url"
             name="og_image_url"
             defaultValue={seo?.og_image_url ?? ""}
             placeholder="Optional custom OG image path"
             maxLength={500}
-            className="w-full px-3 py-2 rounded-lg border border-neutral-300"
+            className={editorInput}
           />
         </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p role={state.error ? "alert" : "status"} className={`text-sm ${state.error ? "text-red-700" : "text-emerald-700"}`}>{state.error ?? state.message}</p>
+        <button type="submit" disabled={saving} className={editorSecondary}>
+          {saving && <Loader2 className="size-4 animate-spin" />} Save SEO
+        </button>
       </div>
     </form>
   );

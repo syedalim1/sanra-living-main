@@ -1,417 +1,336 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Sparkles, AlertTriangle, Loader2, Save } from "lucide-react";
+import { startTransition, useActionState, useState, type FormEvent } from "react";
+import Link from "next/link";
+import { Loader2, Save, WandSparkles } from "lucide-react";
+import type { BuildCategoryLevel, FrameMaterialCode, VariantAvailability, VariantStatus } from "@/lib/variants/types";
+import { EditorSection, editorInput, editorPrimary, editorSecondary } from "./EditorSection";
 import {
   bulkUpdateVariantsAction,
   generateProductVariantsAction,
   saveVariantCostingRowAction,
   type VariantAdminActionState,
 } from "./variant-actions";
-import type { PrivatePricingProfile, PublicSurfaceOption } from "@/lib/variants/types";
 
 export interface AdminVariantRowView {
   id: string;
   variant_code: string;
-  frame_material: "SS" | "MS";
+  frame_material: FrameMaterialCode;
+  build_level: BuildCategoryLevel;
   build_category_label: string;
-  private_gauge_label: string;
   size_code: string;
   size_label: string;
   surface_label: string | null;
+  surface_option_id: string | null;
   manufacturing_cost: number | null;
   pricing_profile_id: string | null;
+  suggested_profile_id: string | null;
   calculated_selling_price: number | null;
+  price_basis: "GST_INCLUSIVE" | "GST_EXCLUSIVE" | null;
   price_override_ex_gst: number | null;
   min_selling_price: number | null;
-  profit_amount: number | null;
-  actual_gross_margin_pct: number | null;
   lead_time_days: number | null;
-  availability: "IN_STOCK" | "MADE_TO_ORDER" | "QUOTE_ONLY" | "UNAVAILABLE";
-  status: "DRAFT" | "PUBLISHED";
-  requires_quote: boolean;
+  availability: VariantAvailability;
+  status: VariantStatus;
+  variant_revision: string;
+  pricing_revision: string | null;
 }
 
+type ProfileOption = { id: string; name: string };
+type SurfaceOption = { id: string; label: string };
+
 const initialState: VariantAdminActionState = {};
+const MATERIALS = [["MS", "MS · Mild steel"], ["SS", "SS · Stainless steel"]] as const;
+const BUILDS = [["ECONOMY", "Economy"], ["STANDARD", "Standard"], ["HEAVY_DUTY", "Heavy Duty"]] as const;
+const TABLE_SIZES = ["2x2", "3x2", "4x2", "4x2.5", "4x3", "6x3"];
+const priceFormat = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const AVAILABILITY = {
+  IN_STOCK: "In stock",
+  MADE_TO_ORDER: "Made to order",
+  QUOTE_ONLY: "Quote only",
+  UNAVAILABLE: "Unavailable",
+};
+const SHEET = "@min-[760px]:grid-cols-[1.05rem_minmax(8rem,1.55fr)_minmax(5.25rem,0.8fr)_minmax(8rem,1.2fr)_minmax(5rem,0.7fr)_minmax(6rem,0.85fr)_4.65rem]";
+const COMPACT_INPUT = `${editorInput} @min-[760px]:mt-0 @min-[760px]:min-h-9 @min-[760px]:px-2 @min-[760px]:py-1`;
+const FIELD_LABEL = "text-sm font-medium text-neutral-800";
+const MOBILE_LABEL = "@min-[760px]:sr-only";
+const CHECKBOX = "size-4 shrink-0 accent-neutral-900";
 
-const TABLE_SIZE_PRESETS = ["2x2", "3x2", "4x2", "4x2.5", "4x3", "6x3", "CUSTOM"];
-const CHAIR_SIZE_PRESETS = ["STANDARD", "CUSTOM"];
+function submitWithoutReset(event: FormEvent<HTMLFormElement>, action: (data: FormData) => void) {
+  event.preventDefault();
+  const data = new FormData(event.currentTarget);
+  startTransition(() => action(data));
+}
 
-export default function VariantCostingPanel({
-  productId,
-  productType,
-  variants,
-  surfaces,
-  profiles,
-}: {
+function ActionFeedback({ state }: { state: VariantAdminActionState }) {
+  if (!state.error && !state.message) return null;
+  return (
+    <p role={state.error ? "alert" : "status"} className={`text-sm ${state.error ? "text-red-700" : "text-emerald-700"}`}>
+      {state.error ?? state.message}
+    </p>
+  );
+}
+
+function GeneratorChoices({ name, title, options, defaults }: {
+  name: string;
+  title: string;
+  options: ReadonlyArray<readonly [string, string]>;
+  defaults: string[];
+}) {
+  return (
+    <fieldset className="min-w-0">
+      <legend className="mb-2 text-sm font-semibold text-neutral-800">{title}</legend>
+      <div className="flex flex-wrap gap-2">
+        {options.map(([value, label]) => (
+          <label key={value} className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-sm has-checked:border-neutral-500 has-checked:bg-neutral-100">
+            <input type="checkbox" name={name} value={value} defaultChecked={defaults.includes(value)} className={CHECKBOX} />
+            {label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function VariantGenerator({ productId, productType, primaryMaterial, materialTags, dimensions, variants, surfaces }: {
+  productId: string;
+  productType: string;
+  primaryMaterial: FrameMaterialCode;
+  materialTags: string[];
+  dimensions: string;
+  variants: AdminVariantRowView[];
+  surfaces: SurfaceOption[];
+}) {
+  const [state, action, pending] = useActionState(generateProductVariantsAction, initialState);
+  const sizeOptions = productType === "TABLE" || productType === "CHAIR_TABLE_SET"
+    ? TABLE_SIZES.map((size) => [size, `${size.replace("x", " × ")} ft`] as const)
+    : [];
+  const preferredMaterials = MATERIALS.filter(([code]) => materialTags.includes(code) || code === primaryMaterial).map(([code]) => code);
+  const generated = variants.filter((variant) => !variant.variant_code.endsWith("-DEFAULT"));
+  const expandableSizes = generated.map((variant) => variant.size_code).filter((code) =>
+    !["STANDARD", "CUSTOM", ...sizeOptions.map(([value]) => value)].includes(code));
+
+  return (
+    <form action={action} onSubmit={(event) => submitWithoutReset(event, action)} className="space-y-4">
+      <input type="hidden" name="product_id" value={productId} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <GeneratorChoices name="materials" title="Frame materials" options={MATERIALS} defaults={generated.length ? generated.map((variant) => variant.frame_material) : preferredMaterials} />
+        <GeneratorChoices name="levels" title="Build categories" options={BUILDS} defaults={generated.length ? generated.map((variant) => variant.build_level) : ["ECONOMY", "STANDARD", "HEAVY_DUTY"]} />
+        {surfaces.length > 0 && (
+          <div className="space-y-2 sm:col-span-2">
+            <GeneratorChoices name="surface_ids" title="Surfaces" options={surfaces.map(({ id, label }) => [id, label])} defaults={generated.flatMap(({ surface_option_id }) => surface_option_id ? [surface_option_id] : [])} />
+            <p className="text-sm text-neutral-600">Leave surfaces unchecked for a variant with no separate surface selection.</p>
+          </div>
+        )}
+        <div className="space-y-3 sm:col-span-2">
+          <GeneratorChoices name="sizes" title="Sizes" options={[
+            ["STANDARD", `Model size · ${dimensions}`],
+            ...sizeOptions, ["CUSTOM", "Custom · Quote only"],
+          ]} defaults={generated.length ? generated.map((variant) => variant.size_code) : ["STANDARD"]} />
+          <label className="block max-w-sm text-sm font-medium">
+            Additional sizes (ft)
+            <input name="additional_sizes" defaultValue={[...new Set(expandableSizes)].join(", ")} placeholder="3.5x2, 5x3" maxLength={240} className={editorInput} />
+          </label>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-4">
+        {variants.length > 0 && (
+          <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-sm text-neutral-700">
+            <input type="checkbox" name="replace_variants" className={CHECKBOX} />
+            Deactivate combinations outside this selection
+          </label>
+        )}
+        <button type="submit" disabled={pending} className={`${editorPrimary} ml-auto`}>
+          {pending ? <Loader2 className="size-4 animate-spin" /> : <WandSparkles className="size-4" />}
+          {pending ? "Generating…" : "Generate variants"}
+        </button>
+      </div>
+      <ActionFeedback state={state} />
+    </form>
+  );
+}
+
+function AvailabilityOptions() {
+  return Object.entries(AVAILABILITY).map(([value, label]) => <option key={value} value={value}>{label}</option>);
+}
+
+function CostingRow({ variant: v, productId, profiles, selected, onSelect }: {
+  variant: AdminVariantRowView;
+  productId: string;
+  profiles: ProfileOption[];
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const [state, action, pending] = useActionState(saveVariantCostingRowAction, initialState);
+  const currentProfile = v.pricing_profile_id ?? v.suggested_profile_id ?? "";
+  const isRetiredProfile = currentProfile && !profiles.some((profile) => profile.id === currentProfile);
+  const displayPrice = v.calculated_selling_price != null
+    ? priceFormat.format(v.calculated_selling_price)
+    : v.availability === "QUOTE_ONLY" ? "Quote only" : "—";
+
+  return (
+    <form
+      action={action}
+      aria-label={`Costing for ${v.variant_code}`}
+      onSubmit={(event) => submitWithoutReset(event, action)}
+      className="rounded-xl border border-neutral-200 bg-white p-3 @min-[760px]:rounded-none @min-[760px]:border-x-0 @min-[760px]:border-t-0 @min-[760px]:px-2"
+    >
+      <div key={`${v.variant_revision}:${v.pricing_revision}`} className={`grid grid-cols-2 items-start gap-3 @min-[760px]:items-center @min-[760px]:gap-x-2 ${SHEET}`}>
+        <input type="hidden" name="product_id" value={productId} />
+        <input type="hidden" name="variant_id" value={v.id} />
+        <input type="hidden" name="variant_revision" value={v.variant_revision} />
+        <input type="hidden" name="pricing_revision" value={v.pricing_revision ?? ""} />
+        <div className="col-span-2 flex min-w-0 items-start gap-2 @min-[760px]:col-span-1">
+          <input type="checkbox" checked={selected} onChange={onSelect} aria-label={`Select ${v.variant_code}`} className={`${CHECKBOX} mt-0.5`} />
+          <div className="min-w-0 @min-[760px]:hidden">
+            <p className="text-sm font-semibold">{v.frame_material} · {v.build_category_label}</p>
+            <p className="text-xs text-neutral-600">{v.size_label}{v.surface_label && ` · ${v.surface_label}`}</p>
+            <p className="mt-1 break-all text-xs text-neutral-500">{v.variant_code}</p>
+          </div>
+        </div>
+        <div className="hidden min-w-0 @min-[760px]:block">
+          <p className="text-sm font-semibold">{v.frame_material} · {v.build_category_label}</p>
+          <p className="truncate text-xs text-neutral-600" title={v.variant_code}>{v.size_label}{v.surface_label && ` · ${v.surface_label}`}</p>
+          <p className="truncate text-xs text-neutral-500" title={v.variant_code}>{v.variant_code}</p>
+        </div>
+        <label className={FIELD_LABEL}>
+          <span className={MOBILE_LABEL}>Manufacturing cost (₹)</span>
+          <input name="manufacturing_cost" type="number" min="0" max="10000000" step="0.01" defaultValue={v.manufacturing_cost ?? ""} placeholder="Enter cost" className={COMPACT_INPUT} />
+        </label>
+        <label className={FIELD_LABEL}>
+          <span className={MOBILE_LABEL}>Pricing profile</span>
+          <select name="pricing_profile_id" defaultValue={currentProfile} className={COMPACT_INPUT}>
+            <option value="">Select profile</option>
+            {isRetiredProfile && <option value={currentProfile}>Inactive profile</option>}
+            {profiles.map(({ id, name }) => (
+              <option key={id} value={id}>{name}{!v.pricing_profile_id && id === v.suggested_profile_id ? " (suggested)" : ""}</option>
+            ))}
+          </select>
+        </label>
+        <div>
+          <p className={`${FIELD_LABEL} ${MOBILE_LABEL}`}>Selling price</p>
+          <p className="text-sm font-semibold tabular-nums">{displayPrice}</p>
+          {v.price_basis && <p className="text-xs text-neutral-600">{v.price_basis === "GST_INCLUSIVE" ? "Incl. GST" : "Excl. GST"}</p>}
+        </div>
+        <label className={FIELD_LABEL}>
+          <span className={MOBILE_LABEL}>Variant status</span>
+          <select name="status" defaultValue={v.status} className={COMPACT_INPUT}>
+            <option value="DRAFT">Draft</option>
+            <option value="PUBLISHED">Published</option>
+          </select>
+        </label>
+        <button type="submit" disabled={pending} className={`${editorPrimary} col-span-2 @min-[760px]:col-span-1 @min-[760px]:min-h-9 @min-[760px]:px-2`}>
+          {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+          Save
+        </button>
+        <details className="col-span-full border-t border-neutral-100 pt-2 @min-[760px]:col-start-2 @min-[760px]:col-end-[-1]">
+          <summary className="min-h-8 cursor-pointer py-1 text-sm font-medium text-neutral-700">
+            Availability and price options · {AVAILABILITY[v.availability]}
+          </summary>
+          <div className="grid gap-3 pt-2 sm:grid-cols-2 @min-[760px]:grid-cols-4">
+            <label className={FIELD_LABEL}>
+              Availability
+              <select name="availability" defaultValue={v.availability} className={editorInput}><AvailabilityOptions /></select>
+            </label>
+            <label className={FIELD_LABEL}>
+              Lead time (days)
+              <input name="lead_time_days" type="number" min="0" max="365" defaultValue={v.lead_time_days ?? ""} className={editorInput} />
+            </label>
+            <label className={FIELD_LABEL}>
+              Manual price ex. GST (₹)
+              <input name="price_override_ex_gst" type="number" min="0" max="10000000" step="0.01" defaultValue={v.price_override_ex_gst ?? ""} className={editorInput} />
+            </label>
+            <label className={FIELD_LABEL}>
+              Minimum selling price (₹)
+              <input name="min_selling_price" type="number" min="0" max="10000000" step="0.01" defaultValue={v.min_selling_price ?? ""} className={editorInput} />
+            </label>
+          </div>
+        </details>
+      </div>
+      <div className="mt-1"><ActionFeedback state={state} /></div>
+    </form>
+  );
+}
+
+export default function VariantCostingPanel({ productId, productType, variants, surfaces, profiles, primaryMaterial, materialTags, dimensions }: {
   productId: string;
   productType: string;
   variants: AdminVariantRowView[];
-  surfaces: PublicSurfaceOption[];
-  profiles: PrivatePricingProfile[];
+  surfaces: SurfaceOption[];
+  profiles: ProfileOption[];
+  primaryMaterial: FrameMaterialCode;
+  materialTags: string[];
+  dimensions: string;
 }) {
-  const [genState, genAction, generating] = useActionState(
-    generateProductVariantsAction,
-    initialState
-  );
-  const [bulkState, bulkAction, bulking] = useActionState(
-    bulkUpdateVariantsAction,
-    initialState
-  );
-  const [rowState, rowAction, savingRow] = useActionState(
-    saveVariantCostingRowAction,
-    initialState
-  );
-
+  const [bulkState, bulkAction, pending] = useActionState(bulkUpdateVariantsAction, initialState);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [showGenerator, setShowGenerator] = useState(variants.length <= 1);
-
-  const applicableSurfaces = surfaces.filter(
-    (s) =>
-      s.applicable_product_types.length === 0 ||
-      s.applicable_product_types.includes(productType)
-  );
-  const sizePresets =
-    productType === "TABLE" ? TABLE_SIZE_PRESETS : CHAIR_SIZE_PRESETS;
-
-  function toggleAll(checked: boolean) {
-    setSelectedIds(checked ? variants.map((v) => v.id) : []);
-  }
-
-  function toggleOne(id: string) {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  }
+  const selection = new Set(selectedIds);
+  const selected = variants.filter((variant) => selection.has(variant.id));
+  const allSelected = selected.length > 0 && selected.length === variants.length;
 
   return (
-    <div className="bg-white rounded-xl border border-neutral-200 p-5 space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-base font-bold text-[#111111]">
-            Economic Variants & Costing Matrix
-          </h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            Internal gauge mappings and manufacturing costs are visible to authorized administrators only.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowGenerator((v) => !v)}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-neutral-300 text-xs font-bold text-neutral-800 hover:bg-neutral-50"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          {showGenerator ? "Hide Variant Generator" : "Smart Variant Generator"}
-        </button>
-      </div>
-
-      {showGenerator && (
-        <form
-          action={genAction}
-          className="p-4 rounded-xl border border-neutral-200 bg-neutral-50 space-y-4"
-        >
-          <input type="hidden" name="product_id" value={productId} />
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-            <div>
-              <p className="font-bold text-neutral-700 mb-2">Step C — Materials</p>
-              {(["MS", "SS"] as const).map((mat) => (
-                <label key={mat} className="flex items-center gap-2 py-1">
-                  <input type="checkbox" name="materials" value={mat} defaultChecked={mat === "MS"} />
-                  <span>{mat === "SS" ? "SS — Stainless Steel" : "MS — Mild Steel"}</span>
-                </label>
-              ))}
-            </div>
-
-            <div>
-              <p className="font-bold text-neutral-700 mb-2">
-                Step D — Build Categories (Admin Gauge)
-              </p>
-              {[
-                { level: "ECONOMY", label: "Economy (SS 20G / MS 19G)" },
-                { level: "STANDARD", label: "Standard (SS 18G / MS 18G)" },
-                { level: "HEAVY_DUTY", label: "Heavy Duty (SS 16G / MS 16G)" },
-              ].map((b) => (
-                <label key={b.level} className="flex items-center gap-2 py-1">
-                  <input type="checkbox" name="levels" value={b.level} defaultChecked />
-                  <span>{b.label}</span>
-                </label>
-              ))}
-            </div>
-
-            <div>
-              <p className="font-bold text-neutral-700 mb-2">Step E — Surface Options</p>
-              {applicableSurfaces.length === 0 ? (
-                <p className="text-neutral-500">No surface options required.</p>
-              ) : (
-                applicableSurfaces.map((s) => (
-                  <label key={s.id} className="flex items-center gap-2 py-1">
-                    <input type="checkbox" name="surface_ids" value={s.id} />
-                    <span>{s.label}</span>
-                  </label>
-                ))
-              )}
-            </div>
-
-            <div>
-              <p className="font-bold text-neutral-700 mb-2">Step F — Sizes</p>
-              {sizePresets.map((sz) => (
-                <label key={sz} className="flex items-center gap-2 py-1">
-                  <input
-                    type="checkbox"
-                    name="sizes"
-                    value={sz}
-                    defaultChecked={sz === "4x2" || sz === "STANDARD"}
-                  />
-                  <span>{sz}</span>
-                </label>
-              ))}
-            </div>
+    <>
+      <EditorSection id="variants" title="Generate variants" description="Choose the materials, build categories and sizes sold under this model number.">
+        <VariantGenerator {...{ productId, productType, primaryMaterial, materialTags, dimensions, variants, surfaces }} />
+      </EditorSection>
+      <EditorSection id="costing" title="Manufacturing costs and selling prices" description="Save a cost and pricing profile to calculate the selling price.">
+        <div className="@container min-w-0 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {variants.length > 0 ? (
+              <label className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-neutral-700">
+                <input type="checkbox" className={CHECKBOX} checked={allSelected} onChange={(event) => setSelectedIds(event.target.checked ? variants.map(({ id }) => id) : [])} />
+                Select all variants
+              </label>
+            ) : <p className="text-sm text-neutral-600">Generate variants to start costing.</p>}
+            <Link href="/admin/cost-import" className={editorSecondary}>Import costs from CSV</Link>
           </div>
-
-          <div className="flex items-center justify-between pt-2 border-t border-neutral-200">
-            <span className="text-[11px] text-neutral-500">
-              Existing variant IDs and manufacturing costs are preserved; removed combinations are safely disabled.
-            </span>
-            <button
-              type="submit"
-              disabled={generating}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#111111] text-white text-xs font-bold hover:bg-neutral-800 disabled:opacity-50"
-            >
-              {generating && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Generate / Sync Variants
-            </button>
-          </div>
-          {genState.error && <p className="text-xs text-red-600">{genState.error}</p>}
-          {genState.message && (
-            <p className="text-xs text-emerald-700 font-semibold">{genState.message}</p>
+          {selected.length > 0 && (
+            <form action={bulkAction} onSubmit={(event) => submitWithoutReset(event, bulkAction)} className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+              <input type="hidden" name="product_id" value={productId} />
+              {selected.map(({ id }) => <input key={id} type="hidden" name="variant_ids" value={id} />)}
+              <p className="mb-2 text-sm font-semibold">Update {selected.length} selected {selected.length === 1 ? "variant" : "variants"}</p>
+              <div className="grid items-end gap-3 sm:grid-cols-3 @min-[760px]:grid-cols-[1fr_1fr_1fr_auto]">
+                <label className={FIELD_LABEL}>
+                  Pricing profile
+                  <select name="pricing_profile_id" className={editorInput}>
+                    <option value="">Keep current</option>
+                    {profiles.map(({ id, name }) => <option key={id} value={id}>{name}</option>)}
+                  </select>
+                </label>
+                <label className={FIELD_LABEL}>
+                  Lead time (days)
+                  <input type="number" name="lead_time_days" min="0" max="365" placeholder="Keep current" className={editorInput} />
+                </label>
+                <label className={FIELD_LABEL}>
+                  Availability
+                  <select name="availability" className={editorInput}><option value="">Keep current</option><AvailabilityOptions /></select>
+                </label>
+                <button type="submit" disabled={pending} className={editorPrimary}>{pending ? "Saving…" : "Apply changes"}</button>
+              </div>
+            </form>
           )}
-        </form>
-      )}
-
-      {selectedIds.length > 0 && (
-        <form
-          action={bulkAction}
-          className="p-3 rounded-lg bg-neutral-100 border border-neutral-300 flex flex-wrap items-center gap-3 text-xs"
-        >
-          <input type="hidden" name="product_id" value={productId} />
-          {selectedIds.map((id) => (
-            <input key={id} type="hidden" name="variant_ids" value={id} />
-          ))}
-          <span className="font-bold">{selectedIds.length} selected:</span>
-          <select
-            name="pricing_profile_id"
-            className="px-2 py-1.5 rounded border border-neutral-300 bg-white text-xs"
-          >
-            <option value="">Keep profile</option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.code}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            name="lead_time_days"
-            placeholder="Lead days"
-            className="w-24 px-2 py-1.5 rounded border border-neutral-300 bg-white text-xs"
-          />
-          <select
-            name="availability"
-            className="px-2 py-1.5 rounded border border-neutral-300 bg-white text-xs"
-          >
-            <option value="">Keep availability</option>
-            <option value="IN_STOCK">IN_STOCK</option>
-            <option value="MADE_TO_ORDER">MADE_TO_ORDER</option>
-            <option value="QUOTE_ONLY">QUOTE_ONLY</option>
-            <option value="UNAVAILABLE">UNAVAILABLE</option>
-          </select>
-          <button
-            type="submit"
-            disabled={bulking}
-            className="px-3 py-1.5 rounded bg-[#111111] text-white font-bold"
-          >
-            Apply Bulk Update
-          </button>
-        </form>
-      )}
-
-      {(rowState.error || bulkState.error) && (
-        <p className="text-xs text-red-600">{rowState.error || bulkState.error}</p>
-      )}
-      {(rowState.message || bulkState.message) && (
-        <p className="text-xs text-emerald-700 font-semibold">
-          {rowState.message || bulkState.message}
-        </p>
-      )}
-
-      {variants.length === 0 ? (
-        <p className="text-xs text-neutral-500">
-          No economic variants yet. Use the Smart Variant Generator above.
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse min-w-[1050px]">
-            <thead>
-              <tr className="border-b border-neutral-200 text-neutral-500 uppercase text-[10px]">
-                <th className="py-2 pr-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.length === variants.length && variants.length > 0}
-                    onChange={(e) => toggleAll(e.target.checked)}
-                    aria-label="Select all variants"
-                  />
-                </th>
-                <th className="py-2 pr-2">Material</th>
-                <th className="py-2 pr-2">Build (Gauge)</th>
-                <th className="py-2 pr-2">Size</th>
-                <th className="py-2 pr-2">Surface</th>
-                <th className="py-2 pr-2">Mfg Cost (₹)</th>
-                <th className="py-2 pr-2">Profile</th>
-                <th className="py-2 pr-2">Calc Price</th>
-                <th className="py-2 pr-2">Override (₹)</th>
-                <th className="py-2 pr-2">Profit / Margin</th>
-                <th className="py-2 pr-2">Lead (d)</th>
-                <th className="py-2 pr-2">Availability</th>
-                <th className="py-2 pr-2">Status</th>
-                <th className="py-2">Save</th>
-              </tr>
-            </thead>
-            <tbody>
-              {variants.map((v) => {
-                const formId = `variant-form-${v.id}`;
-                const missingCost =
-                  v.manufacturing_cost == null && v.price_override_ex_gst == null;
-                return (
-                  <tr key={v.id} className="border-b border-neutral-100 align-middle">
-                    <td className="py-2 pr-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.includes(v.id)}
-                        onChange={() => toggleOne(v.id)}
-                        aria-label={`Select ${v.variant_code}`}
-                      />
-                      <form id={formId} action={rowAction}>
-                        <input type="hidden" name="variant_id" value={v.id} />
-                        <input type="hidden" name="product_id" value={productId} />
-                      </form>
-                    </td>
-                    <td className="py-2 pr-2 font-bold">{v.frame_material}</td>
-                    <td className="py-2 pr-2">
-                      <span>{v.build_category_label}</span>
-                      <span className="ml-1 text-[10px] text-neutral-500 font-mono">
-                        ({v.private_gauge_label})
-                      </span>
-                    </td>
-                    <td className="py-2 pr-2">{v.size_label}</td>
-                    <td className="py-2 pr-2">{v.surface_label ?? "—"}</td>
-                    <td className="py-2 pr-2">
-                      <input
-                        form={formId}
-                        name="manufacturing_cost"
-                        type="number"
-                        step="0.01"
-                        defaultValue={v.manufacturing_cost ?? ""}
-                        placeholder="Unset"
-                        className={`w-24 px-2 py-1 rounded border text-xs ${
-                          missingCost ? "border-amber-400 bg-amber-50" : "border-neutral-300"
-                        }`}
-                      />
-                    </td>
-                    <td className="py-2 pr-2">
-                      <select
-                        form={formId}
-                        name="pricing_profile_id"
-                        defaultValue={v.pricing_profile_id ?? ""}
-                        className="w-32 px-1.5 py-1 rounded border border-neutral-300 text-xs bg-white"
-                      >
-                        <option value="">Missing</option>
-                        {profiles.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.code}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="py-2 pr-2 font-semibold">
-                      {v.calculated_selling_price != null ? (
-                        `₹${v.calculated_selling_price}`
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-amber-700 text-[11px]">
-                          <AlertTriangle className="w-3 h-3" /> Quote
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 pr-2">
-                      <input
-                        form={formId}
-                        name="price_override_ex_gst"
-                        type="number"
-                        step="0.01"
-                        defaultValue={v.price_override_ex_gst ?? ""}
-                        placeholder="—"
-                        className="w-20 px-2 py-1 rounded border border-neutral-300 text-xs"
-                      />
-                    </td>
-                    <td className="py-2 pr-2 text-[11px]">
-                      {v.profit_amount != null && v.actual_gross_margin_pct != null ? (
-                        <span className="text-emerald-700 font-semibold">
-                          ₹{v.profit_amount} ({v.actual_gross_margin_pct}%)
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="py-2 pr-2">
-                      <input
-                        form={formId}
-                        name="lead_time_days"
-                        type="number"
-                        defaultValue={v.lead_time_days ?? ""}
-                        className="w-14 px-1.5 py-1 rounded border border-neutral-300 text-xs"
-                      />
-                    </td>
-                    <td className="py-2 pr-2">
-                      <select
-                        form={formId}
-                        name="availability"
-                        defaultValue={v.availability}
-                        className="px-1.5 py-1 rounded border border-neutral-300 text-xs bg-white"
-                      >
-                        <option value="IN_STOCK">IN_STOCK</option>
-                        <option value="MADE_TO_ORDER">MADE_TO_ORDER</option>
-                        <option value="QUOTE_ONLY">QUOTE_ONLY</option>
-                        <option value="UNAVAILABLE">UNAVAILABLE</option>
-                      </select>
-                    </td>
-                    <td className="py-2 pr-2">
-                      <select
-                        form={formId}
-                        name="status"
-                        defaultValue={v.status}
-                        className="px-1.5 py-1 rounded border border-neutral-300 text-xs bg-white"
-                      >
-                        <option value="DRAFT">DRAFT</option>
-                        <option value="PUBLISHED">PUBLISHED</option>
-                      </select>
-                    </td>
-                    <td className="py-2">
-                      <button
-                        form={formId}
-                        type="submit"
-                        disabled={savingRow}
-                        className="p-1.5 rounded bg-[#111111] text-white hover:bg-neutral-800"
-                        aria-label={`Save ${v.variant_code}`}
-                      >
-                        <Save className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <ActionFeedback state={bulkState} />
+          {variants.length > 0 && (
+            <div className="space-y-3 @min-[760px]:space-y-0">
+              <div aria-hidden="true" className={`hidden items-center gap-2 rounded-t-lg bg-neutral-100 px-2 py-2 text-xs font-semibold text-neutral-700 @min-[760px]:grid ${SHEET}`}>
+                <span /><span>Variant</span><span>Cost (₹)</span><span>Pricing profile</span><span>Selling price</span><span>Status</span>
+              </div>
+              {variants.map((variant) => (
+                <CostingRow
+                  key={variant.id}
+                  variant={variant}
+                  productId={productId}
+                  profiles={profiles}
+                  selected={selection.has(variant.id)}
+                  onSelect={() => setSelectedIds((current) =>
+                    current.includes(variant.id) ? current.filter((id) => id !== variant.id) : [...current, variant.id]
+                  )}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </EditorSection>
+    </>
   );
 }

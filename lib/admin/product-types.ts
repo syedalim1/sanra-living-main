@@ -1,3 +1,5 @@
+export const PRODUCT_PLACEHOLDER = "/images/product-placeholder.svg";
+
 export interface AdminProduct {
   id: string;
   sku: string;

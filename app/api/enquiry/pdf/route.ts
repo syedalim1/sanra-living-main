@@ -59,7 +59,9 @@ export async function POST(req: NextRequest) {
         .select(
           "id, product_id, frame_material, build_category_id, surface_option_id, size_label, finish_label"
         )
-        .in("id", variantIds),
+        .in("id", variantIds)
+          .eq("is_active", true)
+          .eq("status", "PUBLISHED"),
       supabaseServer.from("build_categories").select("id, public_label"),
       supabaseServer.from("surface_options").select("id, label"),
     ]);
@@ -78,6 +80,7 @@ export async function POST(req: NextRequest) {
             .from("products")
             .select("id, sku, name, product_type")
             .in("id", productIds)
+            .eq("is_active", true)
         : { data: [] as Array<Record<string, unknown>> };
 
     const productMap = new Map(
@@ -105,6 +108,8 @@ export async function POST(req: NextRequest) {
         quantity: item.quantity,
         productType: prod.product_type as string,
       });
+
+      if (price.quote_reason === "VARIANT_NOT_PUBLISHED") continue;
 
       const configParts = [
         v.frame_material === "SS" ? "Stainless Steel" : "Mild Steel",

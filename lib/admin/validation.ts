@@ -93,7 +93,7 @@ export const SKU_PATTERN = /^[A-Z0-9]+(?:-[A-Z0-9]+)+$/;
 
 const DimensionSchema = z
   .number()
-  .min(1, { message: "Enter at least 1 ft." })
+  .min(0.01, { message: "Enter a positive dimension in feet." })
   .max(200)
   .refine(hasAtMostTwoDecimals, { message: "Use at most 2 decimal places." });
 
@@ -118,7 +118,7 @@ export const ProductFormSchema = z.object({
     .regex(/^[A-Z0-9_]+$/, { message: "Product type must be uppercase letters, numbers or underscores." }),
   base_length_ft: DimensionSchema,
   base_width_ft: DimensionSchema,
-  base_height_ft: z.number().min(0).max(200),
+  base_height_ft: DimensionSchema,
   short_description: z.string().trim().max(2000).optional().default(""),
   pipe_spec: z.string().trim().max(160).optional().default(""),
   frame_material: z.enum(FRAME_MATERIALS).default("MS"),
@@ -126,7 +126,6 @@ export const ProductFormSchema = z.object({
   material_tags: z.array(z.string().trim().min(1).max(40)).max(20),
   sort_order: z.number().int().min(0).max(100000),
   warranty_text: z.string().trim().min(2).max(240),
-  is_active: z.boolean(),
   is_knockdown_available: z.boolean(),
   allowed_top_categories: z.array(z.enum(TOP_CATEGORIES)).max(TOP_CATEGORIES.length),
   direct_price: NonNegativeMoney.max(100000000).nullable().optional(),
