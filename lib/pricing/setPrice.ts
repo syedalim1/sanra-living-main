@@ -256,6 +256,40 @@ export async function calculateSetPrice(rawInput: unknown): Promise<SetPriceOutp
     }
   }
 
+  // Apply configurable bulk_rules for SET if configured.
+  const { data: setBulkRule } = await supabaseServer
+    .from("bulk_rules")
+    .select("min_qty, below_min_action, below_min_value, special_quote_qty, special_quote_action, is_active")
+    .eq("product_type", "SET")
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (setBulkRule) {
+    const qty = parsed.data.quantity;
+    if (
+      setBulkRule.special_quote_qty != null &&
+      qty >= Number(setBulkRule.special_quote_qty) &&
+      setBulkRule.special_quote_action === "QUOTE_REQUIRED"
+    ) {
+      return { unit_price: 0, total_price: 0, requires_quote: true };
+    }
+    if (qty < Number(setBulkRule.min_qty)) {
+      if (
+        setBulkRule.below_min_action === "QUOTE_REQUIRED" ||
+        setBulkRule.below_min_action === "BLOCK"
+      ) {
+        return { unit_price: 0, total_price: 0, requires_quote: true };
+      }
+      if (
+        setBulkRule.below_min_action === "SURCHARGE_PCT" &&
+        setBulkRule.below_min_value != null &&
+        Number(setBulkRule.below_min_value) > 0
+      ) {
+        adjusted = adjusted * (1 + Number(setBulkRule.below_min_value) / 100);
+      }
+    }
+  }
+
   const unitPrice = roundUpTo99(adjusted);
   const totalPrice = unitPrice * parsed.data.quantity;
 

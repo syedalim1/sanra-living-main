@@ -2,6 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { supabaseServer } from "@/lib/supabase/server";
 import { calculateTypePrice } from "./typePricing";
+import { calculateVariantPrice } from "./variantPricingEngine";
 
 interface RawProductData {
   id: string;
@@ -188,7 +189,50 @@ async function computeAllFromPricesInternal(): Promise<Record<string, number | n
 
     const results: Record<string, number | null> = {};
 
+    // Prefer migrated published product_variants when present (non-LEGACY_OVERRIDE).
+    const { data: publishedVariants } = await supabaseServer
+      .from("product_variants")
+      .select("id, product_id")
+      .eq("is_active", true)
+      .eq("status", "PUBLISHED");
+
+    const migratedProductIds = new Set<string>();
+    if (publishedVariants && publishedVariants.length > 0) {
+      const variantIds = publishedVariants.map((v) => v.id as string);
+      const { data: vpRows } = await supabaseServer
+        .from("variant_pricing_private")
+        .select("variant_id, cost_source")
+        .in("variant_id", variantIds);
+
+      const migratedVariantIds = new Set(
+        (vpRows ?? [])
+          .filter((r) => r.cost_source !== "LEGACY_OVERRIDE")
+          .map((r) => r.variant_id as string)
+      );
+
+      for (const v of publishedVariants) {
+        if (!migratedVariantIds.has(v.id as string)) continue;
+        const pid = v.product_id as string;
+        migratedProductIds.add(pid);
+        const prod = (products as RawProductData[]).find((p) => p.id === pid);
+        const res = await calculateVariantPrice({
+          variantId: v.id as string,
+          quantity: 1,
+          productType: prod?.product_type,
+        });
+        if (!res.requires_quote && res.unit_price != null) {
+          const prev = results[pid];
+          results[pid] = prev == null ? res.unit_price : Math.min(prev, res.unit_price);
+        } else if (!(pid in results)) {
+          results[pid] = null;
+        }
+      }
+    }
+
     for (const p of products as RawProductData[]) {
+      if (migratedProductIds.has(p.id)) {
+        continue;
+      }
       const rule = rulesMap.get(p.id);
       if (!rule) {
         results[p.id] = null;

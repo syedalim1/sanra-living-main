@@ -18,6 +18,8 @@ import {
 } from "@/lib/productTypeConfig";
 import { calculateConfigPriceRaw } from "./pricingCore";
 import { calculatePackPrice, calculateTypePrice } from "./typePricing";
+import { calculateVariantPrice } from "./variantPricingEngine";
+import { buildCategoryForCode } from "@/lib/buildCategory";
 
 export { ConfigPriceInputSchema };
 export type { ConfigPriceInput };
@@ -813,6 +815,94 @@ async function calculateNonTableConfigPrice(
   return { ...result, requires_quote: false };
 }
 
+async function tryCalculateMigratedVariantPrice(
+  sku: string,
+  productType: ProductType,
+  rawInput: Record<string, unknown>
+): Promise<ConfigPriceOutput | null> {
+  try {
+    const { data: prod } = await supabaseServer
+      .from("products")
+      .select("id")
+      .eq("sku", sku.trim().toUpperCase())
+      .maybeSingle();
+
+    if (!prod?.id) return null;
+
+    const { data: variants } = await supabaseServer
+      .from("product_variants")
+      .select("id, frame_material, build_category_id, size_code, status, is_active")
+      .eq("product_id", prod.id)
+      .eq("is_active", true)
+      .eq("status", "PUBLISHED");
+
+    if (!variants || variants.length === 0) return null;
+
+    const variantIds = variants.map((v) => v.id as string);
+    const { data: pricingRows } = await supabaseServer
+      .from("variant_pricing_private")
+      .select("variant_id, cost_source")
+      .in("variant_id", variantIds);
+
+    const migratedIds = new Set(
+      (pricingRows ?? [])
+        .filter((r) => r.cost_source !== "LEGACY_OVERRIDE")
+        .map((r) => r.variant_id as string)
+    );
+
+    if (migratedIds.size === 0) return null;
+
+    const migratedVariants = variants.filter((v) => migratedIds.has(v.id as string));
+    const quantity = Math.max(1, Number(rawInput.quantity ?? 1) || 1);
+    const requestedSize = typeof rawInput.size === "string" ? rawInput.size : null;
+    const requestedFrame =
+      typeof rawInput.frame_material === "string" ? rawInput.frame_material : null;
+    const requestedGauge = typeof rawInput.gauge === "string" ? rawInput.gauge : null;
+    const requestedBuildLabel = buildCategoryForCode(requestedGauge);
+
+    let matched = migratedVariants[0];
+    if (requestedSize || requestedFrame || requestedBuildLabel) {
+      const { data: buildCats } = await supabaseServer
+        .from("build_categories")
+        .select("id, public_label");
+      const buildLabelById = new Map(
+        (buildCats ?? []).map((b) => [b.id as string, b.public_label as string])
+      );
+
+      matched =
+        migratedVariants.find((v) => {
+          if (requestedFrame && v.frame_material !== requestedFrame) return false;
+          if (requestedSize && requestedSize !== "CUSTOM" && v.size_code !== requestedSize) {
+            return false;
+          }
+          if (
+            requestedBuildLabel &&
+            buildLabelById.get(v.build_category_id as string) !== requestedBuildLabel
+          ) {
+            return false;
+          }
+          return true;
+        }) ?? migratedVariants[0];
+    }
+
+    const result = await calculateVariantPrice({
+      variantId: matched.id as string,
+      quantity,
+      productType,
+    });
+
+    return {
+      unit_price: result.unit_price ?? undefined,
+      total_price: result.total_price ?? undefined,
+      discount_pct: 0,
+      bumper_included: rawInput.top_tab === "STONE",
+      requires_quote: result.requires_quote,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function calculateConfigPrice(rawInput: unknown): Promise<ConfigPriceOutput> {
   const envelope = ConfigEnvelopeSchema.safeParse(rawInput);
   if (!envelope.success) {
@@ -820,6 +910,17 @@ export async function calculateConfigPrice(rawInput: unknown): Promise<ConfigPri
   }
 
   const productType = await getProductTypeForSku(envelope.data.sku);
+
+  if (rawInput && typeof rawInput === "object") {
+    const migratedResult = await tryCalculateMigratedVariantPrice(
+      envelope.data.sku,
+      productType,
+      rawInput as Record<string, unknown>
+    );
+    if (migratedResult) {
+      return migratedResult;
+    }
+  }
 
   if (productType === "TABLE") {
     return await calculateTableConfigPrice(rawInput);
