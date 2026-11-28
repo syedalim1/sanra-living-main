@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { buildOrganizationJsonLd } from "@/lib/seo/structuredData";
+import AnalyticsTracker from "@/components/public/AnalyticsTracker";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -50,7 +52,16 @@ export const metadata: Metadata = {
     images: ["/og-default.png"],
   },
   verification: {
-    google: "9X-EZn2twMUIDo4eh8IfxZRUuoNWBRmSPXvQWHP9MGI",
+    google:
+      process.env.NEXT_PUBLIC_GSC_VERIFICATION ||
+      "9X-EZn2twMUIDo4eh8IfxZRUuoNWBRmSPXvQWHP9MGI",
+    ...(process.env.NEXT_PUBLIC_BING_VERIFICATION
+      ? {
+          other: {
+            "msvalidate.01": process.env.NEXT_PUBLIC_BING_VERIFICATION,
+          },
+        }
+      : {}),
   },
 };
 
@@ -59,9 +70,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const orgJsonLd = buildOrganizationJsonLd();
+  const gaId = process.env.NEXT_PUBLIC_GA_ID?.trim() || undefined;
+
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-white text-[#111111]">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(orgJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
+        <AnalyticsTracker gaId={gaId} />
         {children}
       </body>
     </html>

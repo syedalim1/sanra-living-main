@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 
 import React from "react";
 import type { Metadata } from "next";

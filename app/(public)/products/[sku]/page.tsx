@@ -25,7 +25,12 @@ import {
 import { getPublicVariantsForProduct } from "@/lib/variants/publicCatalog";
 import { company } from "@/lib/company";
 import {
+  buildBreadcrumbJsonLd,
+  buildProductStructuredData,
+} from "@/lib/seo/structuredData";
+import {
   SITE_NAME,
+  SITE_URL,
   absoluteUrl,
   productPath,
   productUrl,
@@ -255,12 +260,15 @@ export async function generateMetadata({ params }: SkuPageProps): Promise<Metada
   let category = fallback?.category ?? "Factory steel furniture";
   let image = fallback?.main_image_url ?? "/og-default.png";
   let useCases: string[] = [];
+  let seoTitle: string | null = null;
+  let seoDescription: string | null = null;
+  let seoAlt: string | null = null;
 
   if (HAS_SUPABASE) {
     try {
       const { data } = await supabaseServer
         .from("products")
-        .select("name, category, main_image_url, use_cases")
+        .select("id, name, category, main_image_url, use_cases, short_description")
         .eq("sku", upperSku)
         .eq("is_active", true)
         .maybeSingle();
@@ -270,6 +278,21 @@ export async function generateMetadata({ params }: SkuPageProps): Promise<Metada
         category = data.category;
         image = publicImageUrl(data.main_image_url) ?? "/og-default.png";
         useCases = Array.isArray(data.use_cases) ? data.use_cases : [];
+
+        const { data: seoRow } = await supabaseServer
+          .from("product_seo")
+          .select("seo_title, meta_description, image_alt_text, og_image_url")
+          .eq("product_id", data.id)
+          .maybeSingle();
+
+        if (seoRow) {
+          seoTitle = seoRow.seo_title ?? null;
+          seoDescription = seoRow.meta_description ?? null;
+          seoAlt = seoRow.image_alt_text ?? null;
+          if (seoRow.og_image_url) {
+            image = publicImageUrl(seoRow.og_image_url) ?? image;
+          }
+        }
       }
     } catch {
       // Keep static fallback metadata.
@@ -286,22 +309,25 @@ export async function generateMetadata({ params }: SkuPageProps): Promise<Metada
           .join(", ")
       : category;
 
-  const description = `${name} — ${useCaseText}. Configure live factory pricing, structural steel options and direct SIDCO Coimbatore dispatch.`;
+  const title = seoTitle || `${name} | ${SITE_NAME} Factory Direct`;
+  const description =
+    seoDescription ||
+    `${name} — ${useCaseText}. Configure live factory pricing, material options and direct SIDCO Coimbatore dispatch.`;
   const canonical = productPath(upperSku);
 
   return {
-    title: `${name} | ${SITE_NAME} Factory Direct`,
+    title,
     description,
     alternates: { canonical },
     openGraph: {
-      title: `${name} | ${SITE_NAME}`,
+      title,
       description,
       url: canonical,
       type: "website",
       images: [
         {
           url: absoluteUrl(image),
-          alt: name,
+          alt: seoAlt || name,
         },
       ],
     },
@@ -554,32 +580,44 @@ export default async function SkuPage({ params }: SkuPageProps) {
   }
 
   const canonicalUrl = productUrl(product.sku);
-  const productJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    image: [absoluteUrl(product.main_image_url)],
+  const productJsonLd = buildProductStructuredData({
     sku: product.sku,
+    name: seoH1 || product.name,
+    description: product.short_description ?? null,
     category: product.category,
-    brand: { "@type": "Brand", name: SITE_NAME },
-    ...(fromPrice != null
-      ? {
-          offers: {
-            "@type": "Offer",
-            url: canonicalUrl,
-            priceCurrency: "INR",
-            price: fromPrice,
-            availability: "https://schema.org/InStock",
-          },
-        }
-      : {}),
-  };
+    canonicalUrl,
+    mainImageUrl: product.main_image_url,
+    fromPrice,
+    variants: publishedVariants.map((v) => ({
+      variant_code: v.variant_code,
+      frame_material: v.frame_material,
+      build_category_label: v.build_category_label,
+      surface_label: v.surface_label,
+      size_label: v.size_label,
+      availability: v.availability,
+      unit_price: fromPrice,
+      image_url: v.variant_image_url,
+    })),
+  });
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", url: SITE_URL },
+    { name: "Catalog", url: `${SITE_URL}/products` },
+    { name: product.sku, url: canonicalUrl },
+  ]);
 
   return (
     <div className="sanra-subpage min-h-[70vh] py-10 md:py-14">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <div className="sanra-container">
         {/* Breadcrumb Navigation */}

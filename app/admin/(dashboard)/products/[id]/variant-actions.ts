@@ -6,6 +6,8 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { writeAudit } from "@/lib/admin/audit";
 import { createServerClient } from "@/lib/supabase/server";
 import { invalidatePricingCaches } from "@/lib/pricing/costImport";
+import { submitIndexNow } from "@/lib/seo/indexNow";
+import { productPath } from "@/lib/site";
 
 export interface VariantAdminActionState {
   ok?: boolean;
@@ -459,7 +461,16 @@ export async function toggleProductPublishAction(
     summary: `${nextActive ? "Published" : "Unpublished"} product ${id}`,
   });
 
+  const { data: prodRow } = await db
+    .from("products")
+    .select("sku")
+    .eq("id", id)
+    .maybeSingle();
+
   invalidatePricingCaches();
+  if (prodRow?.sku) {
+    await submitIndexNow([productPath(prodRow.sku as string), "/products"]);
+  }
   revalidatePath(`/admin/products/${id}`);
   revalidatePath("/admin/products");
   revalidatePath("/products");

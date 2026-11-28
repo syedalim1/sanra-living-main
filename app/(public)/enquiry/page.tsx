@@ -8,6 +8,7 @@ export const metadata = {
   description:
     "Review your selected steel furniture configurations, refresh factory prices, and send a combined enquiry on WhatsApp or download a quotation PDF.",
   alternates: { canonical: `${SITE_URL}/enquiry` },
+  robots: { index: false, follow: false },
 };
 
 export default function EnquiryPage() {

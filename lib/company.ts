@@ -1,6 +1,14 @@
 const clean = (value: string | undefined) => (value ?? "").trim();
 
-export const COMPANY_NAME = "SANRA LIVING | Indian Make Steel Industries";
+export const BRAND_NAME = "SANRA LIVING";
+export const MANUFACTURER_NAME = "Indian Make Steel Industries";
+export const COMPANY_NAME = `${BRAND_NAME} | ${MANUFACTURER_NAME}`;
+
+const DEFAULT_ADDRESS =
+  "K-6, SIDCO Industrial Estate, Kurichi, Coimbatore, Tamil Nadu 641021, India.";
+const DEFAULT_EMAIL = "hello@sanraliving.com";
+const DEFAULT_PRIMARY_PHONE = "9585745303";
+const DEFAULT_SECONDARY_PHONE = "8300904920";
 
 function digitsOnly(value: string): string {
   return value.replace(/\D/g, "");
@@ -29,22 +37,31 @@ function telHref(value: string): string {
   return digits ? `tel:+${digits}` : "";
 }
 
-const address = clean(process.env.COMPANY_ADDRESS);
-const whatsappNumber = normalizeDialCode(clean(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER));
+const address = clean(process.env.COMPANY_ADDRESS) || DEFAULT_ADDRESS;
+const primaryPhoneRaw = clean(process.env.COMPANY_PHONE) || DEFAULT_PRIMARY_PHONE;
+const secondaryPhoneRaw =
+  clean(process.env.COMPANY_SECONDARY_PHONE) || DEFAULT_SECONDARY_PHONE;
+const whatsappNumber = normalizeDialCode(
+  clean(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER) || primaryPhoneRaw
+);
 
 export const company = {
+  brand: BRAND_NAME,
+  manufacturer: MANUFACTURER_NAME,
   name: COMPANY_NAME,
   address,
-  email: clean(process.env.COMPANY_EMAIL),
+  email: clean(process.env.COMPANY_EMAIL) || DEFAULT_EMAIL,
   gstin: clean(process.env.COMPANY_GSTIN).toUpperCase(),
-  phone: formatIndianPhone(clean(process.env.COMPANY_PHONE)),
-  phoneHref: telHref(clean(process.env.COMPANY_PHONE)),
-  phoneDial: normalizeDialCode(clean(process.env.COMPANY_PHONE)),
+  phone: formatIndianPhone(primaryPhoneRaw),
+  phoneHref: telHref(primaryPhoneRaw),
+  phoneDial: normalizeDialCode(primaryPhoneRaw),
+  secondaryPhone: formatIndianPhone(secondaryPhoneRaw),
+  secondaryPhoneHref: telHref(secondaryPhoneRaw),
   whatsappNumber,
-  whatsappDisplayNumber: formatIndianPhone(clean(process.env.NEXT_PUBLIC_WHATSAPP_NUMBER)),
-  mapsUrl: address
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
-    : "",
+  whatsappDisplayNumber: formatIndianPhone(whatsappNumber),
+  mapsUrl:
+    clean(process.env.GOOGLE_MAPS_URL) ||
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,
 };
 
 export const SOCIAL = {
@@ -63,7 +80,10 @@ export const WARRANTY_TERMS =
 export const DEFAULT_WHATSAPP_MESSAGE =
   "Hi SANRA LIVING, I'd like to know more about your steel furniture.";
 
-export function whatsappHref(text: string, number: string = company.whatsappNumber): string {
+export function whatsappHref(
+  text: string,
+  number: string = company.whatsappNumber
+): string {
   const base = number ? `https://wa.me/${number}` : "https://wa.me/";
   return `${base}?text=${encodeURIComponent(text)}`;
 }
