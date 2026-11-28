@@ -298,6 +298,8 @@ export async function stageCostImport(params: {
       sku,
       variant_code: matchedVariantCode ?? "",
       manufacturing_cost: newCost,
+      lead_time_days: leadTimeDays,
+      availability,
       validation_error: validationError,
     });
   }

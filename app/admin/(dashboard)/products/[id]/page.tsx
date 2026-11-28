@@ -9,8 +9,19 @@ import { createServerClient } from "@/lib/supabase/server";
 import ProductForm from "@/app/admin/(dashboard)/products/[id]/ProductForm";
 import VariantManager from "@/app/admin/(dashboard)/products/[id]/VariantManager";
 import SwatchManager from "@/app/admin/(dashboard)/products/[id]/SwatchManager";
-import ProductLifecycleActions from "@/app/admin/(dashboard)/products/[id]/ProductLifecycleActions";
+import ProductLifecycleActions, {
+  type PublicationChecklist,
+} from "@/app/admin/(dashboard)/products/[id]/ProductLifecycleActions";
 import ProductOptionsAvailability from "@/app/admin/(dashboard)/products/[id]/ProductOptionsAvailability";
+import VariantCostingPanel, {
+  type AdminVariantRowView,
+} from "@/app/admin/(dashboard)/products/[id]/VariantCostingPanel";
+import ProductSeoPanel from "@/app/admin/(dashboard)/products/[id]/ProductSeoPanel";
+import { evaluateVariantPricing } from "@/lib/pricing/variantPricingEngine";
+import type {
+  PrivatePricingProfile,
+  PublicSurfaceOption,
+} from "@/lib/variants/types";
 import { FALLBACK_OPTIONS } from "@/lib/configuratorOptions";
 import { isProductType } from "@/lib/productTypeConfig";
 import type {
@@ -44,6 +55,17 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
   let product: AdminProduct | null = null;
   let pricing: AdminPricingRule | null = null;
   let variants: AdminVariant[] = [];
+  let adminEconomicVariants: AdminVariantRowView[] = [];
+  let adminSurfaces: PublicSurfaceOption[] = [];
+  let adminProfiles: PrivatePricingProfile[] = [];
+  let productSeo: {
+    seo_title: string | null;
+    meta_description: string | null;
+    product_h1: string | null;
+    image_alt_text: string | null;
+    og_image_url: string | null;
+  } | null = null;
+  let checklist: PublicationChecklist | undefined = undefined;
 
   if (!isNew) {
     const [productResult, pricingResult, variantResult] = await Promise.all([
@@ -276,6 +298,158 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
     });
   }
 
+  if (!isNew && product) {
+    const [
+      econRes,
+      buildCatsRes,
+      specsRes,
+      surfacesRes,
+      profilesRes,
+      seoRes,
+    ] = await Promise.all([
+      db
+        .from("product_variants")
+        .select("*")
+        .eq("product_id", product.id)
+        .eq("is_active", true)
+        .order("sort_order"),
+      db.from("build_categories").select("id, public_label"),
+      db
+        .from("build_category_specs_private")
+        .select("build_category_id, gauge_code, nominal_thickness_mm"),
+      db
+        .from("surface_options")
+        .select("id, code, kind, label, material_family, public_description, applicable_product_types, sort_order")
+        .eq("is_active", true)
+        .order("sort_order"),
+      db
+        .from("pricing_profiles")
+        .select("*")
+        .eq("is_active", true)
+        .order("code"),
+      db
+        .from("product_seo")
+        .select("seo_title, meta_description, product_h1, image_alt_text, og_image_url")
+        .eq("product_id", product.id)
+        .maybeSingle(),
+    ]);
+
+    adminSurfaces = (surfacesRes.data as PublicSurfaceOption[]) ?? [];
+    adminProfiles = (profilesRes.data as PrivatePricingProfile[]) ?? [];
+    productSeo = seoRes.data ?? null;
+
+    const econRows = econRes.data ?? [];
+    const econIds = econRows.map((r) => r.id as string);
+    const { data: vpRows } =
+      econIds.length > 0
+        ? await db
+            .from("variant_pricing_private")
+            .select("*")
+            .in("variant_id", econIds)
+        : { data: [] as Record<string, unknown>[] };
+
+    const vpMap = new Map((vpRows ?? []).map((r) => [r.variant_id as string, r]));
+    const bcLabelMap = new Map(
+      (buildCatsRes.data ?? []).map((b) => [b.id as string, b.public_label as string])
+    );
+    const specMap = new Map(
+      (specsRes.data ?? []).map((s) => [
+        s.build_category_id as string,
+        `${s.gauge_code} / ${s.nominal_thickness_mm}mm`,
+      ])
+    );
+    const surfLabelMap = new Map(adminSurfaces.map((s) => [s.id, s.label]));
+    const profileMap = new Map(adminProfiles.map((p) => [p.id, p]));
+
+    adminEconomicVariants = econRows.map((v) => {
+      const vp = vpMap.get(v.id as string) ?? null;
+      const profile =
+        vp?.pricing_profile_id
+          ? profileMap.get(vp.pricing_profile_id as string) ?? null
+          : null;
+      const mfgCost =
+        vp?.manufacturing_cost != null ? Number(vp.manufacturing_cost) : null;
+      const overrideEx =
+        vp?.price_override_ex_gst != null ? Number(vp.price_override_ex_gst) : null;
+
+      const evalRes = evaluateVariantPricing({
+        variantId: v.id as string,
+        variantCode: v.variant_code as string,
+        availability: v.availability,
+        leadTimeDays: v.lead_time_days != null ? Number(v.lead_time_days) : null,
+        sizeCode: v.size_code as string,
+        quantity: 1,
+        pricing: vp as never,
+        profile,
+        bulkRule: null,
+        tiers: [],
+      });
+
+      let profitAmount: number | null = null;
+      let actualMarginPct: number | null = null;
+      if (evalRes.unit_price != null && mfgCost != null && mfgCost > 0) {
+        const exGst =
+          evalRes.price_basis === "GST_INCLUSIVE" && evalRes.gst_rate != null
+            ? evalRes.unit_price / (1 + evalRes.gst_rate / 100)
+            : evalRes.unit_price;
+        profitAmount = Math.round((exGst - mfgCost) * 100) / 100;
+        actualMarginPct =
+          exGst > 0 ? Math.round(((exGst - mfgCost) / exGst) * 10000) / 100 : null;
+      }
+
+      return {
+        id: v.id as string,
+        variant_code: v.variant_code as string,
+        frame_material: v.frame_material as "SS" | "MS",
+        build_category_label: bcLabelMap.get(v.build_category_id as string) ?? "Standard",
+        private_gauge_label: specMap.get(v.build_category_id as string) ?? "—",
+        size_code: v.size_code as string,
+        size_label: v.size_label as string,
+        surface_label: v.surface_option_id
+          ? surfLabelMap.get(v.surface_option_id as string) ?? null
+          : null,
+        manufacturing_cost: mfgCost,
+        pricing_profile_id: (vp?.pricing_profile_id as string | null) ?? null,
+        calculated_selling_price: evalRes.unit_price,
+        price_override_ex_gst: overrideEx,
+        min_selling_price:
+          vp?.min_selling_price != null ? Number(vp.min_selling_price) : null,
+        profit_amount: profitAmount,
+        actual_gross_margin_pct: actualMarginPct,
+        lead_time_days: v.lead_time_days != null ? Number(v.lead_time_days) : null,
+        availability: v.availability,
+        status: v.status,
+        requires_quote: evalRes.requires_quote,
+      };
+    });
+
+    const hasVariants = adminEconomicVariants.length > 0;
+    const allCostsOrQuote =
+      hasVariants &&
+      adminEconomicVariants.every(
+        (v) =>
+          v.availability === "QUOTE_ONLY" ||
+          (v.manufacturing_cost != null && v.manufacturing_cost > 0) ||
+          (v.price_override_ex_gst != null && v.price_override_ex_gst > 0)
+      );
+    const allProfilesOrQuote =
+      hasVariants &&
+      adminEconomicVariants.every(
+        (v) =>
+          v.availability === "QUOTE_ONLY" ||
+          Boolean(v.pricing_profile_id) ||
+          (v.price_override_ex_gst != null && v.price_override_ex_gst > 0)
+      );
+
+    checklist = {
+      hasPhoto: Boolean(product.main_image_url),
+      hasDescription: Boolean(product.short_description?.trim()),
+      hasVariants,
+      hasCostsOrQuoteOnly: allCostsOrQuote,
+      hasPricingProfileOrQuoteOnly: allProfilesOrQuote,
+    };
+  }
+
   return (
     <div className="space-y-6 pb-12">
       <div className="space-y-3">
@@ -320,7 +494,9 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
             </div>
           </div>
 
-          {product && <ProductLifecycleActions product={product} />}
+          {product && (
+            <ProductLifecycleActions product={product} checklist={checklist} />
+          )}
         </div>
       </div>
 
@@ -328,6 +504,22 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
 
       {product && (
         <>
+          <VariantCostingPanel
+            productId={product.id}
+            productType={engineProductType ?? product.product_type}
+            variants={adminEconomicVariants}
+            surfaces={adminSurfaces}
+            profiles={adminProfiles}
+          />
+
+          <ProductSeoPanel
+            productId={product.id}
+            productName={product.name}
+            category={product.category}
+            dimensionsLabel={`${product.base_length_ft} x ${product.base_width_ft} ft`}
+            seo={productSeo}
+          />
+
           <VariantManager
             productId={product.id}
             variants={variants}

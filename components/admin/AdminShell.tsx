@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -6,26 +6,36 @@ import { usePathname } from "next/navigation";
 import {
   Menu,
   X,
+  LayoutDashboard,
   SlidersHorizontal,
   Package,
+  Layers,
+  FileSpreadsheet,
   Images,
   Camera,
   ClipboardList,
   Users,
-  ListTree,
+  Search,
+  Settings,
+  History,
   LogOut,
   ExternalLink,
 } from "lucide-react";
 import { logoutAction } from "@/app/admin/login/actions";
 
 const NAV_ITEMS = [
-  { label: "Rates", href: "/admin/rates", icon: SlidersHorizontal },
-  { label: "Options", href: "/admin/options", icon: ListTree },
+  { label: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
   { label: "Products", href: "/admin/products", icon: Package },
+  { label: "Dining Sets", href: "/admin/sets", icon: Layers },
+  { label: "Cost Import", href: "/admin/cost-import", icon: FileSpreadsheet },
+  { label: "Pricing Rules", href: "/admin/pricing-rules", icon: SlidersHorizontal },
+  { label: "Enquiries", href: "/admin/leads", icon: Users, badgeKey: "leads" },
   { label: "Orders", href: "/admin/orders", icon: ClipboardList },
   { label: "Projects", href: "/admin/projects", icon: Images },
-  { label: "Photo protection", href: "/admin/media", icon: Camera },
-  { label: "Leads", href: "/admin/leads", icon: Users, badgeKey: "leads" },
+  { label: "Media", href: "/admin/media", icon: Camera },
+  { label: "SEO", href: "/admin/seo", icon: Search },
+  { label: "Settings", href: "/admin/options", icon: Settings },
+  { label: "Audit History", href: "/admin/audit", icon: History },
 ];
 
 function SidebarContent({
@@ -51,7 +61,9 @@ function SidebarContent({
       <nav className="flex-1 px-3 py-4 space-y-1">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const active = item.exact
+            ? pathname === item.href
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link
               key={item.href}
