@@ -1,10 +1,11 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
 import { ArrowRight, ArrowUpRight, Factory, ReceiptIndianRupee, ShieldCheck, Truck } from "lucide-react";
 import DiningGallery from "@/components/public/DiningGallery";
 import FeaturedRange from "@/components/public/FeaturedRange";
+import PublishedProjectsPreview from "@/components/public/PublishedProjectsPreview";
 import { company, whatsappHref, SOCIAL } from "@/lib/company";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
@@ -219,6 +220,56 @@ export default function Home() {
         <FeaturedRange />
       </Suspense>
 
+      <section
+        className="sanra-container py-10 border-t border-neutral-200"
+        aria-labelledby="materials-heading"
+      >
+        <header className="sanra-section-intro mb-6">
+          <div>
+            <p className="sanra-label">Materials</p>
+            <h2 id="materials-heading" className="sanra-display">
+              Stainless Steel &amp; Mild Steel collections.
+            </h2>
+          </div>
+        </header>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <Link
+            href="/products?material=SS"
+            className="p-6 rounded-xl border border-neutral-200 bg-white hover:border-neutral-400 transition-colors flex items-center justify-between gap-4"
+          >
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                SS Collection
+              </p>
+              <h3 className="text-lg font-extrabold text-[#111111] mt-1">
+                Stainless Steel Furniture
+              </h3>
+              <p className="text-xs text-neutral-600 mt-1">
+                Available in Economy, Standard, and Heavy Duty configurations for kitchens, canteens, and dining rooms.
+              </p>
+            </div>
+            <ArrowUpRight className="w-5 h-5 shrink-0 text-neutral-700" />
+          </Link>
+          <Link
+            href="/products?material=MS"
+            className="p-6 rounded-xl border border-neutral-200 bg-white hover:border-neutral-400 transition-colors flex items-center justify-between gap-4"
+          >
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                MS Collection
+              </p>
+              <h3 className="text-lg font-extrabold text-[#111111] mt-1">
+                Mild Steel Powder-Coated Furniture
+              </h3>
+              <p className="text-xs text-neutral-600 mt-1">
+                Available in Economy, Standard, and Heavy Duty configurations for cafés, offices, and institutions.
+              </p>
+            </div>
+            <ArrowUpRight className="w-5 h-5 shrink-0 text-neutral-700" />
+          </Link>
+        </div>
+      </section>
+
       <section className="sanra-industries" aria-labelledby="industries-heading">
         <div className="sanra-container sanra-industries-inner">
           <div className="sanra-rise">
@@ -260,6 +311,10 @@ export default function Home() {
         </div>
       </section>
 
+      <Suspense fallback={null}>
+        <PublishedProjectsPreview />
+      </Suspense>
+
       <section className="sanra-container sanra-trade sanra-rise" aria-labelledby="trade-heading">
         <div>
           <p className="sanra-label">Dealers · Designers · Procurement teams</p>
@@ -287,6 +342,26 @@ export default function Home() {
               </a>
             )}
           </div>
+        </div>
+      </section>
+
+      <section
+        className="sanra-container py-10 border-t border-neutral-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+        aria-labelledby="location-heading"
+      >
+        <div>
+          <p className="sanra-label">Factory Contact &amp; Location</p>
+          <h2 id="location-heading" className="text-lg font-extrabold text-[#111111] mt-1">
+            Indian Make Steel Industries — SIDCO Coimbatore
+          </h2>
+          <p className="text-xs text-neutral-600 mt-1">
+            {company.address} · {company.phone}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Link className="sanra-text-link" href="/contact">
+            Directions &amp; Factory Contact <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
         </div>
       </section>
     </div>

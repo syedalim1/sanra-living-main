@@ -25,6 +25,25 @@ const TABLE_TOP_OPTIONS: FilterOption[] = [
   { value: "WOOD", label: "Wood Top" },
 ];
 
+const SURFACE_OPTIONS: FilterOption[] = [
+  { value: "RUBBERWOOD", label: "Rubberwood" },
+  { value: "PLYWOOD", label: "Plywood" },
+  { value: "PARTICLE_BOARD", label: "Particle Board" },
+  { value: "GRANITE", label: "Granite" },
+  { value: "CUSHION_UPHOLSTERY", label: "Cushion / Upholstery" },
+  { value: "METAL_SEAT", label: "Metal Seat" },
+  { value: "FRAME_ONLY", label: "Frame Only" },
+];
+
+const INDUSTRY_OPTIONS: FilterOption[] = [
+  { value: "CAFE", label: "Cafés & Restaurants" },
+  { value: "CANTEEN", label: "Canteens & Mess Halls" },
+  { value: "SCHOOL", label: "Schools & Colleges" },
+  { value: "HALL", label: "Banquet & Event Halls" },
+  { value: "OFFICE", label: "Offices & Workstations" },
+  { value: "BAKERY", label: "Bakeries & Juice Bars" },
+];
+
 const BUDGET_OPTIONS: FilterOption[] = [
   { value: "under-2000", label: "Under ₹2,000" },
   { value: "2000-4000", label: "₹2,000 – ₹4,000" },
@@ -44,11 +63,15 @@ export default function ProductFilters() {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Current filter state from URL
+  const currentQuery = searchParams.get("q") || "";
   const currentCategory = searchParams.get("category") || "";
   const currentMaterial = searchParams.get("material") || "";
   const currentTop = searchParams.get("top") || "";
+  const currentSurface = searchParams.get("surface") || "";
+  const currentUse = searchParams.get("use") || "";
   const currentBudget = searchParams.get("budget") || "";
   const currentSort = searchParams.get("sort") || "recommended";
+  const [searchInput, setSearchInput] = useState(currentQuery);
 
   // Helper to push updated search params
   const updateFilter = (key: string, val: string | null) => {
@@ -67,14 +90,45 @@ export default function ProductFilters() {
   };
 
   const activeFilterCount =
+    (currentQuery ? 1 : 0) +
     (currentCategory ? 1 : 0) +
     (currentMaterial ? 1 : 0) +
     (currentTop ? 1 : 0) +
+    (currentSurface ? 1 : 0) +
+    (currentUse ? 1 : 0) +
     (currentBudget ? 1 : 0) +
     (currentSort !== "recommended" ? 1 : 0);
 
   const renderFilterSections = () => (
     <div className="space-y-6">
+      {/* 0. Search by name or model number */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          updateFilter("q", searchInput.trim() || null);
+        }}
+        className="space-y-2"
+      >
+        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500">
+          Search Model / Name
+        </label>
+        <div className="flex gap-1.5">
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="e.g. IMS-CF-42 or Cafe"
+            className="w-full text-xs px-2.5 py-2 bg-white border border-neutral-300 rounded-md text-neutral-800 focus:outline-hidden focus:border-black"
+          />
+          <button
+            type="submit"
+            className="px-3 py-2 rounded-md bg-[#111111] text-white text-xs font-bold"
+          >
+            Go
+          </button>
+        </div>
+      </form>
+
       {/* 1. Sort Order */}
       <div>
         <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2.5">
@@ -86,6 +140,44 @@ export default function ProductFilters() {
           className="w-full text-xs font-semibold p-2.5 bg-white border border-neutral-300 rounded-md text-neutral-800 focus:outline-hidden focus:border-black"
         >
           {SORT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Surface Material */}
+      <div className="pt-4 border-t border-neutral-200">
+        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2.5">
+          Surface Material
+        </label>
+        <select
+          value={currentSurface}
+          onChange={(e) => updateFilter("surface", e.target.value || null)}
+          className="w-full text-xs font-semibold p-2.5 bg-white border border-neutral-300 rounded-md text-neutral-800 focus:outline-hidden focus:border-black"
+        >
+          <option value="">All surfaces</option>
+          {SURFACE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Industry / Use Case */}
+      <div className="pt-4 border-t border-neutral-200">
+        <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2.5">
+          Industry / Use
+        </label>
+        <select
+          value={currentUse}
+          onChange={(e) => updateFilter("use", e.target.value || null)}
+          className="w-full text-xs font-semibold p-2.5 bg-white border border-neutral-300 rounded-md text-neutral-800 focus:outline-hidden focus:border-black"
+        >
+          <option value="">All industries</option>
+          {INDUSTRY_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>

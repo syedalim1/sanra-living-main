@@ -121,18 +121,32 @@ interface CatalogRow {
 
 interface ProductsPageProps {
   searchParams: Promise<{
+    q?: string;
     category?: string;
     use?: string;
     material?: string;
     top?: string;
+    surface?: string;
     budget?: string;
     sort?: string;
+    limit?: string;
   }>;
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const resolvedParams = await searchParams;
-  const { category, use, material, top, budget, sort = "recommended" } = resolvedParams;
+  const {
+    q,
+    category,
+    use,
+    material,
+    top,
+    surface,
+    budget,
+    sort = "recommended",
+    limit: limitParam,
+  } = resolvedParams;
+  const pageLimit = Math.max(12, Math.min(120, Number(limitParam) || 12));
 
   // 1. Fetch products from Supabase
   let rawProducts: CatalogRow[] = [];
@@ -147,13 +161,11 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         .eq("is_active", true)
         .order("sort_order", { ascending: true });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         rawProducts = data;
-      } else {
-        rawProducts = FALLBACK_PRODUCTS;
       }
     } catch {
-      rawProducts = FALLBACK_PRODUCTS;
+      rawProducts = [];
     }
   } else {
     rawProducts = FALLBACK_PRODUCTS;
@@ -167,13 +179,69 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       CORE_CATEGORIES.has(product.category.trim().toLowerCase())
   );
 
-  // 2. Fetch computed from_prices
+  // 2. Fetch computed from_prices and published variant summaries
   const priceMap = HAS_SUPABASE ? await getCachedFromPrices() : {};
+  const variantMaterialsMap = new Map<string, Set<"SS" | "MS">>();
+  const variantBuildsMap = new Map<string, Set<string>>();
+  const variantSurfacesMap = new Map<string, Set<string>>();
+  const bulkMoqByType = new Map<string, number>();
 
-  // Attach from_price. Fallback rows carry their own display price so the
-  // catalog still shows prices when Supabase is not configured or unreachable.
+  if (HAS_SUPABASE && rawProducts.length > 0) {
+    try {
+      const [pvRes, bcRes, surfRes, bulkRes] = await Promise.all([
+        supabaseServer
+          .from("product_variants")
+          .select("product_id, frame_material, build_category_id, surface_option_id")
+          .eq("is_active", true)
+          .eq("status", "PUBLISHED"),
+        supabaseServer.from("build_categories").select("id, public_label"),
+        supabaseServer.from("surface_options").select("id, code"),
+        supabaseServer
+          .from("bulk_rules")
+          .select("product_type, min_qty")
+          .eq("is_active", true),
+      ]);
+
+      const bcLabel = new Map(
+        (bcRes.data ?? []).map((b) => [b.id as string, b.public_label as string])
+      );
+      const surfCode = new Map(
+        (surfRes.data ?? []).map((s) => [s.id as string, s.code as string])
+      );
+
+      for (const b of bulkRes.data ?? []) {
+        bulkMoqByType.set(b.product_type as string, Number(b.min_qty));
+      }
+
+      for (const v of pvRes.data ?? []) {
+        const pid = v.product_id as string;
+        if (!variantMaterialsMap.has(pid)) variantMaterialsMap.set(pid, new Set());
+        variantMaterialsMap.get(pid)!.add(v.frame_material as "SS" | "MS");
+
+        const build = bcLabel.get(v.build_category_id as string);
+        if (build) {
+          if (!variantBuildsMap.has(pid)) variantBuildsMap.set(pid, new Set());
+          variantBuildsMap.get(pid)!.add(build);
+        }
+
+        if (v.surface_option_id) {
+          const sc = surfCode.get(v.surface_option_id as string);
+          if (sc) {
+            if (!variantSurfacesMap.has(pid)) variantSurfacesMap.set(pid, new Set());
+            variantSurfacesMap.get(pid)!.add(sc);
+          }
+        }
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
   let catalog: CatalogProduct[] = rawProducts.map((p) => {
     const fallbackPrice = typeof p.from_price === "number" ? p.from_price : null;
+    const mats = variantMaterialsMap.get(p.id);
+    const builds = variantBuildsMap.get(p.id);
+    const surfs = variantSurfacesMap.get(p.id);
     return {
       id: p.id,
       sku: p.sku,
@@ -184,13 +252,30 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       base_width_ft: Number(p.base_width_ft),
       main_image_url: publicImageUrl(p.main_image_url),
       hover_blueprint_img: publicImageUrl(p.hover_blueprint_img),
-      from_price: HAS_SUPABASE ? priceMap[p.id] ?? fallbackPrice : fallbackPrice,
+      from_price: HAS_SUPABASE ? priceMap[p.id] ?? null : fallbackPrice,
       use_cases: p.use_cases || [],
       material_tags: p.material_tags || [],
+      available_materials: mats ? [...mats] : [],
+      available_builds: builds ? [...builds] : [],
+      surface_codes: surfs ? [...surfs] : [],
+      moq_qty: bulkMoqByType.get(p.product_type) ?? null,
     };
   });
 
   // 3. Apply Filters on Server
+  if (q && q.trim()) {
+    const queryLower = q.trim().toLowerCase();
+    catalog = catalog.filter(
+      (p) =>
+        p.name.toLowerCase().includes(queryLower) ||
+        p.sku.toLowerCase().includes(queryLower)
+    );
+  }
+
+  if (surface) {
+    const surfUpper = surface.toUpperCase();
+    catalog = catalog.filter((p) => p.surface_codes?.includes(surfUpper));
+  }
   if (category) {
     catalog = catalog.filter((p) => p.category.toLowerCase() === category.toLowerCase());
   }
@@ -297,11 +382,33 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
             {/* Product Cards Grid or Empty State */}
             {catalog.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
-                {catalog.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
+                  {catalog.slice(0, pageLimit).map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+                {catalog.length > pageLimit && (
+                  <div className="mt-8 flex justify-center">
+                    <Link
+                      href={`/products?${new URLSearchParams({
+                        ...(q ? { q } : {}),
+                        ...(category ? { category } : {}),
+                        ...(use ? { use } : {}),
+                        ...(material ? { material } : {}),
+                        ...(top ? { top } : {}),
+                        ...(surface ? { surface } : {}),
+                        ...(budget ? { budget } : {}),
+                        ...(sort !== "recommended" ? { sort } : {}),
+                        limit: String(pageLimit + 12),
+                      }).toString()}`}
+                      className="px-5 py-2.5 rounded-lg border border-neutral-300 bg-white text-xs font-bold text-neutral-800 hover:bg-neutral-50"
+                    >
+                      Load more ({catalog.length - pageLimit} remaining)
+                    </Link>
+                  </div>
+                )}
+              </>
             ) : (
               /* Empty State */
               <div className="sanra-catalog-empty">

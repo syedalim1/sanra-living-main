@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -19,6 +19,10 @@ export interface CatalogProduct {
   from_price: number | null;
   use_cases?: string[];
   material_tags?: string[];
+  available_materials?: Array<"SS" | "MS">;
+  available_builds?: string[];
+  surface_codes?: string[];
+  moq_qty?: number | null;
 }
 
 export default function ProductCard({ product }: { product: CatalogProduct }) {
@@ -33,7 +37,9 @@ export default function ProductCard({ product }: { product: CatalogProduct }) {
     <article className="sanra-product-card">
       <div
         className="sanra-product-card-photo"
-        onPointerEnter={(event) => { if (event.pointerType === "mouse") setHovered(true); }}
+        onPointerEnter={(event) => {
+          if (event.pointerType === "mouse") setHovered(true);
+        }}
         onPointerLeave={() => setHovered(false)}
       >
         <Link href={href} className="block" aria-label={product.name}>
@@ -61,14 +67,63 @@ export default function ProductCard({ product }: { product: CatalogProduct }) {
         )}
       </div>
       <div className="sanra-product-card-copy">
-        <p className="sanra-label">{product.category}</p>
-        <h3><Link href={href}>{product.name}</Link></h3>
+        <div className="flex items-center justify-between gap-2">
+          <p className="sanra-label">{product.category}</p>
+          <span className="text-[10px] font-mono font-bold text-neutral-500">
+            {product.sku}
+          </span>
+        </div>
+        <h3>
+          <Link href={href}>{product.name}</Link>
+        </h3>
         {product.base_length_ft > 0 && product.base_width_ft > 0 && (
-          <p className="sanra-product-dimensions">{product.base_length_ft} × {product.base_width_ft} ft</p>
+          <p className="sanra-product-dimensions">
+            {product.base_length_ft} × {product.base_width_ft} ft
+          </p>
         )}
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {(product.available_materials ?? []).map((mat) => (
+            <span
+              key={mat}
+              className="px-1.5 py-0.5 rounded bg-neutral-100 border border-neutral-200 text-[10px] font-bold text-neutral-700"
+            >
+              {mat === "SS" ? "Stainless Steel" : "Mild Steel"}
+            </span>
+          ))}
+          {(product.available_builds ?? []).map((build) => (
+            <span
+              key={build}
+              className="px-1.5 py-0.5 rounded bg-neutral-50 border border-neutral-200 text-[10px] text-neutral-600"
+            >
+              {build}
+            </span>
+          ))}
+          {product.moq_qty != null && product.moq_qty > 1 && (
+            <span className="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-[10px] font-semibold text-amber-800">
+              MOQ {product.moq_qty} pcs
+            </span>
+          )}
+        </div>
         <div className="sanra-product-card-bottom">
-          <strong>{product.from_price == null ? "On request" : `From ₹${product.from_price.toLocaleString("en-IN")}`}</strong>
-          <Link href={href} className="sanra-text-link" aria-label={`Configure ${product.name}`}>Configure</Link>
+          <div>
+            <strong>
+              {product.from_price == null
+                ? "Request Quote"
+                : `From ₹${product.from_price.toLocaleString("en-IN")}`}
+            </strong>
+            {product.from_price != null && product.moq_qty != null && product.moq_qty > 1 && (
+              <span className="block text-[10px] text-neutral-500 font-normal">
+                Min {product.moq_qty} pcs · GST extra
+              </span>
+            )}
+          </div>
+          <Link
+            href={href}
+            className="sanra-text-link"
+            aria-label={`Configure ${product.name}`}
+          >
+            Configure
+          </Link>
         </div>
       </div>
     </article>

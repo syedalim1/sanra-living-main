@@ -17,11 +17,13 @@ import {
   isProductType,
   type OptionGroupRow,
 } from "@/lib/productTypeConfig";
-import { getFromPriceForProduct } from "@/lib/pricing/fromPrice";
+import { getFromPriceForProduct, getCachedFromPrices } from "@/lib/pricing/fromPrice";
 import {
   sanitizePublicConfigOptions,
   sanitizePublicOptionGroups,
 } from "@/lib/buildCategory";
+import { getPublicVariantsForProduct } from "@/lib/variants/publicCatalog";
+import { company } from "@/lib/company";
 import {
   SITE_NAME,
   absoluteUrl,
@@ -472,6 +474,62 @@ export default async function SkuPage({ params }: SkuPageProps) {
   }
 
   let relatedSets: Array<{ sku: string; name: string }> = [];
+  let publishedVariants: Awaited<ReturnType<typeof getPublicVariantsForProduct>> = [];
+  let moqQty: number | null = null;
+  let specialQuoteQty: number | null = null;
+  let seoH1: string | null = null;
+  let imageAltText: string | null = null;
+  let relatedProducts: Array<{
+    sku: string;
+    name: string;
+    category: string;
+    from_price: number | null;
+  }> = [];
+
+  if (product.id && !String(product.id).startsWith("fb-")) {
+    try {
+      const [pv, bulkRes, seoRes, relRes, priceMap] = await Promise.all([
+        getPublicVariantsForProduct(product.id),
+        supabaseServer
+          .from("bulk_rules")
+          .select("min_qty, special_quote_qty")
+          .eq("product_type", engineProductType)
+          .eq("is_active", true)
+          .maybeSingle(),
+        supabaseServer
+          .from("product_seo")
+          .select("product_h1, image_alt_text")
+          .eq("product_id", product.id)
+          .maybeSingle(),
+        supabaseServer
+          .from("products")
+          .select("id, sku, name, category")
+          .eq("category", product.category)
+          .eq("is_active", true)
+          .neq("id", product.id)
+          .limit(3),
+        getCachedFromPrices(),
+      ]);
+
+      publishedVariants = pv;
+      moqQty = bulkRes.data?.min_qty != null ? Number(bulkRes.data.min_qty) : null;
+      specialQuoteQty =
+        bulkRes.data?.special_quote_qty != null
+          ? Number(bulkRes.data.special_quote_qty)
+          : null;
+      seoH1 = seoRes.data?.product_h1 ?? null;
+      imageAltText = seoRes.data?.image_alt_text ?? null;
+      relatedProducts = (relRes.data ?? []).map((r) => ({
+        sku: r.sku as string,
+        name: r.name as string,
+        category: r.category as string,
+        from_price: priceMap[r.id as string] ?? null,
+      }));
+    } catch {
+      // Keep defaults
+    }
+  }
+
   if (product.product_type === "TABLE") {
     try {
       const { data: links } = await supabaseServer
@@ -547,6 +605,13 @@ export default async function SkuPage({ params }: SkuPageProps) {
           topCategoryImages={
             (product.top_category_images as Record<string, string> | undefined) ?? null
           }
+          publishedVariants={publishedVariants}
+          moqQty={moqQty}
+          specialQuoteQty={specialQuoteQty}
+          whatsappNumber={company.whatsappNumber}
+          relatedProducts={relatedProducts}
+          seoH1={seoH1}
+          imageAltText={imageAltText}
         />
 
         {relatedSets.length > 0 && (

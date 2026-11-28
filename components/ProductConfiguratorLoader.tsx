@@ -3,6 +3,12 @@
 import dynamic from "next/dynamic";
 import type { ConfigOption } from "@/lib/configuratorOptions";
 import type { OptionGroupRow } from "@/lib/productTypeConfig";
+import type { PublicProductVariant } from "@/lib/variants/types";
+import type { RelatedCatalogProduct, VariantConfiguratorProduct } from "@/components/VariantConfigurator";
+
+const VariantConfigurator = dynamic(() => import("@/components/VariantConfigurator"), {
+  loading: () => <ConfiguratorSkeleton />,
+});
 
 const TableConfigurator = dynamic(() => import("@/components/TableConfigurator"), {
   loading: () => <ConfiguratorSkeleton />,
@@ -38,6 +44,13 @@ interface ProductConfiguratorLoaderProps {
   engineProductType?: string;
   topCategoryImages?: Record<string, string> | null;
   chairAddonPrice?: number | null;
+  publishedVariants?: PublicProductVariant[];
+  moqQty?: number | null;
+  specialQuoteQty?: number | null;
+  whatsappNumber?: string;
+  relatedProducts?: RelatedCatalogProduct[];
+  seoH1?: string | null;
+  imageAltText?: string | null;
 }
 
 export default function ProductConfiguratorLoader({
@@ -49,7 +62,31 @@ export default function ProductConfiguratorLoader({
   engineProductType,
   topCategoryImages,
   chairAddonPrice,
+  publishedVariants,
+  moqQty,
+  specialQuoteQty,
+  whatsappNumber,
+  relatedProducts,
+  seoH1,
+  imageAltText,
 }: ProductConfiguratorLoaderProps) {
+  if (publishedVariants && publishedVariants.length > 0) {
+    return (
+      <VariantConfigurator
+        product={{
+          ...(product as unknown as VariantConfiguratorProduct),
+          seo_h1: seoH1 ?? null,
+          image_alt_text: imageAltText ?? null,
+        }}
+        variants={publishedVariants}
+        moqQty={moqQty ?? null}
+        specialQuoteQty={specialQuoteQty ?? null}
+        whatsappNumber={whatsappNumber ?? ""}
+        relatedProducts={relatedProducts ?? []}
+      />
+    );
+  }
+
   if ((engineProductType ?? product.product_type) === "TABLE") {
     return (
       <TableConfigurator
