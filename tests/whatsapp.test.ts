@@ -35,7 +35,7 @@ describe("WhatsApp booking message", () => {
     expect(message).toContain("Size: 4 x 2 ft");
     expect(message).toContain("Top: Wood Tops — Natural Honey Teak Polish");
     expect(message).toContain(
-      "Pipe/Frame: 16 Gauge Heavy Commercial (1.6mm Tata Structura) | Matte Black Powder Coated"
+      "Build Grade: 16 Gauge Heavy Commercial (1.6mm Tata Structura) | Frame: Matte Black Powder Coated"
     );
     expect(message).toContain("Build: 100% Factory Welded (Coimbatore Local Delivery)");
     expect(message).toContain("Add-ons: Laptop Wire Grommet Hole");

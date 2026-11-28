@@ -119,19 +119,16 @@ export default function VariantConfigurator({
   const [selectedSurface, setSelectedSurface] = useState<string>(
     surfaces[0] ?? "Standard"
   );
-
-  useEffect(() => {
-    if (!surfaces.includes(selectedSurface)) {
-      setSelectedSurface(surfaces[0] ?? "Standard");
-    }
-  }, [surfaces, selectedSurface]);
+  const effectiveSurface = surfaces.includes(selectedSurface)
+    ? selectedSurface
+    : (surfaces[0] ?? "Standard");
 
   const surfaceVariants = useMemo(
     () =>
       materialVariants.filter(
-        (v) => (v.surface_label ?? "Standard") === selectedSurface
+        (v) => (v.surface_label ?? "Standard") === effectiveSurface
       ),
-    [materialVariants, selectedSurface]
+    [materialVariants, effectiveSurface]
   );
 
   const sizes = useMemo(() => {
@@ -145,16 +142,13 @@ export default function VariantConfigurator({
   const [selectedSize, setSelectedSize] = useState<string>(
     sizes[0]?.code ?? "STANDARD"
   );
-
-  useEffect(() => {
-    if (!sizes.some((s) => s.code === selectedSize)) {
-      setSelectedSize(sizes[0]?.code ?? "STANDARD");
-    }
-  }, [sizes, selectedSize]);
+  const effectiveSize = sizes.some((s) => s.code === selectedSize)
+    ? selectedSize
+    : (sizes[0]?.code ?? "STANDARD");
 
   const sizeVariants = useMemo(
-    () => surfaceVariants.filter((v) => v.size_code === selectedSize),
-    [surfaceVariants, selectedSize]
+    () => surfaceVariants.filter((v) => v.size_code === effectiveSize),
+    [surfaceVariants, effectiveSize]
   );
 
   const buildOptions = useMemo(() => {
@@ -167,15 +161,12 @@ export default function VariantConfigurator({
   const [selectedBuild, setSelectedBuild] = useState<PublicBuildCategory>(
     buildOptions[0]?.label ?? "Standard"
   );
-
-  useEffect(() => {
-    if (!buildOptions.some((b) => b.label === selectedBuild)) {
-      setSelectedBuild(buildOptions[0]?.label ?? "Standard");
-    }
-  }, [buildOptions, selectedBuild]);
+  const effectiveBuild = buildOptions.some((b) => b.label === selectedBuild)
+    ? selectedBuild
+    : (buildOptions[0]?.label ?? "Standard");
 
   const activeVariant =
-    buildOptions.find((b) => b.label === selectedBuild)?.variant ??
+    buildOptions.find((b) => b.label === effectiveBuild)?.variant ??
     sizeVariants[0] ??
     variants[0];
 
@@ -195,17 +186,11 @@ export default function VariantConfigurator({
     return [...new Set(imgs)];
   }, [activeVariant, product.main_image_url, product.gallery_images]);
 
-  const [activeImage, setActiveImage] = useState<string>(
-    gallery[0] ?? product.main_image_url
-  );
-
-  useEffect(() => {
-    if (activeVariant?.variant_image_url) {
-      setActiveImage(activeVariant.variant_image_url);
-    } else {
-      setActiveImage(product.main_image_url);
-    }
-  }, [activeVariant, product.main_image_url]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const activeImage =
+    selectedImage && gallery.includes(selectedImage)
+      ? selectedImage
+      : (gallery[0] ?? product.main_image_url);
 
   // Fetch authoritative server-side prices for Economy, Standard, Heavy Duty simultaneously
   useEffect(() => {
@@ -314,7 +299,7 @@ export default function VariantConfigurator({
                 <button
                   key={img}
                   type="button"
-                  onClick={() => setActiveImage(img)}
+                  onClick={() => setSelectedImage(img)}
                   className={`w-16 h-16 rounded-lg overflow-hidden border shrink-0 ${
                     activeImage === img
                       ? "border-neutral-900 ring-1 ring-neutral-900"
@@ -482,7 +467,7 @@ export default function VariantConfigurator({
               <div className="flex flex-wrap gap-2">
                 {surfaces.map((surf) => {
                   const swatch = SURFACE_SWATCHES[surf];
-                  const isSelected = selectedSurface === surf;
+                  const isSelected = effectiveSurface === surf;
                   return (
                     <button
                       key={surf}
@@ -521,7 +506,7 @@ export default function VariantConfigurator({
                     type="button"
                     onClick={() => setSelectedSize(s.code)}
                     className={`px-3 py-2 rounded-lg border text-xs font-semibold ${
-                      selectedSize === s.code
+                      selectedSize === s.code || effectiveSize === s.code
                         ? "border-[#111111] bg-neutral-900 text-white"
                         : "border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400"
                     }`}

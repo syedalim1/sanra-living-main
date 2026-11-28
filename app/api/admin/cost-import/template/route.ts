@@ -3,8 +3,8 @@ import { requireAdminApi } from "@/lib/admin/auth";
 import { generateCostImportTemplateCsv } from "@/lib/pricing/costImport";
 
 export async function GET() {
-  const auth = await requireAdminApi();
-  if (!auth.ok) {
+  const session = await requireAdminApi();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

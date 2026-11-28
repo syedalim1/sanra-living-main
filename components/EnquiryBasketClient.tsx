@@ -49,8 +49,10 @@ interface QuoteResponse {
 }
 
 export default function EnquiryBasketClient() {
-  const [basket, setBasket] = useState<EnquiryBasketItem[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  const [basket, setBasket] = useState<EnquiryBasketItem[]>(() =>
+    typeof window !== "undefined" ? readEnquiryBasket() : []
+  );
+  const hydrated = typeof window !== "undefined";
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState<"whatsapp" | "pdf" | null>(null);
@@ -63,14 +65,7 @@ export default function EnquiryBasketClient() {
   const [deliveryNotes, setDeliveryNotes] = useState("");
 
   useEffect(() => {
-    setBasket(readEnquiryBasket());
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
     if (basket.length === 0) {
-      setQuote(null);
       return;
     }
 
