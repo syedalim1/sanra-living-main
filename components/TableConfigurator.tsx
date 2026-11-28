@@ -836,12 +836,6 @@ export default function TableConfigurator({
                   ₹{priceData.unit_price.toLocaleString("en-IN")} per unit
                 </p>
               )}
-
-              {quantity >= 4 && !priceData.requires_quote && (
-                <p className="mt-1.5 text-xs text-neutral-500">
-                  Bulk discount available. Confirm best price on WhatsApp.
-                </p>
-              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1019,11 +1013,7 @@ export default function TableConfigurator({
                       ))}
                     </div>
                     <p className="text-xs text-neutral-500">
-                      {currentGaugeOption?.load_kg
-                        ? `${currentGaugeOption.load_kg} Kg tested · `
-                        : ""}
-                      {currentGaugeOption?.warranty_text || product.warranty_text} · Cafe,
-                      hotel, IT office
+                      {currentGaugeOption?.warranty_text || product.warranty_text} · Commercial &amp; hospitality use
                     </p>
                   </>
                 )}
