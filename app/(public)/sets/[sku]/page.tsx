@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,6 +10,11 @@ import SetConfigurator, {
   type SetConfigGroup,
   type SetConfigItem,
 } from "@/components/SetConfigurator";
+import {
+  sanitizePublicSpecNote,
+  toPublicGroupTitle,
+  toPublicOptionLabel,
+} from "@/lib/buildCategory";
 import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/site";
 import { publicImageUrl } from "@/lib/media/paths";
 
@@ -115,12 +120,20 @@ export default async function SetPage({ params }: SetPageProps) {
       return [
         {
           code: group.option_group,
-          title: group.group_title,
+          title: toPublicGroupTitle(group.option_group, group.group_title),
           options: groupOptions.map((option) => ({
             code: option.option_code,
-            label: option.label_en,
+            label: toPublicOptionLabel(
+              group.option_group,
+              option.option_code,
+              option.label_en
+            ),
             badge: option.badge_text,
-            note: option.spec_note,
+            note: sanitizePublicSpecNote(
+              group.option_group,
+              option.option_code,
+              option.spec_note
+            ),
           })),
         },
       ];

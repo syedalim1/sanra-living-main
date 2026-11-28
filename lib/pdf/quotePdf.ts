@@ -208,7 +208,7 @@ export async function buildQuotePdf(input: QuotePdfInput): Promise<Uint8Array> {
     rows.push(
       ["Size", summary.size_label],
       ["Top material", summary.top_label],
-      ["Pipe gauge", gaugeParts.join(" • ")],
+      ["Build category", gaugeParts.join(" • ")],
       ["Frame color", summary.frame_color_label],
       ["Build type", summary.build_label],
       ["Add-ons", summary.addons_labels.length > 0 ? summary.addons_labels.join(", ") : "None"]

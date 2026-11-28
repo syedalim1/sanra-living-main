@@ -37,7 +37,6 @@ interface ProductConfiguratorLoaderProps {
   fromPrice: number | null;
   engineProductType?: string;
   topCategoryImages?: Record<string, string> | null;
-  pipeSpec?: string | null;
   chairAddonPrice?: number | null;
 }
 
@@ -49,7 +48,6 @@ export default function ProductConfiguratorLoader({
   fromPrice,
   engineProductType,
   topCategoryImages,
-  pipeSpec,
   chairAddonPrice,
 }: ProductConfiguratorLoaderProps) {
   if ((engineProductType ?? product.product_type) === "TABLE") {
@@ -59,7 +57,6 @@ export default function ProductConfiguratorLoader({
         options={typeOptions}
         visualVariants={visualVariants as never}
         topCategoryImages={topCategoryImages ?? null}
-        pipeSpec={pipeSpec ?? null}
         chairAddonPrice={chairAddonPrice ?? null}
         fromPrice={fromPrice}
       />

@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -21,6 +21,10 @@ import CadDownloads from "@/components/b2b/CadDownloads";
 import { supabaseServer } from "@/lib/supabase/server";
 import { company, whatsappHref } from "@/lib/company";
 import { FALLBACK_OPTIONS, type ConfigOption } from "@/lib/configuratorOptions";
+import {
+  sanitizePublicConfigOptions,
+  sanitizePublicOptionGroups,
+} from "@/lib/buildCategory";
 import {
   FALLBACK_GROUPS,
   PRODUCT_TYPES,
@@ -137,15 +141,17 @@ export default async function B2BPage() {
       ? products.filter((product) => pricedProductIds.has(product.id))
       : products;
 
-  const groups: OptionGroupRow[] =
+  const groups: OptionGroupRow[] = sanitizePublicOptionGroups(
     groupResult.data && groupResult.data.length > 0
       ? (groupResult.data as OptionGroupRow[])
-      : PRODUCT_TYPES.flatMap((type) => FALLBACK_GROUPS[type]);
+      : PRODUCT_TYPES.flatMap((type) => FALLBACK_GROUPS[type])
+  );
 
-  const options: ConfigOption[] =
+  const options: ConfigOption[] = sanitizePublicConfigOptions(
     optionResult.data && optionResult.data.length > 0
       ? (optionResult.data as ConfigOption[])
-      : FALLBACK_OPTIONS;
+      : FALLBACK_OPTIONS
+  );
 
   const productNames = new Map(
     products.map((product) => [product.sku, product.name])

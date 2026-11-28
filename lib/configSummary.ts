@@ -8,6 +8,11 @@ import {
 import type { ConfigPriceInput, NonTableConfigInput } from "@/lib/schemas";
 import type { NonTableProductType, ProductType } from "@/lib/productTypeConfig";
 import { stripCostFragments } from "@/lib/sanitize";
+import {
+  buildCategoryForCode,
+  toPublicGroupTitle,
+  toPublicOptionLabel,
+} from "@/lib/buildCategory";
 
 export interface SelectionLine {
   label: string;
@@ -78,7 +83,8 @@ function labelFor(
   code: string | null | undefined
 ): string {
   const option = findOption(options, group, code);
-  return stripCostFragments(option?.label_en || humanize(code || ""));
+  const raw = stripCostFragments(option?.label_en || humanize(code || ""));
+  return toPublicOptionLabel(group, code ?? "", raw);
 }
 
 function selectionLine(
@@ -162,7 +168,7 @@ function appendGenericLines(
     if (!code) continue;
     const value = labelFor(options, group.option_group, code);
     if (!value || seen.has(value)) continue;
-    next.push({ label: group.group_title, value });
+    next.push({ label: toPublicGroupTitle(group.option_group, group.group_title), value });
     seen.add(value);
   }
 
@@ -225,9 +231,9 @@ function buildNonTableLines(
 
   const selections = input.selections;
   return [
-    selectionLine(options, "GRADE", selections.GRADE, "Grade"),
-    selectionLine(options, "THICKNESS", selections.THICKNESS, "Top thickness"),
-    selectionLine(options, "SS_FINISH", selections.SS_FINISH, "Finish"),
+      selectionLine(options, "GRADE", selections.GRADE, "Build grade"),
+      selectionLine(options, "THICKNESS", selections.THICKNESS, "Build category"),
+      selectionLine(options, "SS_FINISH", selections.SS_FINISH, "Finish"),
   ];
 }
 
@@ -268,7 +274,9 @@ export async function getConfigSummary(input: ConfigSummaryInput): Promise<Confi
       top_material_label: topMaterialLabel,
       top_label: topMaterialLabel ? `${topTabLabel} — ${topMaterialLabel}` : topTabLabel,
       gauge_code: tableInput.gauge,
-      gauge_label: labelFor(options, "GAUGE", tableInput.gauge),
+      gauge_label:
+        buildCategoryForCode(tableInput.gauge) ??
+        labelFor(options, "GAUGE", tableInput.gauge),
       gauge_load_kg: gaugeOption?.load_kg ?? null,
       gauge_warranty:
         frameMaterialOption?.warranty_text ?? gaugeOption?.warranty_text ?? null,

@@ -232,8 +232,8 @@ function featureBadges(
       icon: ShieldCheck,
       text:
         selections.GRADE === "SSG_304"
-          ? "Food-grade Stainless Steel 304"
-          : "Indoor Stainless Steel 202",
+          ? "Commercial Stainless Steel — Heavy Duty"
+          : "Commercial Stainless Steel — Standard",
     },
     { icon: Droplets, text: "Easy to clean" },
     { icon: Sparkles, text: "Rust-proof finish" },

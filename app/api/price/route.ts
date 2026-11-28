@@ -29,12 +29,21 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const result = await calculateConfigPrice(body);
-    return NextResponse.json(result, {
-      status: 200,
-      headers: {
-        "Cache-Control": "no-store",
+    return NextResponse.json(
+      {
+        unit_price: result.unit_price,
+        total_price: result.total_price,
+        discount_pct: result.discount_pct,
+        bumper_included: result.bumper_included,
+        requires_quote: result.requires_quote,
       },
-    });
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store",
+        },
+      }
+    );
   } catch (err: unknown) {
     // Strictly generic error messages, never leaking stacks or pricing logic
     return NextResponse.json(

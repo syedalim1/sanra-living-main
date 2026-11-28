@@ -10,7 +10,6 @@ export interface PricingInput {
 }
 
 export interface PricingResult {
-  baseCost: number;
   finalPrice: number; // without GST
   gstAmount: number;  // 18% GST
   totalWithGst: number;
@@ -84,14 +83,13 @@ export async function calculateProductPrice(input: PricingInput): Promise<Pricin
   const totalWithGst = finalPrice + gstAmount;
 
   return {
-    baseCost: Math.round(costWithOverhead),
     finalPrice,
     gstAmount,
     totalWithGst,
     customerType,
     topMaterialName: topRateItem?.display_name ?? "100% Seasoned Grade-A Hardwood",
     topMaterialCode,
-    frameMaterialName: frameRateItem?.display_name ?? "Heavy Structural MS Pipe",
+    frameMaterialName: frameRateItem?.display_name ?? "Commercial Steel Frame",
     isCustomQuoteRequired: false,
   };
 }

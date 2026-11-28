@@ -48,7 +48,7 @@ export function buildBookingMessage(input: BookingMessageInput): string {
     lines.push(`Size: ${stripCostFragments(input.sizeLabel)}`);
     lines.push(`Top: ${stripCostFragments(input.topLabel)}`);
     lines.push(
-      `Pipe/Frame: ${stripCostFragments(input.gaugeLabel)} | ${stripCostFragments(input.frameColorLabel)}`
+      `Build Grade: ${stripCostFragments(input.gaugeLabel)} | Frame: ${stripCostFragments(input.frameColorLabel)}`
     );
     lines.push(`Build: ${stripCostFragments(input.buildLabel)}`);
     lines.push(

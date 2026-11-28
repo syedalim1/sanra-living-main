@@ -1,4 +1,4 @@
-﻿import "server-only";
+import "server-only";
 
 import React from "react";
 import { notFound } from "next/navigation";
@@ -18,7 +18,10 @@ import {
   type OptionGroupRow,
 } from "@/lib/productTypeConfig";
 import { getFromPriceForProduct } from "@/lib/pricing/fromPrice";
-import { getPublicProductSpec } from "@/lib/pricing/publicSpec";
+import {
+  sanitizePublicConfigOptions,
+  sanitizePublicOptionGroups,
+} from "@/lib/buildCategory";
 import {
   SITE_NAME,
   absoluteUrl,
@@ -323,7 +326,6 @@ export default async function SkuPage({ params }: SkuPageProps) {
   let visualVariants: PublicVariant[] = [];
   let configuratorOptions: ConfigOption[] = FALLBACK_OPTIONS;
   let typeGroups: OptionGroupRow[] = [];
-  let pipeSpec: string | null = null;
 
   try {
     const { data: prodData } = await supabaseServer
@@ -368,9 +370,6 @@ export default async function SkuPage({ params }: SkuPageProps) {
         short_description: prodData.short_description ?? null,
         top_overlay_note: safeOverlayNote(prodData.top_overlay_note),
       };
-
-      const spec = await getPublicProductSpec(prodData.id);
-      pipeSpec = spec.pipe_spec;
 
       const { data: vData } = await supabaseServer
         .from("product_visual_variants")
@@ -540,15 +539,14 @@ export default async function SkuPage({ params }: SkuPageProps) {
 
         <ProductConfiguratorLoader
           product={product}
-          typeOptions={typeOptions}
-          groups={typeGroups}
+          typeOptions={sanitizePublicConfigOptions(typeOptions)}
+          groups={sanitizePublicOptionGroups(typeGroups)}
           visualVariants={visualVariants}
           fromPrice={fromPrice}
           engineProductType={engineProductType}
           topCategoryImages={
             (product.top_category_images as Record<string, string> | undefined) ?? null
           }
-          pipeSpec={pipeSpec}
         />
 
         {relatedSets.length > 0 && (

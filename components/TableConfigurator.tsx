@@ -12,6 +12,7 @@ import {
   isFrameMaterial,
   type ConfigOption,
 } from "@/lib/configuratorOptions";
+import { buildCategoryForCode } from "@/lib/buildCategory";
 import {
   ChevronDown,
   Sparkles,
@@ -78,7 +79,6 @@ interface TableConfiguratorProps {
   options: ConfigOption[];
   visualVariants: VisualVariant[];
   topCategoryImages?: Record<string, string> | null;
-  pipeSpec?: string | null;
   chairAddonPrice?: number | null;
   fromPrice?: number | null;
 }
@@ -88,7 +88,6 @@ export default function TableConfigurator({
   options,
   visualVariants,
   topCategoryImages,
-  pipeSpec,
   chairAddonPrice,
   fromPrice,
 }: TableConfiguratorProps) {
@@ -695,9 +694,7 @@ export default function TableConfigurator({
     selectedTopTab;
 
   const gaugeLabel = (option: ConfigOption) => {
-    const short = option.label_en.split("(")[0].trim();
-    if (option.option_code === "G16") return "16G Recommended";
-    return short.replace(" Gauge", "G");
+    return buildCategoryForCode(option.option_code) ?? "Standard";
   };
 
   const section = (
@@ -754,8 +751,8 @@ export default function TableConfigurator({
                       <span>{Number(product.base_height_ft ?? 2.5)} ft</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Pipe</span>
-                      <span className="text-right max-w-[60%]">{pipeSpec || "Steel tube frame"}</span>
+                      <span>Frame</span>
+                      <span className="text-right max-w-[60%]">Commercial steel frame</span>
                     </div>
                   </div>
                 </div>
@@ -1003,7 +1000,7 @@ export default function TableConfigurator({
 
                 {selectedFrameMaterial === "MS" && (
                   <>
-                    <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Pipe gauge">
+                    <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Build category">
                       {gauges.map((gauge) => (
                         <button
                           key={gauge.option_code}

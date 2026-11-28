@@ -2,6 +2,7 @@ import "server-only";
 
 import { supabaseServer } from "@/lib/supabase/server";
 import { calculateSetPrice } from "@/lib/pricing/setPrice";
+import { toPublicGroupTitle, toPublicOptionLabel } from "@/lib/buildCategory";
 
 export interface SetSummaryItem {
   name: string;
@@ -98,7 +99,10 @@ export async function buildSetSummary(
       if (!code) continue;
       const option = labelMap.get(`${group.option_group}:${code}`);
       if (!option) continue;
-      selections.push({ group: group.group_title, option });
+      selections.push({
+        group: toPublicGroupTitle(group.option_group, group.group_title as string),
+        option: toPublicOptionLabel(group.option_group, code, option),
+      });
     }
 
     summaryItems.push({
