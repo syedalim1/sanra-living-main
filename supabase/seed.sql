@@ -75,7 +75,7 @@ BEGIN
     '/images/cat-dining-tables.svg', '/images/hero-workstation.svg', true,
     ARRAY['CAFE','HOME','CANTEEN','BAKERY','HALL','SCHOOL']::text[], ARRAY['MS','WOOD','GRANITE']::text[],
     10, 'Paired with 100% Seasoned Grade-A Hardwood or 18mm Export-Grade Natural Granite',
-    '{}'::jsonb, '{}'::jsonb, ARRAY[]::text[]
+    '{}'::jsonb, ARRAY[]::text[]
   )
   ON CONFLICT (sku) DO UPDATE SET
     name = EXCLUDED.name,
