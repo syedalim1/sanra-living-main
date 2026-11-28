@@ -1,10 +1,11 @@
 ﻿"use client";
 
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ClipboardList } from "lucide-react";
 import Brand from "@/components/public/Brand";
+import { ENQUIRY_BASKET_EVENT, readEnquiryBasket } from "@/lib/enquiryBasket";
 
 const links = [
   { href: "/products", label: "Collections" },
@@ -29,8 +30,20 @@ function CurrentNavbar() {
 
 function NavbarContent({ pathname }: { pathname: string }) {
   const [openOnPath, setOpenOnPath] = useState<string | null>(null);
+  const [basketCount, setBasketCount] = useState(0);
   const trigger = useRef<HTMLButtonElement>(null);
   const open = openOnPath === pathname;
+
+  useEffect(() => {
+    const sync = () => setBasketCount(readEnquiryBasket().length);
+    sync();
+    window.addEventListener(ENQUIRY_BASKET_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(ENQUIRY_BASKET_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
 
   return (
     <header
@@ -63,6 +76,20 @@ function NavbarContent({ pathname }: { pathname: string }) {
               </Link>
             );
           })}
+          <Link
+            href="/enquiry"
+            aria-current={pathname === "/enquiry" ? "page" : undefined}
+            onClick={() => setOpenOnPath(null)}
+            className="inline-flex items-center gap-1.5"
+          >
+            <ClipboardList size={15} aria-hidden="true" />
+            Enquiry List
+            {basketCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-[#111111] text-white text-[10px] font-bold">
+                {basketCount}
+              </span>
+            )}
+          </Link>
           <Link href="/b2b#bulk" className="sanra-button sanra-button--ink" onClick={() => setOpenOnPath(null)}>
             Get a bulk quote
           </Link>

@@ -54,7 +54,16 @@ export default async function AdminLeadsPage({ searchParams }: LeadsPageProps) {
   if (kindFilter) query = query.eq("kind", kindFilter);
   if (statusFilter) query = query.eq("status", statusFilter);
 
-  const { data, error } = await query;
+  const [{ data, error }, { data: quotesData }] = await Promise.all([
+    query,
+    db
+      .from("quotes")
+      .select(
+        "id, reference, customer_name, phone, city, lead_source, status, total_amount, valid_until, converted_order_id, created_at"
+      )
+      .order("created_at", { ascending: false })
+      .limit(50),
+  ]);
 
   if (error) {
     throw new Error("Unable to load leads.");
@@ -167,6 +176,66 @@ export default async function AdminLeadsPage({ searchParams }: LeadsPageProps) {
       </form>
 
       <LeadsTable leads={leads} />
+
+      <div className="bg-white rounded-xl border border-neutral-200 p-5 space-y-3">
+        <div>
+          <h2 className="text-base font-bold text-[#111111]">
+            Persistent Quotations &amp; Enquiry Baskets
+          </h2>
+          <p className="text-xs text-neutral-500 mt-0.5">
+            Track multi-product enquiries, negotiate selling prices, download PDFs, and convert confirmed quotes to orders.
+          </p>
+        </div>
+
+        {(quotesData ?? []).length === 0 ? (
+          <p className="text-xs text-neutral-500">No persistent quotations recorded yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-neutral-200 text-neutral-500 uppercase text-[10px]">
+                  <th className="py-2 pr-3">Reference</th>
+                  <th className="py-2 pr-3">Customer</th>
+                  <th className="py-2 pr-3">Source</th>
+                  <th className="py-2 pr-3">Status</th>
+                  <th className="py-2 pr-3">Total</th>
+                  <th className="py-2 pr-3">Valid Until</th>
+                  <th className="py-2">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(quotesData ?? []).map((qt) => (
+                  <tr key={qt.id} className="border-b border-neutral-100">
+                    <td className="py-2.5 pr-3 font-mono font-bold">{qt.reference}</td>
+                    <td className="py-2.5 pr-3">
+                      {qt.customer_name || qt.phone || "Anonymous"}
+                      {qt.city ? ` (${qt.city})` : ""}
+                    </td>
+                    <td className="py-2.5 pr-3">{qt.lead_source}</td>
+                    <td className="py-2.5 pr-3">
+                      <span className="px-2 py-0.5 rounded bg-neutral-100 text-[10px] font-bold">
+                        {qt.status}
+                      </span>
+                    </td>
+                    <td className="py-2.5 pr-3 font-semibold">
+                      ₹{Number(qt.total_amount ?? 0).toLocaleString("en-IN")}
+                    </td>
+                    <td className="py-2.5 pr-3 text-neutral-500">{qt.valid_until}</td>
+                    <td className="py-2.5">
+                      <Link
+                        href={`/admin/quotes/${qt.id}`}
+                        className="font-bold text-[#111111] underline hover:no-underline"
+                      >
+                        Manage
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

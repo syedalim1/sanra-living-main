@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import WatermarkedImage from "@/components/WatermarkedImage";
+import { addEnquiryItem } from "@/lib/enquiryBasket";
 import type { PublicProductVariant } from "@/lib/variants/types";
 import type { PublicBuildCategory } from "@/lib/buildCategory";
 
@@ -250,35 +251,22 @@ export default function VariantConfigurator({
 
   function handleAddToEnquiryList() {
     if (!activeVariant) return;
-    try {
-      const key = "sanra_enquiry_basket";
-      const existing = JSON.parse(localStorage.getItem(key) ?? "[]") as Array<
-        Record<string, unknown>
-      >;
-      existing.push({
-        sku: product.sku,
-        name: product.name,
-        variant_id: activeVariant.id,
-        variant_code: activeVariant.variant_code,
-        frame_material:
-          selectedMaterial === "SS" ? "Stainless Steel" : "Mild Steel",
-        build_category: activeVariant.build_category_label,
-        surface: activeVariant.surface_label,
-        size: activeVariant.size_label,
-        quantity,
-        unit_price: activePrice?.unit_price ?? null,
-        total_price: activePrice?.total_price ?? null,
-        price_basis: activePrice?.price_basis ?? null,
-        requires_quote: activePrice?.requires_quote ?? true,
-        product_url: `${window.location.origin}/products/${encodeURIComponent(product.sku.toLowerCase())}`,
-        added_at: new Date().toISOString(),
-      });
-      localStorage.setItem(key, JSON.stringify(existing));
-      setAddedToList(true);
-      setTimeout(() => setAddedToList(false), 2500);
-    } catch {
-      // Ignore storage errors
-    }
+    addEnquiryItem({
+      sku: product.sku,
+      name: product.name,
+      variant_id: activeVariant.id,
+      variant_code: activeVariant.variant_code,
+      frame_material:
+        selectedMaterial === "SS" ? "Stainless Steel" : "Mild Steel",
+      build_category: activeVariant.build_category_label,
+      surface: activeVariant.surface_label,
+      size: activeVariant.size_label,
+      quantity,
+      product_url: `${window.location.origin}/products/${encodeURIComponent(product.sku.toLowerCase())}`,
+      added_at: new Date().toISOString(),
+    });
+    setAddedToList(true);
+    setTimeout(() => setAddedToList(false), 2500);
   }
 
   function whatsappUrl(): string {
