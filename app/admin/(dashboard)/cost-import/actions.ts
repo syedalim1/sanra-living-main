@@ -6,7 +6,6 @@ import { requireAdmin } from "@/lib/admin/auth";
 import { writeAudit } from "@/lib/admin/audit";
 import { createServerClient } from "@/lib/supabase/server";
 import {
-  applyCostImportBatch,
   invalidatePricingCaches,
   stageCostImport,
   type CostImportPreviewResult,
@@ -31,7 +30,6 @@ export async function stageCostImportAction(
   formData: FormData
 ): Promise<CostImportActionState> {
   const session = await requireAdmin();
-  const db = createServerClient();
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
@@ -51,6 +49,7 @@ export async function stageCostImportAction(
   }
 
   try {
+    const db = createServerClient();
     const csvText = await file.text();
     const preview = await stageCostImport({
       filename: file.name,
@@ -59,13 +58,14 @@ export async function stageCostImportAction(
     });
 
     // Check for prior APPLIED batch with the same checksum to warn against duplicate imports
-    const { data: prior } = await db
+    const { data: prior, error: priorError } = await db
       .from("cost_import_batches")
       .select("id")
       .eq("checksum", preview.checksum)
       .eq("status", "APPLIED")
       .neq("id", preview.batch_id)
       .limit(1);
+    if (priorError) throw new Error("Unable to check for a duplicate cost import.");
 
     // Compute expected selling-price impact for valid matched variants
     const validCodes = preview.rows
@@ -78,16 +78,17 @@ export async function stageCostImportAction(
     > = {};
 
     if (validCodes.length > 0) {
-      const { data: variants } = await db
+      const { data: variants, error: variantError } = await db
         .from("product_variants")
         .select("id, variant_code, availability, lead_time_days, size_code")
         .in("variant_code", validCodes);
 
+      if (variantError) throw new Error("Unable to load the matched variants.");
       const variantIds = (variants ?? []).map((v) => v.id as string);
-      const { data: pricings } = await db
-        .from("variant_pricing_private")
-        .select("*")
-        .in("variant_id", variantIds);
+      const { data: pricings, error: costsError } = variantIds.length > 0
+        ? await db.from("variant_pricing_private").select("*").in("variant_id", variantIds)
+        : { data: [], error: null };
+      if (costsError) throw new Error("Unable to load current variant costs.");
 
       const profileIds = [
         ...new Set(
@@ -96,10 +97,11 @@ export async function stageCostImportAction(
             .filter(Boolean) as string[]
         ),
       ];
-      const { data: profiles } =
+      const { data: profiles, error: profilesError } =
         profileIds.length > 0
           ? await db.from("pricing_profiles").select("*").in("id", profileIds)
-          : { data: [] as Record<string, unknown>[] };
+          : { data: [], error: null };
+      if (profilesError) throw new Error("Unable to load pricing profiles.");
 
       const pricingByVariant = new Map(
         (pricings ?? []).map((p) => [p.variant_id as string, p])
@@ -184,7 +186,6 @@ export async function applyCostImportAction(
   formData: FormData
 ): Promise<CostImportActionState> {
   const session = await requireAdmin();
-  const db = createServerClient();
 
   const parsed = ApplyBatchSchema.safeParse({
     batch_id: formData.get("batch_id"),
@@ -196,10 +197,10 @@ export async function applyCostImportAction(
   }
 
   try {
+    const db = createServerClient();
     const effectiveDate =
       parsed.data.effective_from ?? new Date().toISOString().slice(0, 10);
 
-    // Prefer atomic transactional RPC; fall back to service helper if RPC not yet deployed.
     const { data: rpcCount, error: rpcErr } = await db.rpc(
       "apply_cost_import_batch_tx",
       {
@@ -209,18 +210,11 @@ export async function applyCostImportAction(
       }
     );
 
-    let appliedRows = 0;
-    if (!rpcErr && typeof rpcCount === "number") {
-      appliedRows = rpcCount;
-      invalidatePricingCaches();
-    } else {
-      const res = await applyCostImportBatch({
-        batchId: parsed.data.batch_id,
-        actorEmail: session.email,
-        effectiveFrom: effectiveDate,
-      });
-      appliedRows = res.appliedRows;
+    if (rpcErr || typeof rpcCount !== "number") {
+      return { ok: false, error: "Unable to apply the cost import. Refresh the batch before retrying." };
     }
+    const appliedRows = rpcCount;
+    invalidatePricingCaches();
 
     await writeAudit(db, session.email, {
       action: "APPLY_COST_IMPORT",
@@ -231,6 +225,8 @@ export async function applyCostImportAction(
 
     revalidatePath("/admin/cost-import");
     revalidatePath("/admin/products");
+    revalidatePath("/admin/products/[id]", "page");
+    revalidatePath("/products/[sku]", "page");
     revalidatePath("/products");
 
     return { ok: true, appliedCount: appliedRows };

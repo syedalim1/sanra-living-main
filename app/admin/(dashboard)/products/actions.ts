@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import "server-only";
 
@@ -9,6 +9,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/admin/auth";
 import { createServerClient } from "@/lib/supabase/server";
 import { writeAudit } from "@/lib/admin/audit";
+import { catalogWriteError, setCatalogPublication } from "@/lib/admin/productWorkflow";
+import { PRODUCT_PLACEHOLDER } from "@/lib/admin/product-types";
 import { productPath } from "@/lib/site";
 import {
   ProductFormSchema,
@@ -16,7 +18,6 @@ import {
   formString,
   formStringArray,
   parseBoolean,
-  parseNullableNumber,
   parseNumber,
   validateImageSize,
 } from "@/lib/admin/validation";
@@ -29,7 +30,6 @@ import {
 } from "@/lib/admin/images";
 import type { AdminActionResult } from "@/lib/admin/product-types";
 
-const PRODUCT_PLACEHOLDER = "/images/product-placeholder.svg";
 const UUID = z.string().uuid();
 
 function isUniqueViolation(error: { code?: string } | null | undefined): boolean {
@@ -79,14 +79,13 @@ async function isImageReferencedByVariant(
   url: string | null | undefined
 ): Promise<boolean> {
   if (!url) return false;
-  const { data } = await db
-    .from("product_visual_variants")
-    .select("id")
-    .eq("product_id", productId)
-    .eq("preview_image_url", url)
-    .limit(1);
+  const [visual, catalog] = await Promise.all([
+    db.from("product_visual_variants").select("id").eq("product_id", productId).eq("preview_image_url", url).limit(1),
+    db.from("product_variants").select("id").eq("product_id", productId).eq("variant_image_url", url).limit(1),
+  ]);
 
-  return Boolean(data && data.length > 0);
+  // Keep the asset when a failed lookup cannot establish that it is unused.
+  return Boolean(visual.error || catalog.error || visual.data?.length || catalog.data?.length);
 }
 
 export async function saveProductAction(
@@ -94,11 +93,10 @@ export async function saveProductAction(
   formData: FormData
 ): Promise<AdminActionResult> {
   const session = await requireAdmin();
-  const db = createServerClient();
-
   let redirectTo: string | null = null;
 
   try {
+    const db = createServerClient();
     const rawId = formString(formData.get("id"));
     const productId = rawId || null;
 
@@ -107,6 +105,11 @@ export async function saveProductAction(
     }
 
     const productType = formString(formData.get("product_type"));
+    const editingLegacy = Boolean(productId && parseBoolean(formData.get("edit_legacy_prices")));
+    const legacyNumber = (field: string) => {
+      const value = formString(formData.get(field)).trim();
+      return editingLegacy && value ? Number(value) : undefined;
+    };
 
     const parsed = ProductFormSchema.safeParse({
       sku: formString(formData.get("sku")),
@@ -123,12 +126,11 @@ export async function saveProductAction(
       material_tags: formStringArray(formData, "material_tags"),
       sort_order: Math.trunc(parseNumber(formData.get("sort_order"), 100)),
       warranty_text: formString(formData.get("warranty_text")),
-      is_active: parseBoolean(formData.get("is_active")),
       is_knockdown_available: parseBoolean(formData.get("is_knockdown_available")),
       allowed_top_categories: formStringArray(formData, "allowed_top_categories"),
-      direct_price: parseNullableNumber(formData.get("direct_price")),
-      granite_top_price: parseNullableNumber(formData.get("granite_top_price")),
-      wood_top_price: parseNullableNumber(formData.get("wood_top_price")),
+      direct_price: legacyNumber("direct_price"),
+      granite_top_price: legacyNumber("granite_top_price"),
+      wood_top_price: legacyNumber("wood_top_price"),
     });
 
     if (!parsed.success) {
@@ -139,10 +141,6 @@ export async function saveProductAction(
     }
 
     const values = parsed.data;
-
-    if (values.direct_price == null) {
-      return { ok: false, error: "Enter the direct selling price before saving." };
-    }
 
     const skuCheck = await db
       .from("products")
@@ -156,6 +154,18 @@ export async function saveProductAction(
 
     if (skuCheck.data && skuCheck.data.id !== productId) {
       return { ok: false, error: "That SKU already exists." };
+    }
+
+    const existing = productId
+      ? await db.from("products")
+          .select("id, sku, main_image_url, hover_blueprint_img, top_category_images")
+          .eq("id", productId)
+          .maybeSingle()
+      : null;
+    if (existing?.error) return { ok: false, error: "Unable to load the product." };
+    if (productId && !existing?.data) return { ok: false, error: "Product not found." };
+    if (existing?.data && existing.data.sku !== values.sku) {
+      return { ok: false, error: "The model number is locked after creation." };
     }
 
     const mainFile = getFormFile(formData, "main_image");
@@ -214,16 +224,31 @@ export async function saveProductAction(
       };
     }
 
-    const comboConfig =
-      productType === "CHAIR_TABLE_SET" || productType === "BENCH_DESK"
-        ? {
-            set_configuration: formString(formData.get("set_configuration")),
-            seating_type: formString(formData.get("seating_type")),
-            chair_quantity: Math.max(0, Math.trunc(parseNumber(formData.get("chair_quantity"), 0))),
-          }
-        : {};
+    const legacyPatch: Record<string, unknown> = {};
+    for (const field of ["direct_price", "granite_top_price", "wood_top_price"] as const) {
+      if (values[field] != null) legacyPatch[field] = values[field];
+    }
+    if (editingLegacy && values.pipe_spec) {
+      legacyPatch.pipe_spec = values.pipe_spec;
+    }
+    if (["CHAIR_TABLE_SET", "BENCH_DESK"].includes(values.product_type) && formData.has("set_configuration")) {
+      legacyPatch.combo_config = {
+        set_configuration: formString(formData.get("set_configuration")).slice(0, 160),
+        seating_type: formString(formData.get("seating_type")).slice(0, 160),
+        chair_quantity: Math.min(1000, Math.max(0, Math.trunc(parseNumber(formData.get("chair_quantity"))))),
+      };
+    }
 
-    const productRow = {
+    const topPatch: Record<string, string | null> = { ...uploadedTopImages };
+    for (const { key } of topImageFields) {
+      if (productId && !topPatch[key] && parseBoolean(formData.get(`remove_top_${key.toLowerCase()}_image`))) {
+        topPatch[key] = null;
+      }
+    }
+
+    const nextMain = uploadedMainUrl ?? (!productId || removeMainImage ? PRODUCT_PLACEHOLDER : undefined);
+    const nextHover = uploadedHoverUrl ?? (!productId || removeHoverImage ? null : undefined);
+    const productPatch = {
       sku: values.sku,
       name: values.name,
       category: values.category,
@@ -236,144 +261,55 @@ export async function saveProductAction(
       short_description: values.short_description || null,
       is_knockdown_available: values.is_knockdown_available,
       warranty_text: values.warranty_text,
-      is_active: values.is_active,
       use_cases: values.use_cases,
       material_tags: values.material_tags,
       sort_order: values.sort_order,
+      main_image_url: nextMain,
+      hover_blueprint_img: nextHover,
+      top_category_images: !productId || Object.keys(topPatch).length > 0 ? topPatch : undefined,
+      gallery_images: !productId || uploadedGallery.length > 0 ? uploadedGallery : undefined,
     };
 
-    let savedProductId: string;
-
-    if (productId) {
-      const existing = await db
-        .from("products")
-        .select(
-          "id, sku, main_image_url, hover_blueprint_img, top_category_images, gallery_images"
-        )
-        .eq("id", productId)
-        .maybeSingle();
-
-      if (existing.error || !existing.data) {
-        await discardUploads(db, [
-          uploadedMainUrl,
-          uploadedHoverUrl,
-          ...Object.values(uploadedTopImages),
-          ...uploadedGallery,
-        ]);
-        return { ok: false, error: "Product not found." };
-      }
-
-      const productUpdate: Record<string, unknown> = { ...productRow };
-
-      if (uploadedMainUrl) {
-        productUpdate.main_image_url = uploadedMainUrl;
-      } else if (removeMainImage) {
-        productUpdate.main_image_url = PRODUCT_PLACEHOLDER;
-      }
-
-      if (uploadedHoverUrl) {
-        productUpdate.hover_blueprint_img = uploadedHoverUrl;
-      } else if (removeHoverImage) {
-        productUpdate.hover_blueprint_img = null;
-      }
-
-      if (Object.keys(uploadedTopImages).length > 0) {
-        productUpdate.top_category_images = {
-          ...((existing.data.top_category_images ?? {}) as Record<string, string>),
-          ...uploadedTopImages,
-        };
-      }
-
-      if (uploadedGallery.length > 0) {
-        const existingGallery = Array.isArray(existing.data.gallery_images)
-          ? (existing.data.gallery_images as string[])
-          : [];
-        productUpdate.gallery_images = [...existingGallery, ...uploadedGallery].slice(-8);
-      }
-
-      const { error } = await db.from("products").update(productUpdate).eq("id", productId);
-      if (error) {
-        await discardUploads(db, [
-          uploadedMainUrl,
-          uploadedHoverUrl,
-          ...Object.values(uploadedTopImages),
-          ...uploadedGallery,
-        ]);
-        return {
-          ok: false,
-          error: isUniqueViolation(error) ? "That SKU already exists." : "Unable to save product.",
-        };
-      }
-
-      const nextMain = uploadedMainUrl ?? (removeMainImage ? PRODUCT_PLACEHOLDER : existing.data.main_image_url);
-      const nextHover = uploadedHoverUrl ?? (removeHoverImage ? null : existing.data.hover_blueprint_img);
-
-      if (nextMain !== existing.data.main_image_url) {
-        if (!(await isImageReferencedByVariant(db, productId, existing.data.main_image_url))) {
-          await removeStoredImage(db, existing.data.main_image_url).catch(() => undefined);
-        }
-      }
-
-      if (nextHover !== existing.data.hover_blueprint_img) {
-        await removeStoredImage(db, existing.data.hover_blueprint_img).catch(() => undefined);
-      }
-
-      savedProductId = productId;
-    } else {
-      const { data, error } = await db
-        .from("products")
-        .insert({
-          ...productRow,
-          main_image_url: uploadedMainUrl ?? PRODUCT_PLACEHOLDER,
-          hover_blueprint_img: uploadedHoverUrl,
-          top_category_images: uploadedTopImages,
-          gallery_images: uploadedGallery,
-        })
-        .select("id")
-        .single();
-
-      if (error || !data) {
-        await discardUploads(db, [
-          uploadedMainUrl,
-          uploadedHoverUrl,
-          ...Object.values(uploadedTopImages),
-          ...uploadedGallery,
-        ]);
-        return {
-          ok: false,
-          error: isUniqueViolation(error) ? "That SKU already exists." : "Unable to create product.",
-        };
-      }
-
-      savedProductId = data.id;
-    }
-
-    const { error: pricingError } = await db.from("product_pricing_rules").upsert(
-      {
-        product_id: savedProductId,
-        direct_price: values.direct_price ?? null,
-        granite_top_price: values.granite_top_price ?? null,
-        wood_top_price: values.wood_top_price ?? null,
-        combo_config: comboConfig,
-        pipe_spec: values.pipe_spec || null,
-      },
-      { onConflict: "product_id" }
-    );
-
-    if (pricingError) {
-      return { ok: false, error: "Product saved, but the pricing details failed." };
-    }
-
-    await writeAudit(db, session.email, {
-      action: productId ? "UPDATE" : "CREATE",
-      target_table: "products",
-      target_id: savedProductId,
-      summary: `Product ${values.sku} ${productId ? "updated" : "created"}`,
+    const { data: savedProductId, error } = await db.rpc("admin_save_catalog_product", {
+      p_id: productId,
+      p_patch: productPatch,
+      p_legacy: legacyPatch,
+      p_actor: session.email,
     });
 
+    if (error || typeof savedProductId !== "string") {
+      if (error?.code) {
+        await discardUploads(db, [uploadedMainUrl, uploadedHoverUrl, ...Object.values(uploadedTopImages), ...uploadedGallery]);
+      }
+      return {
+        ok: false,
+        error: isUniqueViolation(error) ? "That model number already exists."
+          : error?.code === "P0001" ? error.message
+          : productId ? "Unable to save product details." : "Unable to create the draft.",
+      };
+    }
+
+    const previous = existing?.data;
+    if (previous && productId) {
+      const oldPhotos = [
+        nextMain !== undefined ? previous.main_image_url : null,
+        nextHover !== undefined ? previous.hover_blueprint_img : null,
+        ...Object.keys(topPatch).map((key) => previous.top_category_images?.[key] as string | undefined),
+      ];
+      for (const url of new Set(oldPhotos)) {
+        if (url && !Object.values(topPatch).includes(url) && url !== nextMain && url !== nextHover &&
+          !(await isImageReferencedByVariant(db, productId, url))) {
+          await discardUploads(db, [url]);
+        }
+      }
+    }
+
     revalidateCatalog(values.sku);
-    const addAnother = !productId && formString(formData.get("after_save")) === "new";
-    redirectTo = addAnother ? "/admin/products/new" : `/admin/products/${savedProductId}`;
+    revalidatePath(`/admin/products/${savedProductId}`);
+    if (productId) return { ok: true };
+    redirectTo = formString(formData.get("after_save")) === "new"
+      ? `/admin/products/new?created=${savedProductId}`
+      : `/admin/products/${savedProductId}`;
   } catch {
     return { ok: false, error: "Unable to save the product. Please try again." };
   }
@@ -390,46 +326,12 @@ export async function toggleProductActiveAction(
   formData: FormData
 ): Promise<AdminActionResult> {
   const session = await requireAdmin();
-  const db = createServerClient();
-
-  try {
-    const id = formString(formData.get("id"));
-    if (!UUID.safeParse(id).success) {
-      return { ok: false, error: "Invalid product id." };
-    }
-
-    const { data: product, error } = await db
-      .from("products")
-      .select("id, sku, is_active")
-      .eq("id", id)
-      .maybeSingle();
-
-    if (error || !product) {
-      return { ok: false, error: "Product not found." };
-    }
-
-    const nextActive = !product.is_active;
-    const { error: updateError } = await db
-      .from("products")
-      .update({ is_active: nextActive })
-      .eq("id", id);
-
-    if (updateError) {
-      return { ok: false, error: "Unable to update product status." };
-    }
-
-    await writeAudit(db, session.email, {
-      action: "UPDATE",
-      target_table: "products",
-      target_id: id,
-      summary: `Product ${product.sku} ${nextActive ? "activated" : "archived"}`,
-    });
-
-    revalidateCatalog(product.sku);
-    return { ok: true, isActive: nextActive };
-  } catch {
-    return { ok: false, error: "Unable to update product status." };
+  const id = formString(formData.get("id"));
+  const current = formString(formData.get("is_active"));
+  if (!UUID.safeParse(id).success || !["true", "false"].includes(current)) {
+    return { ok: false, error: "Invalid product status request." };
   }
+  return setCatalogPublication(id, current !== "true", session.email);
 }
 
 export async function archiveProductAction(
@@ -437,45 +339,9 @@ export async function archiveProductAction(
   formData: FormData
 ): Promise<AdminActionResult> {
   const session = await requireAdmin();
-  const db = createServerClient();
-
-  try {
-    const id = formString(formData.get("id"));
-    if (!UUID.safeParse(id).success) {
-      return { ok: false, error: "Invalid product id." };
-    }
-
-    const { data: product, error } = await db
-      .from("products")
-      .select("id, sku")
-      .eq("id", id)
-      .maybeSingle();
-
-    if (error || !product) {
-      return { ok: false, error: "Product not found." };
-    }
-
-    const { error: updateError } = await db
-      .from("products")
-      .update({ is_active: false })
-      .eq("id", id);
-
-    if (updateError) {
-      return { ok: false, error: "Unable to archive product." };
-    }
-
-    await writeAudit(db, session.email, {
-      action: "ARCHIVE",
-      target_table: "products",
-      target_id: id,
-      summary: `Product ${product.sku} archived`,
-    });
-
-    revalidateCatalog(product.sku);
-    return { ok: true };
-  } catch {
-    return { ok: false, error: "Unable to archive product." };
-  }
+  const id = formString(formData.get("id"));
+  if (!UUID.safeParse(id).success) return { ok: false, error: "Invalid product id." };
+  return setCatalogPublication(id, false, session.email);
 }
 
 export async function duplicateProductAction(
@@ -483,135 +349,26 @@ export async function duplicateProductAction(
   formData: FormData
 ): Promise<AdminActionResult> {
   const session = await requireAdmin();
-  const db = createServerClient();
+  const id = formString(formData.get("id"));
+  if (!UUID.safeParse(id).success) return { ok: false, error: "Invalid product id." };
 
-  let redirectTo: string | null = null;
-
+  let draftId: string;
   try {
-    const id = formString(formData.get("id"));
-    if (!UUID.safeParse(id).success) {
-      return { ok: false, error: "Invalid product id." };
-    }
-
-    const [productResult, ruleResult, variantResult] = await Promise.all([
-      db.from("products").select("*").eq("id", id).maybeSingle(),
-      db.from("product_pricing_rules").select("*").eq("product_id", id).maybeSingle(),
-      db.from("product_visual_variants").select("*").eq("product_id", id),
-    ]);
-
-    if (productResult.error || !productResult.data) {
-      return { ok: false, error: "Product not found." };
-    }
-
-    const source = productResult.data;
-    const baseSku = `${source.sku}-COPY`;
-    let newSku = baseSku;
-    let counter = 2;
-
-    while (counter < 100) {
-      const { data: existing } = await db
-        .from("products")
-        .select("id")
-        .eq("sku", newSku)
-        .maybeSingle();
-
-      if (!existing) break;
-      newSku = `${baseSku}${counter}`;
-      counter += 1;
-    }
-
-    const { data: inserted, error: insertError } = await db
-      .from("products")
-      .insert({
-        sku: newSku,
-        name: `${source.name} (Copy)`,
-        category: source.category,
-        product_type: source.product_type,
-        base_length_ft: source.base_length_ft,
-        base_width_ft: source.base_width_ft,
-        base_height_ft: source.base_height_ft ?? 2.5,
-        allowed_top_categories: source.allowed_top_categories,
-        frame_material: source.frame_material ?? "MS",
-        short_description: source.short_description ?? null,
-        is_knockdown_available: source.is_knockdown_available,
-        warranty_text: source.warranty_text,
-        main_image_url: PRODUCT_PLACEHOLDER,
-        hover_blueprint_img: null,
-        is_active: false,
-        use_cases: source.use_cases ?? [],
-        material_tags: source.material_tags ?? [],
-        sort_order: source.sort_order ?? 100,
-        top_overlay_note: source.top_overlay_note ?? null,
-      })
-      .select("id")
-      .single();
-
-    if (insertError || !inserted) {
-      return { ok: false, error: "Unable to duplicate product." };
-    }
-
-    if (ruleResult.data) {
-      const rule = ruleResult.data;
-      const { error: ruleError } = await db.from("product_pricing_rules").insert({
-        product_id: inserted.id,
-        base_pipe_weight_18g_kg: rule.base_pipe_weight_18g_kg,
-        top_area_sqft: rule.top_area_sqft,
-        consumables_cost: rule.consumables_cost,
-        labor_cost: rule.labor_cost,
-        overhead_pct: rule.overhead_pct,
-        retail_margin_pct: rule.retail_margin_pct,
-        b2b_margin_pct: rule.b2b_margin_pct,
-        finishing_cost: rule.finishing_cost ?? 0,
-        b2b_moq: rule.b2b_moq ?? 1,
-        direct_price: rule.direct_price ?? null,
-        granite_top_price: rule.granite_top_price ?? null,
-        wood_top_price: rule.wood_top_price ?? null,
-        combo_config: rule.combo_config ?? {},
-        pipe_spec: rule.pipe_spec ?? null,
-      });
-
-      if (ruleError) {
-        return { ok: false, error: "Product created, but costing copy failed." };
-      }
-    }
-
-    const variants = variantResult.data ?? [];
-    if (variants.length > 0) {
-      const { error: variantError } = await db.from("product_visual_variants").insert(
-        variants.map((variant) => ({
-          product_id: inserted.id,
-          top_material_code: variant.top_material_code,
-          frame_color: variant.frame_color,
-          preview_image_url: PRODUCT_PLACEHOLDER,
-          size_option: variant.size_option,
-          size_multiplier: variant.size_multiplier,
-          selection_key: variant.selection_key ?? null,
-        }))
-      );
-
-      if (variantError) {
-        return { ok: false, error: "Product created, but variant copy failed." };
-      }
-    }
-
-    await writeAudit(db, session.email, {
-      action: "DUPLICATE",
-      target_table: "products",
-      target_id: inserted.id,
-      summary: `Product ${newSku} duplicated from ${source.sku}`,
+    const db = createServerClient();
+    const { data, error } = await db.rpc("admin_duplicate_catalog_product", {
+      p_id: id,
+      p_actor: session.email,
     });
-
-    revalidateCatalog(newSku);
-    redirectTo = `/admin/products/${inserted.id}`;
+    if (error || typeof data !== "string") {
+      return { ok: false, error: catalogWriteError(error, "Unable to duplicate product.") };
+    }
+    draftId = data;
+    revalidateCatalog();
   } catch {
     return { ok: false, error: "Unable to duplicate product." };
   }
 
-  if (redirectTo) {
-    redirect(redirectTo);
-  }
-
-  return { ok: false, error: "Unable to duplicate product." };
+  redirect(`/admin/products/${draftId}`);
 }
 
 export async function uploadProductImageAction(
@@ -619,9 +376,9 @@ export async function uploadProductImageAction(
   formData: FormData
 ): Promise<AdminActionResult> {
   const session = await requireAdmin();
-  const db = createServerClient();
 
   try {
+    const db = createServerClient();
     const productId = formString(formData.get("product_id"));
     const kind = formString(formData.get("kind"));
     const file = getUploadFile(formData);
@@ -638,7 +395,7 @@ export async function uploadProductImageAction(
 
     const { data: product, error } = await db
       .from("products")
-      .select("id, sku, main_image_url, hover_blueprint_img")
+      .select("id, sku, main_image_url, hover_blueprint_img, is_active")
       .eq("id", productId)
       .maybeSingle();
 
@@ -654,7 +411,9 @@ export async function uploadProductImageAction(
     const { error: updateError } = await db
       .from("products")
       .update({ [column]: url })
-      .eq("id", productId);
+      .eq("id", productId)
+      .select("id")
+      .single();
 
     if (updateError) {
       await removeStoredImage(db, url).catch(() => undefined);
@@ -686,9 +445,9 @@ export async function deleteProductImageAction(
   formData: FormData
 ): Promise<AdminActionResult> {
   const session = await requireAdmin();
-  const db = createServerClient();
 
   try {
+    const db = createServerClient();
     const productId = formString(formData.get("product_id"));
     const kind = formString(formData.get("kind"));
 
@@ -698,12 +457,16 @@ export async function deleteProductImageAction(
 
     const { data: product, error } = await db
       .from("products")
-      .select("id, sku, main_image_url, hover_blueprint_img")
+      .select("id, sku, main_image_url, hover_blueprint_img, is_active")
       .eq("id", productId)
       .maybeSingle();
 
     if (error || !product) {
       return { ok: false, error: "Product not found." };
+    }
+
+    if (kind === "main" && product.is_active) {
+      return { ok: false, error: "Unpublish the product before removing its main photo." };
     }
 
     const column = kind === "main" ? "main_image_url" : "hover_blueprint_img";
@@ -714,7 +477,10 @@ export async function deleteProductImageAction(
     const { error: updateError } = await db
       .from("products")
       .update({ [column]: nextValue })
-      .eq("id", productId);
+      .eq("id", productId)
+      .eq("is_active", product.is_active)
+      .select("id")
+      .single();
 
     if (updateError) {
       return { ok: false, error: "Unable to remove the image." };
@@ -743,9 +509,9 @@ export async function saveVariantAction(
   formData: FormData
 ): Promise<AdminActionResult> {
   const session = await requireAdmin();
-  const db = createServerClient();
 
   try {
+    const db = createServerClient();
     const rawId = formString(formData.get("id"));
     const variantId = rawId || null;
     const productId = formString(formData.get("product_id"));
@@ -776,12 +542,13 @@ export async function saveVariantAction(
     let existing: { id: string; preview_image_url: string } | null = null;
 
     if (variantId) {
-      const { data } = await db
+      const { data, error } = await db
         .from("product_visual_variants")
         .select("id, preview_image_url")
         .eq("id", variantId)
         .eq("product_id", product.id)
         .maybeSingle();
+      if (error) return { ok: false, error: "Unable to load the variant." };
       existing = data ?? null;
 
       if (!existing) {
@@ -813,7 +580,9 @@ export async function saveVariantAction(
         .from("product_visual_variants")
         .update(variantRow)
         .eq("id", variantId)
-        .eq("product_id", product.id);
+        .eq("product_id", product.id)
+        .select("id")
+        .single();
 
       if (error) {
         if (uploadedUrl) await removeStoredImage(db, uploadedUrl).catch(() => undefined);
@@ -860,9 +629,9 @@ export async function deleteVariantAction(
   formData: FormData
 ): Promise<AdminActionResult> {
   const session = await requireAdmin();
-  const db = createServerClient();
 
   try {
+    const db = createServerClient();
     const id = formString(formData.get("id"));
     const productId = formString(formData.get("product_id"));
 
@@ -881,17 +650,21 @@ export async function deleteVariantAction(
       return { ok: false, error: "Variant not found." };
     }
 
-    const { data: product } = await db
+    const { data: product, error: productError } = await db
       .from("products")
       .select("sku")
       .eq("id", productId)
       .maybeSingle();
 
+    if (productError || !product) return { ok: false, error: "Unable to load the product." };
+
     const { error: deleteError } = await db
       .from("product_visual_variants")
       .delete()
       .eq("id", id)
-      .eq("product_id", productId);
+      .eq("product_id", productId)
+      .select("id")
+      .single();
 
     if (deleteError) {
       return { ok: false, error: "Unable to delete the variant." };
@@ -920,9 +693,9 @@ export async function uploadSwatchAction(
   formData: FormData
 ): Promise<AdminActionResult> {
   const session = await requireAdmin();
-  const db = createServerClient();
 
   try {
+    const db = createServerClient();
     const optionCode = formString(formData.get("option_code"));
     const file = getUploadFile(formData);
 
@@ -955,7 +728,9 @@ export async function uploadSwatchAction(
     const { error: updateError } = await db
       .from("configurator_options")
       .update({ swatch_texture_img: url })
-      .eq("option_code", optionCode);
+      .eq("option_code", optionCode)
+      .select("option_code")
+      .single();
 
     if (updateError) {
       await removeStoredImage(db, url).catch(() => undefined);
@@ -985,9 +760,9 @@ export async function deleteSwatchAction(
   formData: FormData
 ): Promise<AdminActionResult> {
   const session = await requireAdmin();
-  const db = createServerClient();
 
   try {
+    const db = createServerClient();
     const optionCode = formString(formData.get("option_code"));
     if (!optionCode) {
       return { ok: false, error: "Invalid swatch request." };
@@ -1006,7 +781,9 @@ export async function deleteSwatchAction(
     const { error: updateError } = await db
       .from("configurator_options")
       .update({ swatch_texture_img: null })
-      .eq("option_code", optionCode);
+      .eq("option_code", optionCode)
+      .select("option_code")
+      .single();
 
     if (updateError) {
       return { ok: false, error: "Unable to remove the swatch." };

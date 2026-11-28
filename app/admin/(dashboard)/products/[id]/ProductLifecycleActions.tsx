@@ -1,15 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Archive, Copy, ExternalLink, Globe, EyeOff, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import AdminToast, { type ToastKind } from "@/components/admin/Toast";
-import {
-  archiveProductAction,
-  duplicateProductAction,
-} from "@/app/admin/(dashboard)/products/actions";
-import { toggleProductPublishAction, type VariantAdminActionState } from "./variant-actions";
+import { useActionState } from "react";
+import { Archive, CheckCircle2, Circle, Copy, ExternalLink, Globe, EyeOff, Loader2 } from "lucide-react";
+import { archiveProductAction, duplicateProductAction } from "@/app/admin/(dashboard)/products/actions";
 import type { AdminActionResult, AdminProduct } from "@/lib/admin/product-types";
+import { productPath } from "@/lib/site";
+import { editorPrimary, editorSecondary } from "./EditorSection";
+import { toggleProductPublishAction, type VariantAdminActionState } from "./variant-actions";
 
 const initialState: AdminActionResult = {};
 const initialVarState: VariantAdminActionState = {};
@@ -17,167 +14,81 @@ const initialVarState: VariantAdminActionState = {};
 export interface PublicationChecklist {
   hasPhoto: boolean;
   hasDescription: boolean;
-  hasVariants: boolean;
-  hasCostsOrQuoteOnly: boolean;
-  hasPricingProfileOrQuoteOnly: boolean;
+  hasDimensions: boolean;
+  hasPublishedVariants: boolean;
 }
 
-export default function ProductLifecycleActions({
-  product,
-  checklist,
-}: {
+export default function ProductLifecycleActions({ product, checklist }: {
   product: AdminProduct;
-  checklist?: PublicationChecklist;
+  checklist: PublicationChecklist;
 }) {
-  const router = useRouter();
-  const [toast, setToast] = useState<{ kind: ToastKind; message: string } | null>(null);
-
-  const [, archiveAction, archiving] = useActionState(
-    async (previous: AdminActionResult, formData: FormData) => {
-      const result = await archiveProductAction(previous, formData);
-      if (result.ok) {
-        setToast({ kind: "success", message: `${product.sku} archived.` });
-        router.refresh();
-      } else {
-        setToast({ kind: "error", message: result.error ?? "Unable to archive product." });
-      }
-      return result;
-    },
-    initialState
-  );
-
-  const [, publishAction, togglingPublish] = useActionState(
-    async (previous: VariantAdminActionState, formData: FormData) => {
-      const result = await toggleProductPublishAction(previous, formData);
-      if (result.ok) {
-        setToast({ kind: "success", message: result.message ?? "Updated publish state." });
-        router.refresh();
-      } else {
-        setToast({ kind: "error", message: result.error ?? "Failed to update publish state." });
-      }
-      return result;
-    },
-    initialVarState
-  );
-
-  const [duplicateState, duplicateAction, duplicating] = useActionState(
-    duplicateProductAction,
-    initialState
-  );
+  const [archive, archiveAction, archiving] = useActionState(archiveProductAction, initialState);
+  const [publication, publishAction, publishing] = useActionState(toggleProductPublishAction, initialVarState);
+  const [duplicate, duplicateAction, duplicating] = useActionState(duplicateProductAction, initialState);
+  const requirements = [
+    [checklist.hasPhoto, "Main photo"],
+    [checklist.hasDescription, "Catalog description"],
+    [checklist.hasDimensions, "Product dimensions"],
+    [checklist.hasPublishedVariants, "Ready published variants"],
+  ] as const;
+  const ready = requirements.every(([complete]) => complete);
+  const error = publication.error ?? archive.error ?? duplicate.error;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {requirements.map(([complete, label]) => (
+          <li key={label} className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${complete ? "bg-emerald-50 text-emerald-900" : "bg-neutral-100 text-neutral-700"}`}>
+            {complete ? <CheckCircle2 className="size-4 shrink-0" /> : <Circle className="size-4 shrink-0" />}
+            <span className="sr-only">{complete ? "Complete" : "Required"} </span>
+            {label}
+          </li>
+        ))}
+      </ul>
+      {!product.is_active && !ready && (
+        <p className="text-sm text-neutral-600">Complete these items and publish at least one priced or quote-only variant to enable publication.</p>
+      )}
       <div className="flex flex-wrap items-center gap-2">
-        <a
-          href={`/products/${encodeURIComponent(product.sku.toLowerCase())}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-neutral-300 bg-white text-[10px] font-bold uppercase tracking-wider text-neutral-700 hover:bg-neutral-100"
-        >
-          <ExternalLink className="w-3 h-3" />
-          Preview
-        </a>
-
         <form action={publishAction}>
           <input type="hidden" name="id" value={product.id} />
-          <input type="hidden" name="next_active" value={product.is_active ? "false" : "true"} />
-          <button
-            type="submit"
-            disabled={togglingPublish}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-md text-[10px] font-bold uppercase tracking-wider disabled:opacity-50 ${
-              product.is_active
-                ? "border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
-                : "bg-emerald-600 text-white hover:bg-emerald-700"
-            }`}
-          >
-            {togglingPublish ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : product.is_active ? (
-              <EyeOff className="w-3 h-3" />
-            ) : (
-              <Globe className="w-3 h-3" />
-            )}
-            {product.is_active ? "Unpublish" : "Publish"}
+          <input type="hidden" name="next_active" value={String(!product.is_active)} />
+          <button type="submit" disabled={publishing || (!product.is_active && !ready)} className={product.is_active ? editorSecondary : editorPrimary}>
+            {publishing ? <Loader2 className="size-4 animate-spin" /> : product.is_active ? <EyeOff className="size-4" /> : <Globe className="size-4" />}
+            {product.is_active ? "Unpublish" : "Publish product"}
           </button>
         </form>
-
-        <form
-          action={duplicateAction}
-          onSubmit={(event) => {
-            if (!window.confirm(`Duplicate ${product.sku} with a new SKU and no images?`)) {
-              event.preventDefault();
-            }
-          }}
-        >
-          <input type="hidden" name="id" value={product.id} />
-          <button
-            type="submit"
-            disabled={duplicating}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-neutral-300 bg-white text-[10px] font-bold uppercase tracking-wider text-neutral-700 hover:bg-neutral-100 disabled:opacity-50"
-          >
-            {duplicating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Copy className="w-3 h-3" />}
-            Duplicate
-          </button>
-        </form>
-
-        <form
-          action={archiveAction}
-          onSubmit={(event) => {
-            if (!window.confirm(`Archive ${product.sku}? It will disappear from the public catalog.`)) {
-              event.preventDefault();
-            }
-          }}
-        >
-          <input type="hidden" name="id" value={product.id} />
-          <button
-            type="submit"
-            disabled={archiving || !product.is_active}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md border border-red-200 bg-red-50 text-[10px] font-bold uppercase tracking-wider text-red-700 hover:bg-red-100 disabled:opacity-40"
-          >
-            {archiving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Archive className="w-3 h-3" />}
-            Archive
-          </button>
-        </form>
+        {product.is_active && (
+          <a href={productPath(product.sku)} target="_blank" rel="noreferrer" className={editorSecondary}>
+            <ExternalLink className="size-4" /> View product
+          </a>
+        )}
       </div>
-
-      {checklist && (
-        <div className="flex flex-wrap gap-2 text-[10px]">
-          {[
-            { ok: checklist.hasPhoto, label: "Photos" },
-            { ok: checklist.hasDescription, label: "Description" },
-            { ok: checklist.hasVariants, label: "Variants" },
-            { ok: checklist.hasCostsOrQuoteOnly, label: "Costs / Quote-only" },
-            { ok: checklist.hasPricingProfileOrQuoteOnly, label: "Pricing rules" },
-          ].map((item) => (
-            <span
-              key={item.label}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${
-                item.ok
-                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                  : "bg-amber-50 text-amber-800 border-amber-200"
-              }`}
-            >
-              {item.ok ? (
-                <CheckCircle2 className="w-3 h-3" />
-              ) : (
-                <AlertCircle className="w-3 h-3" />
-              )}
-              {item.label}
-            </span>
-          ))}
+      <details>
+        <summary className="cursor-pointer text-sm font-medium text-neutral-700">More product actions</summary>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <form action={duplicateAction} onSubmit={(event) => {
+            if (!window.confirm(`Duplicate ${product.sku} as a draft with a new model number?`)) event.preventDefault();
+          }}>
+            <input type="hidden" name="id" value={product.id} />
+            <button type="submit" disabled={duplicating} className={editorSecondary}>
+              {duplicating ? <Loader2 className="size-4 animate-spin" /> : <Copy className="size-4" />} Duplicate
+            </button>
+          </form>
+          {product.is_active && (
+            <form action={archiveAction} onSubmit={(event) => {
+              if (!window.confirm(`Archive ${product.sku} and hide it from the public catalog?`)) event.preventDefault();
+            }}>
+              <input type="hidden" name="id" value={product.id} />
+              <button type="submit" disabled={archiving} className={editorSecondary}>
+                {archiving ? <Loader2 className="size-4 animate-spin" /> : <Archive className="size-4" />} Archive
+              </button>
+            </form>
+          )}
         </div>
-      )}
-
-      {duplicateState.error && (
-        <p className="text-[10px] text-red-600">{duplicateState.error}</p>
-      )}
-
-      {toast && (
-        <AdminToast
-          kind={toast.kind}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
+      </details>
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      {!error && (publication.message || archive.ok) && (
+        <p role="status" className="text-sm text-emerald-700">{publication.message ?? "Product archived."}</p>
       )}
     </div>
   );

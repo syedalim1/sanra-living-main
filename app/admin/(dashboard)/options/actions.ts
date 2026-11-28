@@ -1,10 +1,11 @@
-﻿"use server";
+"use server";
 
 import "server-only";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth";
+import type { AdminActionResult } from "@/lib/admin/product-types";
 import { writeAudit } from "@/lib/admin/audit";
 import { createServerClient } from "@/lib/supabase/server";
 import { buildStoragePath, uploadImageFile } from "@/lib/admin/images";
@@ -502,12 +503,25 @@ export async function duplicateGroupAction(formData: FormData): Promise<void> {
   refreshOptions();
 }
 
-export async function saveAvailabilityAction(formData: FormData): Promise<void> {
+export async function saveAvailabilityAction(
+  _state: AdminActionResult,
+  formData: FormData,
+): Promise<AdminActionResult> {
   const session = await requireAdmin();
+  try {
+    return await saveAvailability(formData, session.email);
+  } catch {
+    return { ok: false, error: "Unable to save product options." };
+  }
+}
+
+async function saveAvailability(formData: FormData, actorEmail: string): Promise<AdminActionResult> {
   const db = createServerClient();
   const productId = field(formData, "product_id");
   const productType = field(formData, "product_type");
-  if (!productId || !isProductType(productType)) return;
+  if (!z.string().uuid().safeParse(productId).success || !isProductType(productType)) {
+    return { ok: false, error: "Invalid product options request." };
+  }
 
   const enabledCodes = new Set(
     formData
@@ -515,7 +529,7 @@ export async function saveAvailabilityAction(formData: FormData): Promise<void> 
       .filter((value): value is string => typeof value === "string")
   );
 
-  const { data: groups } = await db
+  const { data: groups, error: groupsError } = await db
     .from("product_type_option_groups")
     .select("option_group, is_required, default_code, is_active")
     .eq("product_type", productType);
@@ -523,16 +537,22 @@ export async function saveAvailabilityAction(formData: FormData): Promise<void> 
   // Only active groups are rendered in the admin form. Saving availability for
   // an inactive group used to mark every option in it as disabled without the
   // admin ever seeing those checkboxes.
+  if (groupsError) return { ok: false, error: "Unable to load product option groups." };
   const activeGroups = (groups ?? []).filter((group) => group.is_active !== false);
+  if (productType === "TABLE" && !activeGroups.some((group) => group.option_group === "FRAME_MATERIAL")) {
+    activeGroups.unshift({ option_group: "FRAME_MATERIAL", is_required: true, default_code: null, is_active: true });
+  }
   const groupCodes = activeGroups.map((group) => group.option_group);
 
-  if (groupCodes.length === 0) return;
+  if (groupCodes.length === 0) return { ok: false, error: "No active option groups are available." };
 
-  const { data: options } = await db
+  const { data: options, error: optionsError } = await db
     .from("configurator_options")
     .select("option_code, option_group, parent_code")
     .in("option_group", groupCodes)
     .eq("is_active", true);
+
+  if (optionsError) return { ok: false, error: "Unable to load product options." };
 
   type ManagedOption = {
     option_code: string;
@@ -616,30 +636,22 @@ export async function saveAvailabilityAction(formData: FormData): Promise<void> 
     }
   }
 
-  const managedOptions = [...managed.values()];
-
-  await db.from("product_option_availability").delete().eq("product_id", productId);
-
-  if (managedOptions.length > 0) {
-    await db.from("product_option_availability").insert(
-      managedOptions.map((option) => ({
-        product_id: productId,
-        option_code: option.option_code,
-        is_enabled: enabled.has(option.option_code),
-      }))
-    );
-  }
-
-  await writeAudit(db, session.email, {
-    action: "UPDATE",
-    target_table: "product_option_availability",
-    target_id: productId,
-    summary: `Saved product option availability (${enabled.size} enabled).`,
+  const { error } = await db.rpc("admin_save_catalog_options", {
+    p_id: productId,
+    p_type: productType,
+    p_options: [...managed.values()].map(({ option_code }) => ({
+      option_code,
+      is_enabled: enabled.has(option_code),
+    })),
+    p_actor: actorEmail,
   });
+  if (error) return { ok: false, error: "Unable to save product options." };
 
   revalidatePath(`/admin/products/${productId}`);
   revalidatePath("/products");
-  revalidatePath(`/admin/options`);
+  revalidatePath("/products/[sku]", "page");
+  revalidatePath("/admin/options");
+  return { ok: true };
 }
 
 const PreviewSchema = z.object({

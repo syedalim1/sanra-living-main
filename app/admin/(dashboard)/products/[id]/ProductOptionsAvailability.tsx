@@ -1,3 +1,6 @@
+"use client";
+
+import { startTransition, useActionState } from "react";
 import { saveAvailabilityAction } from "@/app/admin/(dashboard)/options/actions";
 
 interface AvailabilityGroup {
@@ -25,6 +28,7 @@ export default function ProductOptionsAvailability({
   disabledCodes: string[];
 }) {
   const disabled = new Set(disabledCodes);
+  const [state, action, saving] = useActionState(saveAvailabilityAction, {});
 
   return (
     <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
@@ -41,7 +45,11 @@ export default function ProductOptionsAvailability({
           No option groups configured for this product type yet.
         </p>
       ) : (
-        <form action={saveAvailabilityAction} className="px-5 py-4 space-y-4">
+        <form action={action} onSubmit={(event) => {
+          event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          startTransition(() => action(data));
+        }} className="px-5 py-4 space-y-4">
           <input type="hidden" name="product_id" value={productId} />
           <input type="hidden" name="product_type" value={productType} />
 
@@ -77,8 +85,9 @@ export default function ProductOptionsAvailability({
             );
           })}
 
-          <button className="px-4 py-2 rounded-md bg-[#111111] text-white text-[10px] font-bold uppercase tracking-wider">
-            Save product options
+          <p role={state.error ? "alert" : "status"} className={`text-sm ${state.error ? "text-red-700" : "text-emerald-700"}`}>{state.error ?? (state.ok ? "Product options saved." : "")}</p>
+          <button type="submit" disabled={saving} className="px-4 py-2 rounded-md bg-[#111111] text-white text-[10px] font-bold uppercase tracking-wider">
+            {saving ? "Saving…" : "Save product options"}
           </button>
         </form>
       )}

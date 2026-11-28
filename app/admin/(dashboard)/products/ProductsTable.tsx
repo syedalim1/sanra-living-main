@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { adminImageUrl } from "@/lib/media/paths";
 
@@ -29,12 +29,13 @@ function ActiveToggle({ product }: { product: AdminProduct }) {
     initialState
   );
 
-  const active = state.isActive ?? product.is_active;
+  const active = product.is_active;
 
   return (
     <div>
       <form action={formAction}>
         <input type="hidden" name="id" value={product.id} />
+        <input type="hidden" name="is_active" value={String(active)} />
         <button
           type="submit"
           disabled={pending}
@@ -45,7 +46,7 @@ function ActiveToggle({ product }: { product: AdminProduct }) {
           }`}
         >
           {pending && <Loader2 className="w-3 h-3 animate-spin" />}
-          {active ? "Active" : "Archived"}
+          {active ? "Published" : "Draft"}
         </button>
       </form>
       {state.error && <p className="text-[10px] text-red-600 mt-1">{state.error}</p>}

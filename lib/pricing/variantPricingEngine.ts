@@ -368,15 +368,17 @@ export async function calculateVariantPrice(
   const { data: variant, error: vErr } = await supabaseServer
     .from("product_variants")
     .select(
-      "id, product_id, variant_code, size_code, availability, lead_time_days, status, is_active"
+      "id, product_id, variant_code, size_code, availability, lead_time_days, status, is_active, products!inner(product_type)"
     )
+    .eq("products.is_active", true)
     .eq("id", input.variantId)
-    .maybeSingle();
+    .maybeSingle()
+    .overrideTypes<{ products: { product_type: string } }>();
 
   if (vErr || !variant || !variant.is_active || variant.status !== "PUBLISHED") {
     return {
       variant_id: input.variantId,
-      variant_code: (variant?.variant_code as string) ?? "",
+      variant_code: "",
       quantity,
       unit_price: null,
       total_price: null,
@@ -390,15 +392,7 @@ export async function calculateVariantPrice(
     };
   }
 
-  let productType = input.productType;
-  if (!productType) {
-    const { data: product } = await supabaseServer
-      .from("products")
-      .select("product_type")
-      .eq("id", variant.product_id)
-      .maybeSingle();
-    productType = (product?.product_type as string) ?? "TABLE";
-  }
+  const productType = input.productType ?? variant.products?.product_type ?? "TABLE";
 
   const [pricingRes, bulkRes, tiersRes] = await Promise.all([
     supabaseServer

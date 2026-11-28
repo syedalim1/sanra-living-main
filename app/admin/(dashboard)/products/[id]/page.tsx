@@ -20,9 +20,13 @@ import ProductSeoPanel from "@/app/admin/(dashboard)/products/[id]/ProductSeoPan
 import { evaluateVariantPricing } from "@/lib/pricing/variantPricingEngine";
 import type {
   PrivatePricingProfile,
+  PrivateVariantPricing,
   PublicSurfaceOption,
 } from "@/lib/variants/types";
 import { FALLBACK_OPTIONS } from "@/lib/configuratorOptions";
+import { PRODUCT_PLACEHOLDER } from "@/lib/admin/product-types";
+import { suggestPricingProfile, surfaceAppliesToModel } from "@/lib/admin/variantSetup";
+import { EditorSection } from "./EditorSection";
 import { isProductType } from "@/lib/productTypeConfig";
 import type {
   AdminMaterialOption,
@@ -37,16 +41,18 @@ const UUID_RE =
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ created?: string | string[] }>;
 }
 
 export const instant = false;
 
-export default async function AdminProductPage({ params }: ProductPageProps) {
+export default async function AdminProductPage({ params, searchParams }: ProductPageProps) {
   await connection();
   await requireAdmin();
   const db = createServerClient();
   const { id } = await params;
   const isNew = id === "new";
+  const created = isNew ? (await searchParams).created : undefined;
 
   if (!isNew && !UUID_RE.test(id)) {
     notFound();
@@ -80,7 +86,10 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
         .order("created_at"),
     ]);
 
-    if (productResult.error || !productResult.data) {
+    if (productResult.error || pricingResult.error || variantResult.error) {
+      throw new Error("Unable to load product details.");
+    }
+    if (!productResult.data) {
       notFound();
     }
 
@@ -158,7 +167,7 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
     }));
   }
 
-  const [optionResult, materialResult] = await Promise.all([
+  const [optionResult, materialResult] = product ? await Promise.all([
     db
       .from("configurator_options")
       .select("option_group, option_code, parent_code, label_en, swatch_texture_img")
@@ -166,10 +175,11 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
       .order("sort_order"),
     db
       .from("material_rates")
-      .select("material_code, display_name, category, cost_per_unit")
+      .select("material_code, display_name, category")
       .order("category")
       .order("display_name"),
-  ]);
+  ]) : [{ data: [], error: null }, { data: [], error: null }];
+  if (optionResult.error || materialResult.error) throw new Error("Unable to load catalog options.");
 
   const dbOptions: AdminOption[] = (optionResult.data ?? []).map((option) => ({
     option_group: option.option_group,
@@ -248,6 +258,7 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
         .eq("product_id", product.id),
     ]);
 
+    if (typeGroupResult.error || availabilityResult.error) throw new Error("Unable to load product availability.");
     availabilityGroups = (typeGroupResult.data ?? [])
       .filter((group) => group.is_active !== false)
       .map((group) => ({
@@ -302,7 +313,6 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
     const [
       econRes,
       buildCatsRes,
-      specsRes,
       surfacesRes,
       profilesRes,
       seoRes,
@@ -313,10 +323,7 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
         .eq("product_id", product.id)
         .eq("is_active", true)
         .order("sort_order"),
-      db.from("build_categories").select("id, public_label"),
-      db
-        .from("build_category_specs_private")
-        .select("build_category_id, gauge_code, nominal_thickness_mm"),
+      db.from("build_categories").select("id, public_label, level, is_active, frame_material"),
       db
         .from("surface_options")
         .select("id, code, kind, label, material_family, public_description, applicable_product_types, sort_order")
@@ -334,192 +341,168 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
         .maybeSingle(),
     ]);
 
+    if (econRes.error || buildCatsRes.error || surfacesRes.error || profilesRes.error || seoRes.error) {
+      throw new Error("Unable to load variant costing or SEO settings.");
+    }
     adminSurfaces = (surfacesRes.data as PublicSurfaceOption[]) ?? [];
     adminProfiles = (profilesRes.data as PrivatePricingProfile[]) ?? [];
     productSeo = seoRes.data ?? null;
 
     const econRows = econRes.data ?? [];
     const econIds = econRows.map((r) => r.id as string);
-    const { data: vpRows } =
+    const { data: vpRows, error: vpError } =
       econIds.length > 0
         ? await db
             .from("variant_pricing_private")
-            .select("*")
+            .select("variant_id, manufacturing_cost, pricing_profile_id, cost_source, price_override_ex_gst, price_override_inc_gst, min_selling_price, updated_at")
             .in("variant_id", econIds)
-        : { data: [] as Record<string, unknown>[] };
+        : { data: [], error: null };
+    if (vpError) throw new Error("Unable to load variant prices.");
 
-    const vpMap = new Map((vpRows ?? []).map((r) => [r.variant_id as string, r]));
-    const bcLabelMap = new Map(
-      (buildCatsRes.data ?? []).map((b) => [b.id as string, b.public_label as string])
-    );
-    const specMap = new Map(
-      (specsRes.data ?? []).map((s) => [
-        s.build_category_id as string,
-        `${s.gauge_code} / ${s.nominal_thickness_mm}mm`,
-      ])
-    );
-    const surfLabelMap = new Map(adminSurfaces.map((s) => [s.id, s.label]));
-    const profileMap = new Map(adminProfiles.map((p) => [p.id, p]));
+    const vpMap = new Map((vpRows ?? []).map((row) => [row.variant_id as string, row]));
+    const buildById = new Map(buildCatsRes.data.map((build) => [build.id, build]));
+    const surfaceById = new Map(adminSurfaces.map((surface) => [surface.id, surface]));
+    const profileMap = new Map(adminProfiles.map((profile) => [profile.id, profile]));
+    const publishedReadiness: boolean[] = [];
+    const hasDimensions = product.base_length_ft > 0 && product.base_width_ft > 0 && Number(product.base_height_ft) > 0;
 
-    adminEconomicVariants = econRows.map((v) => {
-      const vp = vpMap.get(v.id as string) ?? null;
-      const profile =
-        vp?.pricing_profile_id
-          ? profileMap.get(vp.pricing_profile_id as string) ?? null
-          : null;
-      const mfgCost =
-        vp?.manufacturing_cost != null ? Number(vp.manufacturing_cost) : null;
-      const overrideEx =
-        vp?.price_override_ex_gst != null ? Number(vp.price_override_ex_gst) : null;
-
-      const evalRes = evaluateVariantPricing({
-        variantId: v.id as string,
-        variantCode: v.variant_code as string,
-        availability: v.availability,
-        leadTimeDays: v.lead_time_days != null ? Number(v.lead_time_days) : null,
-        sizeCode: v.size_code as string,
+    adminEconomicVariants = econRows.map((variant) => {
+      const row = vpMap.get(variant.id);
+      const pricing = row ? {
+        variant_id: variant.id,
+        manufacturing_cost: row.manufacturing_cost == null ? null : Number(row.manufacturing_cost),
+        cost_source: row.cost_source,
+        cost_effective_from: null,
+        pricing_profile_id: row.pricing_profile_id,
+        price_override_ex_gst: row.price_override_ex_gst == null ? null : Number(row.price_override_ex_gst),
+        price_override_inc_gst: row.price_override_inc_gst == null ? null : Number(row.price_override_inc_gst),
+        min_selling_price: row.min_selling_price == null ? null : Number(row.min_selling_price),
+        internal_notes: null,
+        updated_by: null,
+        updated_at: row.updated_at,
+      } satisfies PrivateVariantPricing : null;
+      const assignedProfile = pricing?.pricing_profile_id ?? null;
+      const suggestion = assignedProfile ? null
+        : suggestPricingProfile(adminProfiles, variant.frame_material, product.product_type);
+      const build = buildById.get(variant.build_category_id);
+      const result = evaluateVariantPricing({
+        variantId: variant.id,
+        variantCode: variant.variant_code,
+        availability: variant.availability,
+        leadTimeDays: variant.lead_time_days,
+        sizeCode: variant.size_code,
         quantity: 1,
-        pricing: vp as never,
-        profile,
+        pricing,
+        profile: assignedProfile ? profileMap.get(assignedProfile) ?? null : null,
         bulkRule: null,
         tiers: [],
       });
-
-      let profitAmount: number | null = null;
-      let actualMarginPct: number | null = null;
-      if (evalRes.unit_price != null && mfgCost != null && mfgCost > 0) {
-        const exGst =
-          evalRes.price_basis === "GST_INCLUSIVE" && evalRes.gst_rate != null
-            ? evalRes.unit_price / (1 + evalRes.gst_rate / 100)
-            : evalRes.unit_price;
-        profitAmount = Math.round((exGst - mfgCost) * 100) / 100;
-        actualMarginPct =
-          exGst > 0 ? Math.round(((exGst - mfgCost) / exGst) * 10000) / 100 : null;
+      if (variant.status === "PUBLISHED") {
+        const variantDimensions = variant.size_code === "CUSTOM"
+          || (variant.size_code === "STANDARD" && hasDimensions)
+          || (Number(variant.length_ft) > 0 && Number(variant.width_ft) > 0 && Number(variant.height_ft) > 0);
+        publishedReadiness.push(Boolean(build?.is_active && build.frame_material === variant.frame_material
+          && variant.size_label.trim() && variantDimensions
+          && (!variant.surface_option_id || surfaceById.has(variant.surface_option_id))
+          && (variant.availability === "QUOTE_ONLY" || (result.unit_price != null && result.unit_price > 0))));
       }
-
       return {
-        id: v.id as string,
-        variant_code: v.variant_code as string,
-        frame_material: v.frame_material as "SS" | "MS",
-        build_category_label: bcLabelMap.get(v.build_category_id as string) ?? "Standard",
-        private_gauge_label: specMap.get(v.build_category_id as string) ?? "—",
-        size_code: v.size_code as string,
-        size_label: v.size_label as string,
-        surface_label: v.surface_option_id
-          ? surfLabelMap.get(v.surface_option_id as string) ?? null
-          : null,
-        manufacturing_cost: mfgCost,
-        pricing_profile_id: (vp?.pricing_profile_id as string | null) ?? null,
-        calculated_selling_price: evalRes.unit_price,
-        price_override_ex_gst: overrideEx,
-        min_selling_price:
-          vp?.min_selling_price != null ? Number(vp.min_selling_price) : null,
-        profit_amount: profitAmount,
-        actual_gross_margin_pct: actualMarginPct,
-        lead_time_days: v.lead_time_days != null ? Number(v.lead_time_days) : null,
-        availability: v.availability,
-        status: v.status,
-        requires_quote: evalRes.requires_quote,
+        id: variant.id,
+        variant_code: variant.variant_code,
+        frame_material: variant.frame_material,
+        build_level: build?.level ?? "STANDARD",
+        build_category_label: build?.public_label ?? "Standard",
+        size_code: variant.size_code,
+        size_label: variant.size_label,
+        surface_label: surfaceById.get(variant.surface_option_id)?.label ?? null,
+        surface_option_id: variant.surface_option_id,
+        manufacturing_cost: pricing?.manufacturing_cost ?? null,
+        pricing_profile_id: assignedProfile,
+        suggested_profile_id: suggestion,
+        calculated_selling_price: result.unit_price,
+        price_basis: result.price_basis,
+        price_override_ex_gst: pricing?.price_override_ex_gst ?? null,
+        min_selling_price: pricing?.min_selling_price ?? null,
+        lead_time_days: variant.lead_time_days,
+        availability: variant.availability,
+        status: variant.status,
+        variant_revision: variant.updated_at,
+        pricing_revision: pricing?.updated_at ?? null,
       };
     });
 
-    const hasVariants = adminEconomicVariants.length > 0;
-    const allCostsOrQuote =
-      hasVariants &&
-      adminEconomicVariants.every(
-        (v) =>
-          v.availability === "QUOTE_ONLY" ||
-          (v.manufacturing_cost != null && v.manufacturing_cost > 0) ||
-          (v.price_override_ex_gst != null && v.price_override_ex_gst > 0)
-      );
-    const allProfilesOrQuote =
-      hasVariants &&
-      adminEconomicVariants.every(
-        (v) =>
-          v.availability === "QUOTE_ONLY" ||
-          Boolean(v.pricing_profile_id) ||
-          (v.price_override_ex_gst != null && v.price_override_ex_gst > 0)
-      );
-
     checklist = {
-      hasPhoto: Boolean(product.main_image_url),
+      hasPhoto: Boolean(product.main_image_url?.trim() && product.main_image_url !== PRODUCT_PLACEHOLDER),
       hasDescription: Boolean(product.short_description?.trim()),
-      hasVariants,
-      hasCostsOrQuoteOnly: allCostsOrQuote,
-      hasPricingProfileOrQuoteOnly: allProfilesOrQuote,
+      hasDimensions,
+      hasPublishedVariants: publishedReadiness.length > 0 && publishedReadiness.every(Boolean),
     };
   }
 
+  const sections = [
+    ["information", "Information"],
+    ["photos", "Photos"],
+    ["dimensions", "Dimensions and materials"],
+    ...(product ? [["variants", "Variants"], ["costing", "Costing"], ["publication", "SEO and publication"]] : []),
+  ];
+  const dimensions = product ? `${product.base_length_ft} × ${product.base_width_ft} ft` : "";
+
   return (
-    <div className="space-y-6 pb-12">
-      <div className="space-y-3">
-        <Link
-          href="/admin/products"
-          className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-500 hover:text-black"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to products
+    <div className="min-w-0 space-y-4 pb-12 text-neutral-900">
+      <header className="rounded-2xl border border-neutral-200 bg-white px-4 py-4 shadow-xs sm:px-6 sm:py-5">
+        <Link href="/admin/products" className="inline-flex min-h-9 items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-950">
+          <ArrowLeft className="size-4" /> Products
         </Link>
-
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-[#111111] tracking-tight">
-              {product ? product.name : "New Product"}
-            </h1>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              {product && (
-                <>
-                  <span className="px-2 py-0.5 rounded bg-neutral-900 text-white text-[9px] font-bold uppercase tracking-widest">
-                    {product.sku}
-                  </span>
-                  <span className="px-2 py-0.5 rounded border border-neutral-200 text-[9px] font-bold uppercase tracking-widest text-neutral-600">
-                    {product.product_type}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${
-                      product.is_active
-                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                        : "bg-neutral-100 text-neutral-500 border border-neutral-200"
-                    }`}
-                  >
-                    {product.is_active ? "Active" : "Archived"}
-                  </span>
-                </>
-              )}
-              {!product && (
-                <span className="text-[11px] text-neutral-500">
-                  Add details and images now. Variants and swatches unlock after the first save.
-                </span>
-              )}
-            </div>
+        <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="break-words text-2xl font-semibold tracking-tight sm:text-3xl">{product ? "Edit product" : "Add product"}</h1>
+            {product && <p className="mt-1 break-words text-sm text-neutral-600">{product.name} · {product.sku}</p>}
           </div>
-
-          {product && (
-            <ProductLifecycleActions product={product} checklist={checklist} />
-          )}
+          <span className={`rounded-full border px-3 py-1 text-sm font-medium ${product?.is_active ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-stone-200 bg-stone-100 text-stone-700"}`}>
+            {product?.is_active ? "Published" : "Draft"}
+          </span>
         </div>
-      </div>
+        <nav aria-label="Product editor sections" className="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-3">
+          {sections.map(([anchor, label]) => (
+            <a key={anchor} href={`#${anchor}`} className="inline-flex min-h-9 items-center rounded-lg bg-neutral-100 px-3 text-sm font-medium text-neutral-700 hover:bg-neutral-200">{label}</a>
+          ))}
+        </nav>
+      </header>
 
-      <ProductForm product={product} pricing={pricing} />
+      <ProductForm key={typeof created === "string" ? created : id} product={product} pricing={pricing} />
 
-      {product && (
+      {product && checklist && (
         <>
           <VariantCostingPanel
             productId={product.id}
-            productType={engineProductType ?? product.product_type}
+            productType={product.product_type}
+            primaryMaterial={product.frame_material === "SS" ? "SS" : "MS"}
+            materialTags={product.material_tags}
+            dimensions={dimensions}
             variants={adminEconomicVariants}
-            surfaces={adminSurfaces}
-            profiles={adminProfiles}
+            surfaces={adminSurfaces
+              .filter((surface) => surfaceAppliesToModel(surface, product.product_type, product.allowed_top_categories))
+              .map(({ id, label }) => ({ id, label }))}
+            profiles={adminProfiles.map(({ id, name }) => ({ id, name }))}
           />
 
-          <ProductSeoPanel
-            productId={product.id}
-            productName={product.name}
-            category={product.category}
-            dimensionsLabel={`${product.base_length_ft} x ${product.base_width_ft} ft`}
-            seo={productSeo}
-          />
+          <EditorSection id="publication" title="SEO and publication">
+            <ProductLifecycleActions product={product} checklist={checklist} />
+            <details className="mt-4 rounded-xl border border-neutral-200 p-3 sm:p-4">
+              <summary className="cursor-pointer py-1 text-sm font-semibold">Search and social metadata</summary>
+              <ProductSeoPanel
+                productId={product.id}
+                productName={product.name}
+                category={product.category}
+                dimensionsLabel={dimensions}
+                seo={productSeo}
+              />
+            </details>
+          </EditorSection>
 
+          <details className="rounded-2xl border border-neutral-200 bg-white px-4 py-3 sm:px-5">
+            <summary className="cursor-pointer py-1 text-sm font-semibold">Advanced catalog tools</summary>
+            <div className="mt-3 space-y-4">
           <VariantManager
             productId={product.id}
             variants={variants}
@@ -548,6 +531,8 @@ export default async function AdminProductPage({ params }: ProductPageProps) {
               }))}
             disabledCodes={disabledOptionCodes}
           />
+            </div>
+          </details>
         </>
       )}
     </div>

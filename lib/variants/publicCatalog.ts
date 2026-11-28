@@ -100,9 +100,10 @@ export async function getPublicVariantsForProduct(
       supabaseServer
         .from("product_variants")
         .select(
-          "id, product_id, variant_code, frame_material, build_category_id, surface_option_id, size_code, size_label, length_ft, width_ft, height_ft, finish_label, variant_image_url, availability, lead_time_days, sort_order"
+          "id, product_id, variant_code, frame_material, build_category_id, surface_option_id, size_code, size_label, length_ft, width_ft, height_ft, finish_label, variant_image_url, availability, lead_time_days, sort_order, products!inner()"
         )
         .eq("product_id", productId)
+        .eq("products.is_active", true)
         .eq("is_active", true)
         .eq("status", "PUBLISHED")
         .order("sort_order"),
